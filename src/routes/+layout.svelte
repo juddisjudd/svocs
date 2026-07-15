@@ -52,7 +52,7 @@
 			<div class="topbar-left">
 				<a class="brand" href={resolve('/')}>
 					<img class="mark" src={logoMark} alt="" width="20" height="20" />
-					SVOCS
+					<span><span class="brand-accent">SV</span><span class="brand-rest">OCS</span></span>
 				</a>
 
 				<nav class="primary-nav" aria-label="Primary">
@@ -256,10 +256,18 @@
 		gap: 0.5rem;
 		flex-shrink: 0;
 		text-decoration: none;
-		color: var(--text);
 		font-weight: 700;
 		letter-spacing: 0.03em;
 		font-size: 0.98rem;
+	}
+
+	.brand-accent {
+		color: var(--accent);
+		font-weight: 900;
+	}
+
+	.brand-rest {
+		color: var(--text);
 	}
 
 	.mark {
@@ -310,12 +318,11 @@
 		border: 1px solid var(--line);
 		background: color-mix(in srgb, var(--bg-soft) 88%, transparent);
 		color: var(--text);
-		transition: transform 0.16s ease;
+		transition: color 0.16s ease;
 	}
 
 	.repo:hover {
 		color: var(--accent-soft);
-		transform: translateY(-1px);
 	}
 
 	.repo svg {

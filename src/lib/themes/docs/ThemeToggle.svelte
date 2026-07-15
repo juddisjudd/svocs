@@ -71,7 +71,6 @@
 	@media (hover: hover) and (pointer: fine) {
 		button:hover {
 			color: var(--accent-soft);
-			transform: translateY(-1px);
 		}
 	}
 

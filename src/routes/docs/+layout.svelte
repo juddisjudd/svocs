@@ -100,24 +100,41 @@
 			aria-label={navCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
 			onclick={toggleNav}
 		>
-			<svg viewBox="0 0 16 16" aria-hidden="true" class:flipped={navCollapsed}>
-				<path
-					d="m9 4-4 4 4 4"
+			{#if navCollapsed}
+				<!-- layout-sidebar-left-expand (Tabler) -->
+				<svg
+					viewBox="0 0 24 24"
 					fill="none"
 					stroke="currentColor"
-					stroke-width="1.5"
+					stroke-width="2"
 					stroke-linecap="round"
 					stroke-linejoin="round"
-				/>
-				<path
-					d="m13 4-4 4 4 4"
+					aria-hidden="true"
+				>
+					<path
+						d="M4 6a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2l0 -12"
+					/>
+					<path d="M9 4v16" />
+					<path d="M14 10l2 2l-2 2" />
+				</svg>
+			{:else}
+				<!-- layout-sidebar-left-collapse (Tabler) -->
+				<svg
+					viewBox="0 0 24 24"
 					fill="none"
 					stroke="currentColor"
-					stroke-width="1.5"
+					stroke-width="2"
 					stroke-linecap="round"
 					stroke-linejoin="round"
-				/>
-			</svg>
+					aria-hidden="true"
+				>
+					<path
+						d="M4 6a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2l0 -12"
+					/>
+					<path d="M9 4v16" />
+					<path d="M15 10l-2 2l2 2" />
+				</svg>
+			{/if}
 		</button>
 	</aside>
 
@@ -260,13 +277,8 @@
 	}
 
 	.rail-toggle svg {
-		width: 0.95rem;
-		height: 0.95rem;
-		transition: transform 200ms ease;
-	}
-
-	.rail-toggle svg.flipped {
-		transform: rotate(180deg);
+		width: 1.1rem;
+		height: 1.1rem;
 	}
 
 	/* ---- content column ---- */
