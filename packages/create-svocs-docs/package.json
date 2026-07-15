@@ -3,6 +3,7 @@
 	"version": "0.1.0",
 	"description": "Scaffold a new SVOCS documentation site.",
 	"type": "module",
+	"license": "MIT",
 	"homepage": "https://svocs.dev",
 	"repository": {
 		"type": "git",

@@ -9,3 +9,7 @@ SVOCS is under active development. The core is stable — content pipeline, rout
 ## Open source
 
 SVOCS is fully open-source. Issues, discussions, and pull requests are welcome on [GitHub](https://github.com/juddisjudd/svocs). If you'd like to support development, see [Sponsors](/sponsors).
+
+## License
+
+MIT.

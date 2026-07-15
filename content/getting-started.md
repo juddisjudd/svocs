@@ -2,6 +2,8 @@
 
 The fastest way to start is the `create-svocs-docs` starter, which drops in a working SVOCS site with this exact page structure — sidebar, search, theming, and all:
 
+> **Not published yet.** `create-svocs-docs` isn't live on npm while SVOCS is still pre-release — the commands below are how it'll work once it is. Until then, clone [the repo](https://github.com/juddisjudd/svocs) and copy `packages/create-svocs-docs/template` as your starting point.
+
 ```sh filename="bun"
 bunx create-svocs-docs my-docs
 ```

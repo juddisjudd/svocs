@@ -4,6 +4,7 @@
 	"version": "0.0.1",
 	"packageManager": "bun@1.3.14",
 	"type": "module",
+	"license": "MIT",
 	"homepage": "https://svocs.dev",
 	"repository": {
 		"type": "git",
