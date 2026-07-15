@@ -9,15 +9,16 @@
 		"components": { "order": 6 },
 		"architecture": { "order": 7 },
 		"ai": { "order": 8 },
+		"repo-analysis": { "order": 9 },
 
-		"configuration-heading": { "type": "separator", "title": "Configuration", "order": 9 },
-		"navigation": { "order": 10 },
+		"configuration-heading": { "type": "separator", "title": "Configuration", "order": 10 },
+		"navigation": { "order": 11 },
 
-		"search-heading": { "type": "separator", "title": "Search", "order": 11 },
-		"search": { "order": 12 },
+		"search-heading": { "type": "separator", "title": "Search", "order": 12 },
+		"search": { "order": 13 },
 
-		"more-heading": { "type": "separator", "title": "More", "order": 13 },
-		"deployment": { "order": 14 },
-		"about": { "order": 15 }
+		"more-heading": { "type": "separator", "title": "More", "order": 14 },
+		"deployment": { "order": 15 },
+		"about": { "order": 16 }
 	}
 }

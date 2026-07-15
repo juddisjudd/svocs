@@ -1,6 +1,6 @@
 {
 	"name": "create-svocs-docs",
-	"version": "0.3.0",
+	"version": "0.4.0",
 	"description": "Scaffold a new SVOCS documentation site.",
 	"type": "module",
 	"license": "MIT",
@@ -25,7 +25,8 @@
 	"files": [
 		"bin.js",
 		"template",
-		"recipes"
+		"recipes",
+		"lib"
 	],
 	"engines": {
 		"node": ">=18"

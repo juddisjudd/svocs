@@ -28,6 +28,8 @@ bun run dev
 
 Your new site is live at `http://localhost:5173`.
 
+The prompts also let you pick a search backend and, optionally, generate baseline content from an existing GitHub repo instead of the generic starter pages — see [Repo Analysis](/docs/repo-analysis).
+
 ## Add a page
 
 Every file under `content/` becomes a route. Drop a markdown file at `content/hello.md`:
@@ -70,3 +72,4 @@ This prerenders every page with `adapter-static` and indexes the site with Pagef
 - [Writing Content](/docs/writing-content) — frontmatter, sidecar metadata, GFM, code blocks
 - [Components](/docs/components) — the built-in `.svx` component library
 - [Navigation](/docs/navigation) — the full `_meta.json` schema
+- [Repo Analysis](/docs/repo-analysis) — generate starter content from an existing repo, heuristically or with an AI

@@ -1,0 +1,6 @@
+{
+	"title": "Repo Analysis",
+	"description": "Generate baseline docs content from an existing GitHub repo, heuristically or with an AI.",
+	"order": 9,
+	"tags": ["guide"]
+}

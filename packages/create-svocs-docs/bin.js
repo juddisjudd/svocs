@@ -4,6 +4,13 @@ import { join, dirname, resolve, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createInterface } from 'node:readline/promises';
 import { spawnSync } from 'node:child_process';
+import {
+	fetchRepoContext,
+	generateHeuristicPages,
+	generateLlmPages,
+	parseGithubRepo,
+	writeGeneratedPages
+} from './lib/repo-analysis.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const TEMPLATE_DIR = join(__dirname, 'template');
@@ -59,6 +66,17 @@ const SEARCH_BACKENDS = {
 		]
 	}
 };
+
+function describeRepoFetchError(error) {
+	switch (error) {
+		case 'rate-limited':
+			return 'GitHub API rate limit hit — try again shortly';
+		case 'network':
+			return "Couldn't reach GitHub";
+		default:
+			return 'Repo not found (or private)';
+	}
+}
 
 function sortObjectKeys(obj) {
 	return Object.fromEntries(Object.entries(obj).sort(([a], [b]) => a.localeCompare(b)));
@@ -236,11 +254,30 @@ function applySubstitutions(dir, siteName, packageName) {
 async function main() {
 	const args = process.argv.slice(2);
 	const targetArg = args.find((arg) => !arg.startsWith('-'));
-	const searchFlag = args
-		.find((arg) => arg.startsWith('--search='))
-		?.slice('--search='.length);
+	const searchFlag = args.find((arg) => arg.startsWith('--search='))?.slice('--search='.length);
 	if (searchFlag && !SEARCH_BACKEND_IDS.includes(searchFlag)) {
-		console.error(`Unknown --search backend: "${searchFlag}". Expected one of: ${SEARCH_BACKEND_IDS.join(', ')}.`);
+		console.error(
+			`Unknown --search backend: "${searchFlag}". Expected one of: ${SEARCH_BACKEND_IDS.join(', ')}.`
+		);
+		process.exitCode = 1;
+		return;
+	}
+	const repoFlag = args.find((arg) => arg.startsWith('--repo='))?.slice('--repo='.length);
+	const repoModeFlag = args
+		.find((arg) => arg.startsWith('--repo-mode='))
+		?.slice('--repo-mode='.length);
+	const llmProviderFlag = args
+		.find((arg) => arg.startsWith('--llm-provider='))
+		?.slice('--llm-provider='.length);
+	if (repoModeFlag && !['heuristic', 'llm'].includes(repoModeFlag)) {
+		console.error(`Unknown --repo-mode: "${repoModeFlag}". Expected "heuristic" or "llm".`);
+		process.exitCode = 1;
+		return;
+	}
+	if (llmProviderFlag && !['anthropic', 'openai'].includes(llmProviderFlag)) {
+		console.error(
+			`Unknown --llm-provider: "${llmProviderFlag}". Expected "anthropic" or "openai".`
+		);
 		process.exitCode = 1;
 		return;
 	}
@@ -261,6 +298,29 @@ async function main() {
 			.toLowerCase();
 		if (!answer) return fallback;
 		return answer === 'y' || answer === 'yes';
+	}
+
+	async function askSecret(question) {
+		if (!isInteractive) return '';
+		process.stdout.write(question);
+		// Swallow every echo readline writes while the answer is typed — no
+		// asterisks, input is simply hidden (same UX as a typical sudo/ssh
+		// password prompt). This is deliberately not a targeted "replace each
+		// visible character with *" patch: readline's line-redraw internals
+		// (backspace, terminal width changes) are version- and
+		// platform-specific and can involve ANSI escape sequences, which a
+		// naive character substitution would corrupt. A full swallow makes no
+		// assumptions about what gets written, so it can't get that wrong —
+		// we just print one manual newline afterward to land the cursor
+		// correctly for whatever prompt comes next.
+		const originalWrite = process.stdout.write.bind(process.stdout);
+		process.stdout.write = () => true;
+		try {
+			return (await rl.question('')).trim();
+		} finally {
+			process.stdout.write = originalWrite;
+			process.stdout.write('\n');
+		}
 	}
 
 	async function askSearchBackend() {
@@ -290,7 +350,78 @@ async function main() {
 		}
 	}
 
-	const siteName = await ask(`Site name: (${toSiteName(dirName)}) `, toSiteName(dirName));
+	let repoContext = null;
+	let repoAnalysisMode = null;
+	let llmProvider = null;
+	let llmApiKey = '';
+
+	if (repoFlag) {
+		const parsed = parseGithubRepo(repoFlag);
+		if (!parsed) {
+			console.warn(`Couldn't parse "--repo=${repoFlag}" as a GitHub repo — skipping analysis.`);
+		} else {
+			console.log(`\nFetching ${parsed.owner}/${parsed.repo} ...`);
+			const context = await fetchRepoContext(parsed.owner, parsed.repo);
+			if (context?.error) {
+				console.warn(`${describeRepoFetchError(context.error)} — skipping analysis.`);
+			} else {
+				repoContext = context;
+				repoAnalysisMode = repoModeFlag ?? 'heuristic';
+				llmProvider = llmProviderFlag ?? 'anthropic';
+				if (repoAnalysisMode === 'llm') {
+					llmApiKey =
+						(llmProvider === 'openai'
+							? process.env.OPENAI_API_KEY
+							: process.env.ANTHROPIC_API_KEY) ?? '';
+				}
+			}
+		}
+	} else if (isInteractive) {
+		const wantsAnalysis = await confirm(
+			'Analyze an existing GitHub repo for a baseline docs setup?',
+			false
+		);
+		if (wantsAnalysis) {
+			const repoInput = await ask('GitHub repo (owner/repo or URL): ', '');
+			const parsed = parseGithubRepo(repoInput);
+			if (!parsed) {
+				console.log("Couldn't parse that as a GitHub repo — skipping analysis.");
+			} else {
+				console.log(`\nFetching ${parsed.owner}/${parsed.repo} ...`);
+				const context = await fetchRepoContext(parsed.owner, parsed.repo);
+				if (context?.error) {
+					console.log(`${describeRepoFetchError(context.error)} — skipping analysis.`);
+				} else {
+					repoContext = context;
+					console.log('\nAnalysis mode:');
+					console.log('  1) Heuristic — reorganizes the README, no AI, no key needed (default)');
+					console.log(
+						'  2) LLM-powered — an AI rewrites the content into docs pages (bring your own key)'
+					);
+					const modeAnswer = (await rl.question('Choose 1-2: (1) ')).trim();
+					repoAnalysisMode = modeAnswer === '2' ? 'llm' : 'heuristic';
+
+					if (repoAnalysisMode === 'llm') {
+						console.log('\nLLM provider:');
+						console.log('  1) Anthropic');
+						console.log('  2) OpenAI');
+						const providerAnswer = (await rl.question('Choose 1-2: (1) ')).trim();
+						llmProvider = providerAnswer === '2' ? 'openai' : 'anthropic';
+						llmApiKey = await askSecret(
+							`${llmProvider === 'openai' ? 'OpenAI' : 'Anthropic'} API key (used once, never saved): `
+						);
+						if (!llmApiKey) {
+							console.log('\nNo key entered — using heuristic analysis instead.');
+							repoAnalysisMode = 'heuristic';
+						}
+					}
+				}
+			}
+		}
+	}
+
+	const suggestedSiteName = repoContext?.name ? toSiteName(repoContext.name) : toSiteName(dirName);
+	const siteName = await ask(`Site name: (${suggestedSiteName}) `, suggestedSiteName);
 	const packageName = toPackageName(dirName);
 	const searchBackend = searchFlag ?? (await askSearchBackend());
 	const shouldInitGit = await confirm('Initialize a git repository?', true);
@@ -301,6 +432,31 @@ async function main() {
 	copyTemplate(TEMPLATE_DIR, targetDir);
 	applySubstitutions(targetDir, siteName, packageName);
 	applySearchBackend(targetDir, searchBackend);
+
+	if (repoContext && repoAnalysisMode) {
+		let generatedPages = null;
+		if (repoAnalysisMode === 'llm') {
+			if (!llmApiKey) {
+				console.log('\nNo LLM key available — using heuristic analysis instead.');
+			} else {
+				console.log(
+					`\nAsking ${llmProvider === 'openai' ? 'OpenAI' : 'Anthropic'} to analyze the repo ...`
+				);
+				generatedPages = await generateLlmPages(repoContext, llmProvider, llmApiKey);
+			}
+		}
+		if (!generatedPages) {
+			generatedPages = generateHeuristicPages(repoContext);
+		}
+		if (generatedPages.length > 0) {
+			writeGeneratedPages(targetDir, generatedPages);
+			console.log(`Generated ${generatedPages.length} docs page(s) from the repo.`);
+		} else {
+			console.log(
+				"Couldn't generate any content from that repo — leaving the starter content as-is."
+			);
+		}
+	}
 
 	if (shouldInitGit) {
 		const gitDir = join(targetDir, '.git');
