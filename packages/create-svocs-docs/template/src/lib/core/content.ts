@@ -1,5 +1,6 @@
 import type { Component } from 'svelte';
 import GithubSlugger from 'github-slugger';
+import type { SearchDocument } from '$lib/search/types';
 
 type ContentModule = {
 	default: Component;
@@ -138,6 +139,27 @@ function extractTocFromMarkdown(raw: string): TocItem[] {
 	}
 
 	return toc;
+}
+
+function stripMarkdownToText(raw: string): string {
+	const lines = raw.split(/\r?\n/);
+	let inCodeFence = false;
+	let text = '';
+
+	for (const line of lines) {
+		if (/^```/.test(line.trim())) {
+			inCodeFence = !inCodeFence;
+			continue;
+		}
+
+		if (inCodeFence) {
+			continue;
+		}
+
+		text += ` ${line.replace(/[`*_#[\]()<>-]/g, ' ')}`;
+	}
+
+	return text.replace(/\s+/g, ' ').trim();
 }
 
 function extractWordCount(raw: string): number {
@@ -341,4 +363,42 @@ export function getAllLlmsDocuments(): LlmsDocument[] {
 	}
 
 	return documents.sort((a, b) => a.slug.localeCompare(b.slug));
+}
+
+/**
+ * The canonical source every search backend's indexer/sync script builds
+ * from — reuses the same resolved titles/order (via getDocsEntries) so no
+ * indexer re-parses content on its own. Ships in every project regardless
+ * of the active search backend; unused, it's dead code with negligible
+ * cost, and it means adding a backend later never requires touching this
+ * file.
+ */
+export function getAllSearchDocuments(): SearchDocument[] {
+	const docsEntries = getDocsEntries();
+	const entryBySlug = new Map(docsEntries.map((entry) => [entry.slug, entry]));
+
+	const documents: SearchDocument[] = [];
+
+	for (const [filePath, raw] of Object.entries(rawContentModules)) {
+		if (filePath.endsWith('/_meta.md') || filePath.endsWith('/_meta.svx')) {
+			continue;
+		}
+
+		const slug = toSlug(filePath);
+		const entry = entryBySlug.get(slug);
+		if (!entry) {
+			continue;
+		}
+
+		documents.push({
+			id: entry.slug,
+			url: entry.path,
+			title: entry.title,
+			description: entry.description,
+			content: stripMarkdownToText(raw),
+			headings: extractTocFromMarkdown(raw).map(({ id, text }) => ({ id, text }))
+		});
+	}
+
+	return documents;
 }

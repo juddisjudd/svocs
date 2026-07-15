@@ -5,7 +5,7 @@
 	"type": "module",
 	"scripts": {
 		"dev": "vite dev",
-		"build": "vite build && pagefind --site build",
+		"build": "vite build && node scripts/search/postbuild.mjs",
 		"search:index": "pagefind --site build",
 		"preview": "vite preview",
 		"dev:deno": "deno task dev",
