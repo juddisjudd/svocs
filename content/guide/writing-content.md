@@ -1,0 +1,68 @@
+## Frontmatter
+
+Set page metadata directly in the file with YAML frontmatter — no sidecar file required:
+
+```md filename="content/guide/example.md"
+---
+title: Example Page
+description: Shown in listings and the meta description tag.
+order: 5
+tags: [guide]
+---
+
+Your content starts here.
+```
+
+## Metadata fields
+
+- `title`: Display title
+- `description`: Optional summary for listings
+- `order`: Sorting number for nav
+- `tags`: Optional list for future filtering
+
+## Sidecar overrides
+
+A `name.meta.json` file next to `name.md` takes priority over frontmatter for any field it sets — useful when you want to tweak nav ordering without touching the prose file, or for content synced in from elsewhere:
+
+```json filename="content/guide/example.meta.json"
+{
+	"order": 1
+}
+```
+
+Frontmatter still supplies everything the sidecar doesn't override.
+
+## Headings
+
+Use consistent heading levels so TOC generation and anchor links are predictable.
+
+## GFM formatting
+
+Tables, task lists, strikethrough, and bare-URL autolinks all work out of the box:
+
+| Feature       | Syntax         |
+| ------------- | -------------- |
+| Table         | pipe-delimited |
+| Task list     | `- [ ] todo`   |
+| Strikethrough | `~~done~~`     |
+
+- [x] Ship GFM support
+- [ ] Ship more of the roadmap
+
+## Code blocks with a filename
+
+Add `filename="..."` to a fence's info string to show a filename header above the code, alongside the built-in copy button every code block gets:
+
+````md
+```sh filename="deploy.sh"
+echo hello
+```
+````
+
+## Components
+
+`.svx` files (not `.md`) can import and use Svelte components inline — see the [Components](/docs/components) page for the full built-in set (Callout, Tabs, Steps, Cards, Collapse, Bleed, Banner, FileTree, ImageZoom) and how to import them.
+
+> **Watch out:** avoid writing a literal script-tag as inline code (single backticks) — unlike
+> fenced code blocks, inline spans aren't protected from Svelte's own tag parsing and will break
+> the build. Describe it in prose instead, or put it inside a fenced code block.

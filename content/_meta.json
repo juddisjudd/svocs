@@ -1,0 +1,20 @@
+{
+	"items": {
+		"getting-started": {
+			"title": "Getting Started",
+			"order": 1
+		},
+		"architecture": {
+			"title": "Architecture",
+			"order": 2
+		},
+		"guide": {
+			"title": "Guide Overview",
+			"order": 3
+		},
+		"deployment": {
+			"title": "Deployment",
+			"order": 4
+		}
+	}
+}

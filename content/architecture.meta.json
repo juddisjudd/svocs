@@ -1,0 +1,6 @@
+{
+	"title": "Architecture",
+	"description": "Content pipeline, routing strategy, and theme boundaries.",
+	"order": 2,
+	"tags": ["architecture"]
+}

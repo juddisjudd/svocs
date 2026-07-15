@@ -1,0 +1,16 @@
+{
+	"items": {
+		"index": {
+			"title": "Deployment",
+			"order": 1
+		},
+		"cloudflare-pages": {
+			"title": "Cloudflare Pages",
+			"order": 2
+		},
+		"github-pages": {
+			"title": "GitHub Pages",
+			"order": 3
+		}
+	}
+}

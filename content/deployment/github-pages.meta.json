@@ -1,0 +1,6 @@
+{
+	"title": "GitHub Pages",
+	"description": "Publish SVOCS from your repository with GitHub Actions.",
+	"order": 3,
+	"tags": ["deployment", "github"]
+}

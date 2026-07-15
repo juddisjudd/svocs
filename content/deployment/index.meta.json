@@ -1,0 +1,6 @@
+{
+	"title": "Deployment",
+	"description": "Ship your SVOCS site as static files to any host.",
+	"order": 1,
+	"tags": ["deployment"]
+}
