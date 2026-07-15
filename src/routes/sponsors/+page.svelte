@@ -1,5 +1,5 @@
 <script lang="ts">
-	const sponsorUrl = 'https://github.com/sponsors/your-org';
+	const sponsorUrl = 'https://github.com/sponsors/juddisjudd';
 </script>
 
 <svelte:head>

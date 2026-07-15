@@ -1,0 +1,6 @@
+{
+	"title": "Navigation",
+	"description": "The _meta.json schema: ordering, titles, precedence, and category separators.",
+	"order": 6,
+	"tags": ["configuration"]
+}

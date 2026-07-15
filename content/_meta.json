@@ -1,20 +1,19 @@
 {
 	"items": {
-		"getting-started": {
-			"title": "Getting Started",
-			"order": 1
-		},
-		"architecture": {
-			"title": "Architecture",
-			"order": 2
-		},
-		"guide": {
-			"title": "Guide Overview",
-			"order": 3
-		},
-		"deployment": {
-			"title": "Deployment",
-			"order": 4
-		}
+		"getting-started-heading": { "type": "separator", "title": "Getting Started", "order": 1 },
+		"introduction": { "order": 2 },
+		"getting-started": { "order": 3 },
+
+		"guides-heading": { "type": "separator", "title": "Guides", "order": 4 },
+		"writing-content": { "order": 5 },
+		"components": { "order": 6 },
+		"architecture": { "order": 7 },
+
+		"configuration-heading": { "type": "separator", "title": "Configuration", "order": 8 },
+		"navigation": { "order": 9 },
+
+		"more-heading": { "type": "separator", "title": "More", "order": 10 },
+		"deployment": { "order": 11 },
+		"about": { "order": 12 }
 	}
 }

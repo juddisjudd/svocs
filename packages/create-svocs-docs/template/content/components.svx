@@ -1,0 +1,132 @@
+<script>
+	import { resolve } from '$app/paths';
+	import Callout from '$lib/components/Callout.svelte';
+	import Tabs from '$lib/components/Tabs.svelte';
+	import Tab from '$lib/components/Tab.svelte';
+	import Steps from '$lib/components/Steps.svelte';
+	import Cards from '$lib/components/Cards.svelte';
+	import Card from '$lib/components/Card.svelte';
+	import Collapse from '$lib/components/Collapse.svelte';
+	import Bleed from '$lib/components/Bleed.svelte';
+	import Banner from '$lib/components/Banner.svelte';
+	import FileTree from '$lib/components/FileTree.svelte';
+	import FileTreeFolder from '$lib/components/FileTreeFolder.svelte';
+	import FileTreeFile from '$lib/components/FileTreeFile.svelte';
+</script>
+
+<Banner id="components-intro">
+	These components ship with SVOCS — import them from `$lib/components` in any `.svx` file.
+</Banner>
+
+## Callout
+
+<Callout type="info">
+	Use `.svx` instead of `.md` for any page that needs live components.
+</Callout>
+
+<Callout type="tip">
+	Frontmatter and sidecar `.meta.json` both work on `.svx` files too.
+</Callout>
+
+<Callout type="warning">
+	Component imports only work in `.svx` — plain `.md` files can't have a script block.
+</Callout>
+
+<Callout type="danger">
+	Don't nest a `Callout` inside another `Callout` — styling assumes one level.
+</Callout>
+
+Import path: `$lib/components/Callout.svelte`, added at the top of the `.svx` file's script block alongside your other imports.
+
+## Tabs
+
+<Tabs items={['bun', 'pnpm', 'deno']}>
+<Tab>
+
+```sh
+bun install
+bun run dev
+```
+
+</Tab>
+<Tab>
+
+```sh
+pnpm install
+pnpm dev
+```
+
+</Tab>
+<Tab>
+
+```sh
+deno task dev
+```
+
+</Tab>
+</Tabs>
+
+## Steps
+
+<Steps>
+
+### Add a markdown file
+
+Create `content/example.md` with frontmatter or a sidecar `.meta.json`.
+
+### Register it in the sidebar
+
+Folders pick up ordering automatically from each page's `order` field — no extra step for a flat page.
+
+### Preview it
+
+Run `bun run dev` and visit `/docs/example`.
+
+</Steps>
+
+## Cards
+
+<Cards>
+	<Card title="Getting Started" href={resolve('/docs/getting-started')}>Add your first page.</Card>
+	<Card title="Navigation" href={resolve('/docs/navigation')}>Organize the sidebar with _meta.json.</Card>
+	<Card title="GitHub" href="https://github.com" external>Source and issue tracker.</Card>
+</Cards>
+
+## Collapse
+
+<Collapse title="Why mdsvex instead of raw Markdown?">
+
+It compiles Markdown straight to Svelte components, so `.svx` files can mix prose with live, interactive components — no separate MDX runtime required.
+
+</Collapse>
+
+## FileTree
+
+<FileTree>
+	<FileTreeFolder name="content" open>
+		<FileTreeFile name="_meta.json" />
+		<FileTreeFile name="introduction.md" />
+		<FileTreeFolder name="deployment" open>
+			<FileTreeFile name="index.md" />
+		</FileTreeFolder>
+	</FileTreeFolder>
+	<FileTreeFile name="vite.config.ts" />
+</FileTree>
+
+## Bleed
+
+Break wide content — a table, a diagram, a screenshot — out of the prose column's side padding:
+
+<Bleed>
+
+```sh filename="all-runtimes.sh"
+bun install     && bun run dev
+pnpm install    && pnpm dev
+deno task install && deno task dev
+```
+
+_(runs across all three package managers)_
+
+</Bleed>
+
+That's the full component set.

@@ -1,0 +1,31 @@
+{
+	"name": "create-svocs-docs",
+	"version": "0.1.0",
+	"description": "Scaffold a new SVOCS documentation site.",
+	"type": "module",
+	"homepage": "https://svocs.dev",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/juddisjudd/svocs",
+		"directory": "packages/create-svocs-docs"
+	},
+	"bugs": "https://github.com/juddisjudd/svocs/issues",
+	"keywords": [
+		"svocs",
+		"sveltekit",
+		"svelte",
+		"documentation",
+		"scaffold",
+		"create"
+	],
+	"bin": {
+		"create-svocs-docs": "./bin.js"
+	},
+	"files": [
+		"bin.js",
+		"template"
+	],
+	"engines": {
+		"node": ">=18"
+	}
+}

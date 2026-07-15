@@ -1,8 +1,12 @@
+## Authoring model
+
+Use plain markdown (`.md`) for most pages. Switch to `.svx` only when a page needs a live Svelte component inline — everything else about the two file types is identical: frontmatter, sidecars, GFM, code blocks.
+
 ## Frontmatter
 
 Set page metadata directly in the file with YAML frontmatter — no sidecar file required:
 
-```md filename="content/guide/example.md"
+```md filename="content/example.md"
 ---
 title: Example Page
 description: Shown in listings and the meta description tag.
@@ -24,13 +28,13 @@ Your content starts here.
 
 A `name.meta.json` file next to `name.md` takes priority over frontmatter for any field it sets — useful when you want to tweak nav ordering without touching the prose file, or for content synced in from elsewhere:
 
-```json filename="content/guide/example.meta.json"
+```json filename="content/example.meta.json"
 {
 	"order": 1
 }
 ```
 
-Frontmatter still supplies everything the sidecar doesn't override.
+Frontmatter still supplies everything the sidecar doesn't override. `_meta.json` — a separate, folder-level file — sits above both; see [Navigation](/docs/navigation) for how that precedence works.
 
 ## Headings
 

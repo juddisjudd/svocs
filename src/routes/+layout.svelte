@@ -7,7 +7,7 @@
 	import ThemeToggle from '$lib/themes/docs/ThemeToggle.svelte';
 
 	let { children }: { children: Snippet } = $props();
-	const repoUrl = 'https://github.com/your-org/svocs';
+	const repoUrl = 'https://github.com/juddisjudd/svocs';
 	const currentPath = $derived(page.url.pathname.replace(/\/$/, '') || '/');
 </script>
 

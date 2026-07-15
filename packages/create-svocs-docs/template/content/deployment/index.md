@@ -1,0 +1,21 @@
+## Static output
+
+`bun run build` prerenders every page with `adapter-static` and writes plain HTML, CSS, and JS to `build/` — there's no Node server, no functions, and no environment variables needed at runtime. That output can be deployed to any static host.
+
+## Cloudflare Pages
+
+Point the build command at `bun run build` (or your package manager's equivalent) and the output directory at `build`. No further configuration is required.
+
+## GitHub Pages
+
+GitHub Pages serves project sites from a sub-path (`https://user.github.io/my-repo/`), so set the `BASE_PATH` environment variable at build time:
+
+```sh
+BASE_PATH=/my-repo bun run build
+```
+
+This is wired into `vite.config.ts`'s `paths.base`, which every internal link and asset reference in this template already respects. Commit a `.nojekyll` file at the site root (already included in `static/`) so GitHub Pages doesn't try to process the output with Jekyll.
+
+## Any other static host
+
+Anywhere that can serve a directory of static files — Vercel, Netlify, S3 plus a CDN, your own server behind nginx — works the same way: run the build, upload `build/`, done.

@@ -72,7 +72,7 @@ deno task dev
 
 ### Add a markdown file
 
-Create `content/guide/example.md` with frontmatter or a sidecar `.meta.json`.
+Create `content/example.md` with frontmatter or a sidecar `.meta.json`.
 
 ### Register it in the sidebar
 
@@ -80,7 +80,7 @@ Folders pick up ordering automatically from each page's `order` field — no ext
 
 ### Preview it
 
-Run `bun run dev` and visit `/docs/guide/example`.
+Run `bun run dev` and visit `/docs/example`.
 
 </Steps>
 
@@ -104,9 +104,10 @@ It compiles Markdown straight to Svelte components, so `.svx` files can mix pros
 
 <FileTree>
 	<FileTreeFolder name="content" open>
-		<FileTreeFile name="index.md" />
-		<FileTreeFolder name="guide" open>
-			<FileTreeFile name="getting-started.md" />
+		<FileTreeFile name="_meta.json" />
+		<FileTreeFile name="introduction.md" />
+		<FileTreeFolder name="deployment" open>
+			<FileTreeFile name="index.md" />
 			<FileTreeFile name="_meta.json" />
 		</FileTreeFolder>
 	</FileTreeFolder>

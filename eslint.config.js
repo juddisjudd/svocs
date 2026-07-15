@@ -10,7 +10,11 @@ const gitignorePath = path.resolve(import.meta.dirname, '.gitignore');
 
 export default defineConfig(
 	includeIgnoreFile(gitignorePath),
-	{ ignores: ['.remember/'] },
+	{
+		// create-svocs-docs starter template: a data payload with its own
+		// self-contained tooling, not part of this repo's own source tree.
+		ignores: ['.remember/', 'packages/create-svocs-docs/template/']
+	},
 	js.configs.recommended,
 	ts.configs.recommended,
 	svelte.configs.recommended,

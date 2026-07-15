@@ -1,0 +1,5 @@
+{
+	"title": "Deployment",
+	"description": "Ship the static build to Cloudflare Pages, GitHub Pages, or any static host.",
+	"order": 1
+}

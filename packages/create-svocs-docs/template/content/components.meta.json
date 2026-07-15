@@ -1,0 +1,6 @@
+{
+	"title": "Components",
+	"description": "Built-in Svelte components you can use inside .svx content.",
+	"order": 4,
+	"tags": ["components"]
+}

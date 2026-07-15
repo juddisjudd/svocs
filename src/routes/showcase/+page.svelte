@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 
-	const repoUrl = 'https://github.com/your-org/svocs';
+	const repoUrl = 'https://github.com/juddisjudd/svocs';
 
 	// Real showcase entries land here as they come in — this site is the
 	// first, honest one: dogfooding, not a placeholder testimonial.

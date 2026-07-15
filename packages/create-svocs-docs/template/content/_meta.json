@@ -1,0 +1,18 @@
+{
+	"items": {
+		"getting-started-heading": { "type": "separator", "title": "Getting Started", "order": 1 },
+		"introduction": { "order": 2 },
+		"getting-started": { "order": 3 },
+
+		"guides-heading": { "type": "separator", "title": "Guides", "order": 4 },
+		"writing-content": { "order": 5 },
+		"components": { "order": 6 },
+
+		"configuration-heading": { "type": "separator", "title": "Configuration", "order": 7 },
+		"navigation": { "order": 8 },
+
+		"more-heading": { "type": "separator", "title": "More", "order": 9 },
+		"deployment": { "order": 10 },
+		"about": { "order": 11 }
+	}
+}
