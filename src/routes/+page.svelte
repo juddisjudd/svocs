@@ -2,6 +2,7 @@
 	import { resolve } from '$app/paths';
 	import type { PageData } from './$types';
 	import DocTypewriter from './DocTypewriter.svelte';
+	import VelvetBackground from './VelvetBackground.svelte';
 	import { SITE_URL } from '$lib/site';
 
 	let { data }: { data: PageData } = $props();
@@ -54,24 +55,7 @@
 <main class="home">
 	<!-- ============ HERO ============ -->
 	<section class="hero">
-		<div class="hero-glow" aria-hidden="true"></div>
-		<svg
-			class="hero-lines"
-			viewBox="0 0 100 40"
-			preserveAspectRatio="none"
-			aria-hidden="true"
-			focusable="false"
-		>
-			<path
-				class="line line-a"
-				d="M -8,27 C 10,14 21,32 34,21 C 47,10 55,26 68,17 C 79,9.5 87,13 98,4"
-			/>
-			<path
-				class="line line-b"
-				d="M -6,9 C 12,19 22,4 36,13 C 50,22 60,7 74,16 C 85,23 93,20 104,26"
-			/>
-			<path class="line line-c" d="M 58,36 C 68,26 71,15 81,10 C 88,6.5 92,10 99,4" />
-		</svg>
+		<VelvetBackground />
 
 		<p class="badge anim" style:--i={0}>
 			<span class="badge-dot" aria-hidden="true"></span>
@@ -405,100 +389,6 @@
 		padding: 5.5rem 1rem 1rem;
 		display: grid;
 		justify-items: center;
-	}
-
-	.hero-glow {
-		position: absolute;
-		inset: -8rem 0 auto;
-		height: 30rem;
-		background:
-			radial-gradient(
-				38rem 16rem at 50% 22%,
-				color-mix(in srgb, var(--accent) 14%, transparent),
-				transparent 70%
-			),
-			radial-gradient(
-				24rem 12rem at 32% 8%,
-				color-mix(in srgb, var(--accent-soft) 7%, transparent),
-				transparent 70%
-			);
-		pointer-events: none;
-	}
-
-	/* A few slender, hand-drawn bezier ribbons standing in for a literal
-	   grid — meant to read as "slender, graceful, elegantly slim" rather
-	   than the boxy/mechanical feel of a dot grid. Sparse by design. */
-	.hero-lines {
-		position: absolute;
-		inset: -1.5rem 0 auto;
-		height: 32rem;
-		width: 100%;
-		overflow: visible;
-		mask-image: radial-gradient(44rem 20rem at 50% 6%, black 30%, transparent 80%);
-		pointer-events: none;
-		opacity: 0;
-		animation: lines-in 1500ms var(--ease-out) 250ms both;
-	}
-
-	.line {
-		fill: none;
-		/* stroke-width is in viewBox user units (0-100 x 0-40), left to
-		   scale with the non-uniform preserveAspectRatio="none" stretch —
-		   vector-effect: non-scaling-stroke would fight that stretch and
-		   collapse these to sub-pixel width. */
-		stroke-width: 0.35;
-	}
-
-	.line-a {
-		stroke: var(--accent);
-		opacity: 0.42;
-		animation: drift-a 10s ease-in-out infinite;
-	}
-
-	.line-b {
-		stroke: var(--accent-strong);
-		opacity: 0.26;
-		animation: drift-b 12s ease-in-out infinite;
-		animation-delay: -4s;
-	}
-
-	.line-c {
-		stroke: var(--accent-soft);
-		opacity: 0.32;
-		stroke-width: 0.28;
-		animation: drift-a 11s ease-in-out infinite;
-		animation-delay: -7s;
-	}
-
-	@keyframes lines-in {
-		from {
-			opacity: 0;
-			transform: translateY(8px) scale(0.99);
-		}
-		to {
-			opacity: 1;
-			transform: translateY(0) scale(1);
-		}
-	}
-
-	@keyframes drift-a {
-		0%,
-		100% {
-			transform: translateY(0);
-		}
-		50% {
-			transform: translateY(-0.7px);
-		}
-	}
-
-	@keyframes drift-b {
-		0%,
-		100% {
-			transform: translateY(0);
-		}
-		50% {
-			transform: translateY(0.6px);
-		}
 	}
 
 	.anim {
@@ -1203,17 +1093,6 @@
 		}
 
 		.caret {
-			animation: none;
-		}
-
-		.hero-lines {
-			animation: none;
-			opacity: 1;
-		}
-
-		.line-a,
-		.line-b,
-		.line-c {
 			animation: none;
 		}
 
