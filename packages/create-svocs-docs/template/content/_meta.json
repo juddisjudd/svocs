@@ -7,13 +7,14 @@
 		"guides-heading": { "type": "separator", "title": "Guides", "order": 4 },
 		"writing-content": { "order": 5 },
 		"components": { "order": 6 },
+		"ai": { "order": 7 },
 
-		"configuration-heading": { "type": "separator", "title": "Configuration", "order": 7 },
-		"navigation": { "order": 8 },
-		"search": { "order": 9 },
+		"configuration-heading": { "type": "separator", "title": "Configuration", "order": 8 },
+		"navigation": { "order": 9 },
+		"search": { "order": 10 },
 
-		"more-heading": { "type": "separator", "title": "More", "order": 10 },
-		"deployment": { "order": 11 },
-		"about": { "order": 12 }
+		"more-heading": { "type": "separator", "title": "More", "order": 11 },
+		"deployment": { "order": 12 },
+		"about": { "order": 13 }
 	}
 }

@@ -48,6 +48,19 @@ export type TocItem = {
 	depth: 2 | 3;
 };
 
+/**
+ * A page's *unstripped* markdown source, for llms.txt/llms-full.txt/the
+ * per-page .md route — the real source (headings, links, code fences
+ * intact), not processed HTML.
+ */
+export type LlmsDocument = {
+	slug: string;
+	url: string;
+	title: string;
+	description?: string;
+	raw: string;
+};
+
 const contentModules = import.meta.glob('/content/**/*.{md,svx}', { eager: true }) as Record<
 	string,
 	ContentModule
@@ -283,4 +296,49 @@ export function getDocTocBySlug(slugParts: string[]): TocItem[] {
 	}
 
 	return extractTocFromMarkdown(raw);
+}
+
+/** Raw, unstripped markdown source for one page — backs the /docs/*.md route. */
+export function getRawMarkdownBySlug(slugParts: string[]): string | null {
+	const slug = slugParts.join('/');
+	const targetPath = Object.keys(rawContentModules).find((path) => toSlug(path) === slug);
+
+	if (!targetPath) {
+		return null;
+	}
+
+	return rawContentModules[targetPath] ?? null;
+}
+
+/**
+ * Every doc's raw markdown source with its resolved title/description —
+ * backs llms.txt and llms-full.txt.
+ */
+export function getAllLlmsDocuments(): LlmsDocument[] {
+	const docsEntries = getDocsEntries();
+	const entryBySlug = new Map(docsEntries.map((entry) => [entry.slug, entry]));
+
+	const documents: LlmsDocument[] = [];
+
+	for (const [filePath, raw] of Object.entries(rawContentModules)) {
+		if (filePath.endsWith('/_meta.md') || filePath.endsWith('/_meta.svx')) {
+			continue;
+		}
+
+		const slug = toSlug(filePath);
+		const entry = entryBySlug.get(slug);
+		if (!entry) {
+			continue;
+		}
+
+		documents.push({
+			slug: entry.slug,
+			url: entry.path,
+			title: entry.title,
+			description: entry.description,
+			raw
+		});
+	}
+
+	return documents.sort((a, b) => a.slug.localeCompare(b.slug));
 }

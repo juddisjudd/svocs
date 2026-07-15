@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	import { getDocComponentBySlug } from '$lib/core/content';
+	import PageActions from '$lib/themes/docs/PageActions.svelte';
 
 	let { data }: { data: PageData } = $props();
 	const Content = $derived(getDocComponentBySlug(data.entry.slug.split('/')));
@@ -20,6 +21,7 @@
 			<p>{data.entry.description}</p>
 		{/if}
 		<p class="meta">{data.entry.readingTimeMinutes} min read · {data.entry.wordCount} words</p>
+		<PageActions slug={data.entry.slug} />
 	</header>
 
 	{#if Content}
