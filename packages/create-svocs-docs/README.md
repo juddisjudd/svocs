@@ -18,7 +18,7 @@ pnpm create svocs-docs my-docs
 deno run -A npm:create-svocs-docs my-docs
 ```
 
-Answer the prompts (site name, whether to analyze an existing GitHub repo, search backend, whether to `git init`), then:
+Answer the prompts (site name, accent color, whether to analyze an existing GitHub repo, search backend, whether to `git init`), then:
 
 ```sh
 cd my-docs
@@ -26,7 +26,7 @@ bun install
 bun run dev
 ```
 
-Pass `--search=<backend>` to skip the search-backend prompt (`pagefind` (default), `orama`, `flexsearch`, `typesense`, or `chroma`) — useful for scripted/non-interactive setups.
+Pass `--search=<backend>` to skip the search-backend prompt (`pagefind` (default), `orama`, `flexsearch`, `typesense`, or `chroma`), or `--accent=<hex>` to skip the accent-color prompt (e.g. `--accent=#2563eb`) — useful for scripted/non-interactive setups.
 
 ### Optional: generate content from an existing repo
 

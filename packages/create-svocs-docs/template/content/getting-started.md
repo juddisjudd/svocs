@@ -57,4 +57,5 @@ This prerenders every page with `adapter-static` and indexes the site with Pagef
 
 - [Writing Content](/docs/writing-content) — frontmatter, sidecar metadata, GFM, code blocks
 - [Components](/docs/components) — the built-in `.svx` component library
+- [Theming](/docs/theming) — change the accent color, or the rest of the palette
 - [Navigation](/docs/navigation) — the full `_meta.json` schema

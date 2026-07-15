@@ -317,7 +317,7 @@
 	.nav-item.current {
 		color: var(--panel-accent);
 		background: color-mix(in srgb, var(--accent) 16%, transparent);
-		box-shadow: 0 0 10px rgba(255, 60, 0, 0.18);
+		box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 18%, transparent);
 	}
 
 	.nav-heading {

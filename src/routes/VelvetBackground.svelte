@@ -157,33 +157,48 @@ void main() {
 		const uColorMid = gl.getUniformLocation(program, 'u_colorMid');
 		const uColorSheen = gl.getUniformLocation(program, 'u_colorSheen');
 
-		function hexToRgb(hex: string): [number, number, number] {
-			const clean = hex.trim().replace('#', '');
-			const full =
-				clean.length === 3
-					? clean
-							.split('')
-							.map((c) => c + c)
-							.join('')
-					: clean;
-			const value = parseInt(full, 16);
-			return [((value >> 16) & 255) / 255, ((value >> 8) & 255) / 255, (value & 255) / 255];
+		// getComputedStyle().getPropertyValue('--foo') returns a custom
+		// property's *literal specified text* — fine for a plain hex
+		// literal, but --glow-a/--accent-soft are color-mix() expressions
+		// (derived from --accent so a custom brand color stays coordinated
+		// instead of leaving the glow stuck ember-colored). Resolving a
+		// function value requires assigning it to a real color property on
+		// a probe element and reading that back, since only ordinary
+		// properties get resolved to rgb(...) by getComputedStyle.
+		const probe = document.createElement('div');
+		probe.style.cssText = 'position:absolute; width:0; height:0; visibility:hidden;';
+		document.body.appendChild(probe);
+
+		function resolveColorVar(
+			varName: string,
+			fallback: [number, number, number]
+		): [number, number, number] {
+			probe.style.color = `var(${varName})`;
+			const resolved = getComputedStyle(probe).color;
+			const nums = resolved.match(/[\d.]+/g);
+			if (!nums || nums.length < 3) return fallback;
+			// A color-mix() result serializes as color(srgb r g b) — already
+			// 0-1 normalized — while a plain literal serializes as the legacy
+			// rgb(r, g, b) — 0-255. Dividing the former by 255 collapses
+			// everything toward black, so the two formats need branching.
+			return resolved.startsWith('color(')
+				? [Number(nums[0]), Number(nums[1]), Number(nums[2])]
+				: [Number(nums[0]) / 255, Number(nums[1]) / 255, Number(nums[2]) / 255];
 		}
 
 		// The dark-theme brand palette already has a near-black base and a
 		// warm ember-brown "glow" tone (--bg / --glow-a) — reused here
 		// rather than hardcoding a separate velvet palette, so this stays
-		// in sync with the site's actual colors (including light mode)
-		// instead of drifting into its own thing.
+		// in sync with the site's actual colors (including light mode and
+		// any custom --accent) instead of drifting into its own thing.
 		let colorDeep: [number, number, number] = [0, 0, 0];
 		let colorMid: [number, number, number] = [0, 0, 0];
 		let colorSheen: [number, number, number] = [1, 1, 1];
 
 		function readThemeColors() {
-			const styles = getComputedStyle(document.documentElement);
-			colorDeep = hexToRgb(styles.getPropertyValue('--bg') || '#000000');
-			colorMid = hexToRgb(styles.getPropertyValue('--glow-a') || '#140903');
-			colorSheen = hexToRgb(styles.getPropertyValue('--accent-soft') || '#ff6a38');
+			colorDeep = resolveColorVar('--bg', [0, 0, 0]);
+			colorMid = resolveColorVar('--glow-a', [0.078, 0.035, 0.012]);
+			colorSheen = resolveColorVar('--accent-soft', [1, 0.416, 0.22]);
 		}
 		readThemeColors();
 
@@ -272,6 +287,7 @@ void main() {
 			themeObserver.disconnect();
 			section.removeEventListener('pointermove', onPointerMove as EventListener);
 			section.removeEventListener('pointerleave', onPointerLeave);
+			probe.remove();
 			gl!.deleteProgram(program);
 			gl!.deleteShader(vertShader);
 			gl!.deleteShader(fragShader);

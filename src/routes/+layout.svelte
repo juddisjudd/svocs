@@ -134,11 +134,16 @@
 		--line: #2a2523;
 		--line-strong: #3d3532;
 		--accent: #ff3c00;
-		--accent-soft: #ff6a38;
-		--accent-strong: #ff9066;
+		/* Soft/strong and the ambient glow tint derive from --accent rather
+		   than shipping as independent hex values, so a custom accent color
+		   (see create-svocs-docs' --accent prompt) always produces a
+		   coordinated ramp instead of leaving the glow stuck looking
+		   ember-colored regardless of what accent is picked. */
+		--accent-soft: color-mix(in srgb, var(--accent) 78%, white);
+		--accent-strong: color-mix(in srgb, var(--accent) 60%, white);
 		--accent-contrast: #180806;
 		--danger: #ff7d6b;
-		--glow-a: #140903;
+		--glow-a: color-mix(in srgb, var(--accent) 10%, black);
 		--glow-b: #0e0c0c;
 		--shadow-card:
 			0 1px 2px rgba(0, 0, 0, 0.2), 0 4px 12px rgba(0, 0, 0, 0.22),
@@ -160,11 +165,11 @@
 		--line: #e3d8d2;
 		--line-strong: #cfc0b8;
 		--accent: #ff3c00;
-		--accent-soft: #e83500;
-		--accent-strong: #c22e00;
+		--accent-soft: color-mix(in srgb, var(--accent) 91%, black);
+		--accent-strong: color-mix(in srgb, var(--accent) 76%, black);
 		--accent-contrast: #180806;
 		--danger: #b8321c;
-		--glow-a: #f9e2d7;
+		--glow-a: color-mix(in srgb, var(--accent) 15%, white);
 		--glow-b: #efe7e2;
 		--shadow-card:
 			0 1px 2px rgba(52, 20, 8, 0.05), 0 4px 12px rgba(52, 20, 8, 0.07),

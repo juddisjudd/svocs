@@ -48,11 +48,11 @@
 		font-weight: 650;
 		font-size: 0.95rem;
 		text-decoration: none;
-		background: linear-gradient(180deg, #ff6136, var(--accent));
+		background: linear-gradient(180deg, var(--accent-strong), var(--accent));
 		color: var(--accent-contrast);
 		box-shadow:
 			0 1px 2px rgba(0, 0, 0, 0.25),
-			0 4px 14px rgba(255, 60, 0, 0.3),
+			0 4px 14px color-mix(in srgb, var(--accent) 30%, transparent),
 			inset 0 1px 0 rgba(255, 255, 255, 0.25);
 		transition: transform 140ms ease;
 	}

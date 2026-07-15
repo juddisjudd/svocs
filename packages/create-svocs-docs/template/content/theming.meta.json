@@ -1,0 +1,6 @@
+{
+	"title": "Theming",
+	"description": "Pick an accent color during setup, or hand-edit the CSS custom properties directly.",
+	"order": 5,
+	"tags": ["configuration"]
+}

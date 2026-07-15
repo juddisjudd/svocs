@@ -67,6 +67,38 @@ const SEARCH_BACKENDS = {
 	}
 };
 
+const DEFAULT_ACCENT = '#ff3c00';
+
+function normalizeHexColor(input) {
+	const match = input.trim().match(/^#?([0-9a-fA-F]{6}|[0-9a-fA-F]{3})$/);
+	if (!match) return null;
+	const hex = match[1];
+	const expanded =
+		hex.length === 3
+			? hex
+					.split('')
+					.map((c) => c + c)
+					.join('')
+			: hex;
+	return `#${expanded.toLowerCase()}`;
+}
+
+/** Only touches src/routes/+layout.svelte — --accent is the one literal
+ *  color left in the theme block; --accent-soft/--accent-strong/--glow-a
+ *  derive from it via color-mix(), so swapping this one line is enough to
+ *  re-theme the whole scaffolded site coherently. */
+function applyAccentColor(targetDir, hex) {
+	if (!hex || hex === DEFAULT_ACCENT) {
+		return;
+	}
+	const layoutPath = join(targetDir, 'src/routes/+layout.svelte');
+	const content = readFileSync(layoutPath, 'utf8');
+	writeFileSync(
+		layoutPath,
+		content.replaceAll(`--accent: ${DEFAULT_ACCENT};`, `--accent: ${hex};`)
+	);
+}
+
 function describeRepoFetchError(error) {
 	switch (error) {
 		case 'rate-limited':
@@ -281,6 +313,13 @@ async function main() {
 		process.exitCode = 1;
 		return;
 	}
+	const accentFlagRaw = args.find((arg) => arg.startsWith('--accent='))?.slice('--accent='.length);
+	const accentFlag = accentFlagRaw ? normalizeHexColor(accentFlagRaw) : undefined;
+	if (accentFlagRaw && !accentFlag) {
+		console.error(`Invalid --accent value: "${accentFlagRaw}". Expected a hex color like #2563eb.`);
+		process.exitCode = 1;
+		return;
+	}
 
 	const rl = createInterface({ input: process.stdin, output: process.stdout });
 	const isInteractive = process.stdin.isTTY;
@@ -321,6 +360,18 @@ async function main() {
 			process.stdout.write = originalWrite;
 			process.stdout.write('\n');
 		}
+	}
+
+	async function askAccentColor() {
+		if (!isInteractive) return DEFAULT_ACCENT;
+		const answer = (await rl.question(`Accent color (hex): (${DEFAULT_ACCENT}) `)).trim();
+		if (!answer) return DEFAULT_ACCENT;
+		const normalized = normalizeHexColor(answer);
+		if (!normalized) {
+			console.log(`  "${answer}" doesn't look like a hex color — keeping the default.`);
+			return DEFAULT_ACCENT;
+		}
+		return normalized;
 	}
 
 	async function askSearchBackend() {
@@ -423,6 +474,7 @@ async function main() {
 	const suggestedSiteName = repoContext?.name ? toSiteName(repoContext.name) : toSiteName(dirName);
 	const siteName = await ask(`Site name: (${suggestedSiteName}) `, suggestedSiteName);
 	const packageName = toPackageName(dirName);
+	const accentColor = accentFlag ?? (await askAccentColor());
 	const searchBackend = searchFlag ?? (await askSearchBackend());
 	const shouldInitGit = await confirm('Initialize a git repository?', true);
 
@@ -431,6 +483,7 @@ async function main() {
 	console.log(`\nScaffolding "${siteName}" in ${targetDir} ...`);
 	copyTemplate(TEMPLATE_DIR, targetDir);
 	applySubstitutions(targetDir, siteName, packageName);
+	applyAccentColor(targetDir, accentColor);
 	applySearchBackend(targetDir, searchBackend);
 
 	if (repoContext && repoAnalysisMode) {

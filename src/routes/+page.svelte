@@ -491,11 +491,11 @@
 	}
 
 	.btn.primary {
-		background: linear-gradient(180deg, #ff6136, var(--accent));
+		background: linear-gradient(180deg, var(--accent-strong), var(--accent));
 		color: var(--accent-contrast);
 		box-shadow:
 			0 1px 2px rgba(0, 0, 0, 0.25),
-			0 4px 14px rgba(255, 60, 0, 0.3),
+			0 4px 14px color-mix(in srgb, var(--accent) 30%, transparent),
 			inset 0 1px 0 rgba(255, 255, 255, 0.25);
 	}
 
@@ -657,7 +657,7 @@
 		background: var(--panel-soft);
 		font-size: 0.8rem;
 		color: var(--panel-text-hi);
-		box-shadow: 0 0 0 3px rgba(255, 60, 0, 0.08);
+		box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 8%, transparent);
 	}
 
 	.search-input svg {
@@ -720,7 +720,7 @@
 	}
 
 	.search-hit mark {
-		background: rgba(255, 60, 0, 0.28);
+		background: color-mix(in srgb, var(--accent) 28%, transparent);
 		color: var(--panel-accent);
 		border-radius: 0.15rem;
 		padding: 0 0.1em;

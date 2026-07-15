@@ -28,7 +28,7 @@ bun run dev
 
 Your new site is live at `http://localhost:5173`.
 
-The prompts also let you pick a search backend and, optionally, generate baseline content from an existing GitHub repo instead of the generic starter pages — see [Repo Analysis](/docs/repo-analysis).
+The prompts also let you pick an accent color, a search backend, and, optionally, generate baseline content from an existing GitHub repo instead of the generic starter pages — see [Theming](/docs/theming) and [Repo Analysis](/docs/repo-analysis).
 
 ## Add a page
 
@@ -71,5 +71,6 @@ This prerenders every page with `adapter-static` and indexes the site with Pagef
 
 - [Writing Content](/docs/writing-content) — frontmatter, sidecar metadata, GFM, code blocks
 - [Components](/docs/components) — the built-in `.svx` component library
+- [Theming](/docs/theming) — change the accent color, or the rest of the palette
 - [Navigation](/docs/navigation) — the full `_meta.json` schema
 - [Repo Analysis](/docs/repo-analysis) — generate starter content from an existing repo, heuristically or with an AI

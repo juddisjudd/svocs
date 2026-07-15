@@ -10,11 +10,12 @@
 		"ai": { "order": 7 },
 
 		"configuration-heading": { "type": "separator", "title": "Configuration", "order": 8 },
-		"navigation": { "order": 9 },
-		"search": { "order": 10 },
+		"theming": { "order": 9 },
+		"navigation": { "order": 10 },
+		"search": { "order": 11 },
 
-		"more-heading": { "type": "separator", "title": "More", "order": 11 },
-		"deployment": { "order": 12 },
-		"about": { "order": 13 }
+		"more-heading": { "type": "separator", "title": "More", "order": 12 },
+		"deployment": { "order": 13 },
+		"about": { "order": 14 }
 	}
 }
