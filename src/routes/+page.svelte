@@ -5,7 +5,7 @@
 
 	let { data }: { data: PageData } = $props();
 
-	const installCommand = 'bun install && bun run dev';
+	const installCommand = 'bunx create-svocs-docs';
 	let copied = $state(false);
 	let copyTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -197,13 +197,13 @@
 		<article class="card span-3">
 			<div class="mock-tree" aria-hidden="true">
 				<span class="dir">content/</span>
-				<span class="row"><i class="pipe">├─</i> index.md <em>→ /</em></span>
-				<span class="row"><i class="pipe">├─</i> <span class="dir">guide/</span></span>
-				<span class="row deep"
-					><i class="pipe">│ ├─</i> getting-started.md <em>→ /guide/getting-started</em></span
+				<span class="row"><i class="pipe">├─</i> _meta.json <em>categories &amp; order</em></span>
+				<span class="row"><i class="pipe">├─</i> introduction.md <em>→ /docs</em></span>
+				<span class="row"
+					><i class="pipe">├─</i> getting-started.md <em>→ /docs/getting-started</em></span
 				>
-				<span class="row deep"><i class="pipe">│ └─</i> _meta.json</span>
-				<span class="row"><i class="pipe">└─</i> architecture.md <em>→ /architecture</em></span>
+				<span class="row"><i class="pipe">└─</i> <span class="dir">deployment/</span></span>
+				<span class="row deep"><i class="pipe">└─</i> index.md <em>→ /docs/deployment</em></span>
 			</div>
 			<h2>File-system routing</h2>
 			<p>Folders become routes. <code>_meta.json</code> controls titles, order and grouping.</p>

@@ -7,7 +7,7 @@
 	"homepage": "https://svocs.dev",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/juddisjudd/svocs",
+		"url": "git+https://github.com/juddisjudd/svocs.git",
 		"directory": "packages/create-svocs-docs"
 	},
 	"bugs": "https://github.com/juddisjudd/svocs/issues",
@@ -20,7 +20,7 @@
 		"create"
 	],
 	"bin": {
-		"create-svocs-docs": "./bin.js"
+		"create-svocs-docs": "bin.js"
 	},
 	"files": [
 		"bin.js",

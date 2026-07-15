@@ -38,7 +38,11 @@ export default defineConfig({
 				runes: ({ filename }) =>
 					filename.split(/[/\\]/).includes('node_modules') ? undefined : true
 			},
-			adapter: adapter(),
+			// fallback: a static host that doesn't know our routes (nginx,
+			// Coolify, etc.) serves this for any unmatched path so the
+			// client-side router can render our real +error.svelte instead
+			// of the host's own generic 404.
+			adapter: adapter({ fallback: '404.html' }),
 			// Set BASE_PATH when deploying under a sub-path, e.g. GitHub Pages
 			// project sites: BASE_PATH=/my-repo
 			paths: {

@@ -1,0 +1,19 @@
+node_modules
+.svelte-kit
+build
+.git
+.github
+
+# Not needed to build the main site
+packages
+
+# Local-only / editor / tooling
+.claude
+.vscode
+.idea
+.playwright-mcp
+.remember
+PLAN.md
+ROADMAP.md
+
+*.log

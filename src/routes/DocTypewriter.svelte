@@ -5,27 +5,31 @@
 	type Phase = 'typing' | 'hold-code' | 'revealing' | 'hold-docs' | 'hiding';
 
 	const LINES: Token[][] = [
-		[{ text: '---', cls: 'p' }],
-		[{ text: 'title', cls: 'a' }, { text: ': Getting Started' }],
-		[{ text: '---', cls: 'p' }],
+		[{ text: '# ', cls: 'k' }, { text: 'Quick Start' }],
 		[],
-		[{ text: '# ', cls: 'k' }, { text: 'Getting Started' }],
+		[{ text: 'Scaffold a project and ship' }],
+		[{ text: 'a static site with ' }, { text: 'Svelte 5', cls: 'f' }, { text: '.' }],
 		[],
-		[{ text: 'SVOCS combines markdown-first' }],
-		[{ text: 'authoring with ' }, { text: 'Svelte 5', cls: 'f' }, { text: ' runes,' }],
-		[{ text: 'shipped as a static site.' }],
+		[{ text: '## ', cls: 'k' }, { text: 'Add a page' }],
 		[],
-		[{ text: '## ', cls: 'k' }, { text: 'Quick start' }],
-		[],
-		[{ text: '1. Add markdown to ' }, { text: 'content/', cls: 'v' }],
-		[{ text: '2. Run ' }, { text: 'bun run dev', cls: 'v' }],
-		[{ text: '3. Ship with ' }, { text: 'bun run build', cls: 'v' }]
+		[{ text: '- ', cls: 'p' }, { text: 'Drop a file in ' }, { text: 'content/', cls: 'v' }],
+		[{ text: '- ', cls: 'p' }, { text: 'Preview at ' }, { text: 'bun run dev', cls: 'v' }]
 	];
 
 	// The "rendered" side after the wipe is hand-authored to match LINES
 	// above exactly, so the reveal reads as "this markdown becomes this
-	// page" rather than an unrelated skeleton.
-	const NAV_ITEMS = ['Introduction', 'Architecture', 'Deployment', 'Components'];
+	// page" rather than an unrelated skeleton. The nav mirrors this site's
+	// own content/_meta.json category structure — non-clickable headings
+	// grouping real pages, the actual feature this card is selling.
+	type NavRow = { kind: 'heading' | 'item'; label: string; current?: boolean };
+	const NAV_ROWS: NavRow[] = [
+		{ kind: 'heading', label: 'Getting Started' },
+		{ kind: 'item', label: 'Introduction' },
+		{ kind: 'item', label: 'Quick Start', current: true },
+		{ kind: 'heading', label: 'Guides' },
+		{ kind: 'item', label: 'Writing Content' },
+		{ kind: 'item', label: 'Components' }
+	];
 
 	const reducedMotion = browser && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -116,32 +120,30 @@
 					>{#each tokensForLine(line, i) as token, j (j)}<i class={token.cls}>{token.text}</i
 						>{/each}{#if phase === 'typing' && i === lineIndex}<i class="morph-caret"
 						></i>{/if}</span
-				>
-			{/each}</pre>
+				>{/each}</pre>
 
 		<div class="morph-rendered">
 			<div class="doc-nav">
-				<span class="nav-item">{NAV_ITEMS[0]}</span>
-				<span class="nav-item current">Getting Started</span>
-				{#each NAV_ITEMS.slice(1) as item (item)}
-					<span class="nav-item">{item}</span>
+				{#each NAV_ROWS as row, i (i)}
+					{#if row.kind === 'heading'}
+						<span class="nav-heading">{row.label}</span>
+					{:else}
+						<span class="nav-item" class:current={row.current}>{row.label}</span>
+					{/if}
 				{/each}
 			</div>
 			<div class="doc-article">
-				<h1>Getting Started</h1>
-				<p>
-					SVOCS combines markdown-first authoring with <b>Svelte 5</b> runes, shipped as a static site.
-				</p>
-				<h2>Quick start</h2>
-				<ol>
-					<li>Add markdown to <code>content/</code></li>
-					<li>Run <code>bun run dev</code></li>
-					<li>Ship with <code>bun run build</code></li>
-				</ol>
+				<h1>Quick Start</h1>
+				<p>Scaffold a project and ship a static site with <b>Svelte 5</b>.</p>
+				<h2>Add a page</h2>
+				<ul>
+					<li>Drop a file in <code>content/</code></li>
+					<li>Preview at <code>bun run dev</code></li>
+				</ul>
 			</div>
 			<div class="doc-toc">
 				<span class="toc-label">On this page</span>
-				<span class="toc-item">Quick start</span>
+				<span class="toc-item">Add a page</span>
 			</div>
 		</div>
 
@@ -318,6 +320,20 @@
 		box-shadow: 0 0 10px rgba(255, 60, 0, 0.18);
 	}
 
+	.nav-heading {
+		margin-top: 0.3rem;
+		padding: 0 0.5rem;
+		font-size: 0.58rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		color: var(--panel-dim);
+	}
+
+	.nav-heading:first-child {
+		margin-top: 0;
+	}
+
 	.doc-article {
 		min-width: 0;
 	}
@@ -349,7 +365,7 @@
 		color: var(--panel-text-hi);
 	}
 
-	.doc-article ol {
+	.doc-article ul {
 		margin: 0;
 		padding-left: 1.1rem;
 		display: grid;
