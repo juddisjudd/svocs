@@ -1,10 +1,17 @@
 <script lang="ts">
+	import { SITE_URL } from '$lib/site';
+
 	const sponsorUrl = 'https://github.com/sponsors/juddisjudd';
 </script>
 
 <svelte:head>
 	<title>Sponsors | SVOCS</title>
 	<meta name="description" content="Support SVOCS development through sponsorship." />
+
+	<meta property="og:type" content="website" />
+	<meta property="og:title" content="Sponsors | SVOCS" />
+	<meta property="og:description" content="Support SVOCS development through sponsorship." />
+	<meta property="og:url" content="{SITE_URL}/sponsors" />
 </svelte:head>
 
 <main class="sponsors-page">

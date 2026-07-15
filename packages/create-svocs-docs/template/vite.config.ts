@@ -6,6 +6,11 @@ import adapter from '@sveltejs/adapter-static';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { highlightWithFilename } from './src/lib/build/code-highlighter';
 
+// $env/static/public (used in src/lib/search/resolver.ts) requires this to
+// be defined at build time — override it to pick a different search
+// backend, see https://svocs.dev/docs/search
+process.env.PUBLIC_SVOCS_SEARCH_PROVIDER ??= 'pagefind';
+
 type MdsvexOptions = NonNullable<Parameters<typeof mdsvex>[0]>;
 type MdsvexRehypePlugin = NonNullable<MdsvexOptions['rehypePlugins']>[number];
 

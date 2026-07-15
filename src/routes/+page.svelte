@@ -2,6 +2,7 @@
 	import { resolve } from '$app/paths';
 	import type { PageData } from './$types';
 	import DocTypewriter from './DocTypewriter.svelte';
+	import { SITE_URL } from '$lib/site';
 
 	let { data }: { data: PageData } = $props();
 
@@ -20,6 +21,10 @@
 		}
 	}
 
+	const pageTitle = 'SVOCS — Beautiful docs with Svelte & Markdown';
+	const pageDescription =
+		'SVOCS is a simple, powerful and flexible docs and blog generator with everything you love from Svelte. Markdown-first authoring, static export, zero-config search.';
+
 	const extras = [
 		'Table of contents',
 		'Breadcrumbs',
@@ -37,11 +42,13 @@
 </script>
 
 <svelte:head>
-	<title>SVOCS — Beautiful docs with Svelte & Markdown</title>
-	<meta
-		name="description"
-		content="SVOCS is a simple, powerful and flexible docs and blog generator with everything you love from Svelte. Markdown-first authoring, static export, zero-config search."
-	/>
+	<title>{pageTitle}</title>
+	<meta name="description" content={pageDescription} />
+
+	<meta property="og:type" content="website" />
+	<meta property="og:title" content={pageTitle} />
+	<meta property="og:description" content={pageDescription} />
+	<meta property="og:url" content={SITE_URL} />
 </svelte:head>
 
 <main class="home">

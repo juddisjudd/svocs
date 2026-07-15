@@ -2,11 +2,23 @@
 	import { resolve } from '$app/paths';
 	import type { Snippet } from 'svelte';
 	import SearchBox from '$lib/themes/docs/SearchBox.svelte';
+	import SearchDialog from '$lib/themes/docs/search/SearchDialog.svelte';
 	import ThemeToggle from '$lib/themes/docs/ThemeToggle.svelte';
 	import { SITE_NAME } from '$lib/site';
 
 	let { children }: { children: Snippet } = $props();
+
+	let searchDialog: ReturnType<typeof SearchDialog> | undefined = $state();
+
+	function onWindowKeydown(event: KeyboardEvent) {
+		if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+			event.preventDefault();
+			searchDialog?.open();
+		}
+	}
 </script>
+
+<svelte:window onkeydown={onWindowKeydown} />
 
 <a class="skip" href="#main-content">Skip to content</a>
 
@@ -19,12 +31,14 @@
 
 			<div class="actions">
 				<div class="search-wrap">
-					<SearchBox compact />
+					<SearchBox onOpen={() => searchDialog?.open()} />
 				</div>
 				<ThemeToggle />
 			</div>
 		</div>
 	</header>
+
+	<SearchDialog bind:this={searchDialog} />
 
 	<main id="main-content">
 		{@render children()}
@@ -177,7 +191,7 @@
 	}
 
 	.search-wrap {
-		width: min(26rem, 56vw);
+		width: min(11rem, 40vw);
 	}
 
 	main {
@@ -211,7 +225,7 @@
 
 	@media (max-width: 560px) {
 		.search-wrap {
-			width: min(10rem, 36vw);
+			width: 2.4rem;
 		}
 	}
 </style>

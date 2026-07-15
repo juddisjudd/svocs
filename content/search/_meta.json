@@ -1,0 +1,10 @@
+{
+	"items": {
+		"index": { "title": "Search", "order": 1 },
+		"pagefind": { "title": "Pagefind", "order": 2 },
+		"orama": { "title": "Orama", "order": 3 },
+		"flexsearch": { "title": "FlexSearch", "order": 4 },
+		"typesense": { "title": "Typesense", "order": 5 },
+		"chroma": { "title": "Chroma", "order": 6 }
+	}
+}

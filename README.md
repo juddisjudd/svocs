@@ -1,3 +1,9 @@
+<p align="center">
+  <a href="https://svocs.dev">
+    <img src="static/1200x630-OG.png" alt="SVOCS — Svelte-powered documentation framework" width="100%" />
+  </a>
+</p>
+
 # SVOCS
 
 SVOCS is a markdown-first documentation/blog site generator built on SvelteKit + Svelte 5.

@@ -336,6 +336,11 @@
 		border-radius: 0.3em;
 		background: var(--bg-soft);
 		border: 1px solid var(--line);
+		/* Long unbroken tokens (env var assignments, provider class paths)
+		   have no whitespace to wrap at — without this they overflow their
+		   container instead of breaking, dragging the whole page into
+		   horizontal scroll at narrow widths. */
+		overflow-wrap: break-word;
 	}
 
 	.prose :global(.heading-anchor) {

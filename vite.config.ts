@@ -7,6 +7,16 @@ import adapter from '@sveltejs/adapter-static';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { highlightWithFilename } from './src/lib/build/code-highlighter';
 
+// $env/static/public (used in src/lib/search/resolver.ts) requires this to
+// be defined at build time — a real compile-time constant lets the bundler
+// dead-code-eliminate every unreachable provider branch, including its
+// dynamic import() target. That matters beyond tree-shaking: a provider
+// with a broken transitive dependency (e.g. chromadb's optional
+// @chroma-core/default-embed) would otherwise fail EVERY build, even for
+// deployments that never select it, since a non-constant discriminant
+// forces the bundler to still resolve every branch's module graph.
+process.env.PUBLIC_SVOCS_SEARCH_PROVIDER ??= 'pagefind';
+
 type MdsvexOptions = NonNullable<Parameters<typeof mdsvex>[0]>;
 type MdsvexRehypePlugin = NonNullable<MdsvexOptions['rehypePlugins']>[number];
 
@@ -30,6 +40,18 @@ const mdsvexOptions = {
 	highlight: { highlighter: highlightWithFilename, optimise: true }
 } satisfies MdsvexOptions;
 
+// These static-index routes deliberately 404 during prerendering whenever
+// their backend isn't the active PUBLIC_SVOCS_SEARCH_PROVIDER (see
+// src/routes/search-index.*.json/+server.ts) — every deployment builds all
+// of them, but only one is ever non-404. SvelteKit's default prerender
+// behavior fails the whole build on any prerendered 4xx, so this allowlists
+// exactly those two expected-inert routes while still failing hard on any
+// other unexpected prerender error.
+const INERT_SEARCH_INDEX_ROUTES = new Set([
+	'/search-index.orama.json',
+	'/search-index.flexsearch.json'
+]);
+
 export default defineConfig({
 	plugins: [
 		sveltekit({
@@ -49,7 +71,15 @@ export default defineConfig({
 				base: process.env.BASE_PATH?.startsWith('/') ? (process.env.BASE_PATH as `/${string}`) : ''
 			},
 			preprocess: [mdsvex(mdsvexOptions)],
-			extensions: ['.svelte', '.svx', '.md']
+			extensions: ['.svelte', '.svx', '.md'],
+			prerender: {
+				handleHttpError: ({ path, message }) => {
+					if (INERT_SEARCH_INDEX_ROUTES.has(path)) {
+						return;
+					}
+					throw new Error(message);
+				}
+			}
 		})
 	],
 	test: {

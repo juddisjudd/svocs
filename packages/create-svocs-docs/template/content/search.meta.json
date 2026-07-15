@@ -1,0 +1,6 @@
+{
+	"title": "Search",
+	"description": "Pagefind ships by default; swap in Orama, FlexSearch, Typesense, or Chroma.",
+	"order": 9,
+	"tags": ["configuration"]
+}

@@ -10,9 +10,10 @@
 
 		"configuration-heading": { "type": "separator", "title": "Configuration", "order": 7 },
 		"navigation": { "order": 8 },
+		"search": { "order": 9 },
 
-		"more-heading": { "type": "separator", "title": "More", "order": 9 },
-		"deployment": { "order": 10 },
-		"about": { "order": 11 }
+		"more-heading": { "type": "separator", "title": "More", "order": 10 },
+		"deployment": { "order": 11 },
+		"about": { "order": 12 }
 	}
 }

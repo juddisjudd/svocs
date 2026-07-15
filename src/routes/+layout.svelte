@@ -4,18 +4,44 @@
 	import { page } from '$app/state';
 	import type { Snippet } from 'svelte';
 	import SearchBox from '$lib/themes/docs/SearchBox.svelte';
+	import SearchDialog from '$lib/themes/docs/search/SearchDialog.svelte';
 	import ThemeToggle from '$lib/themes/docs/ThemeToggle.svelte';
+	import { SITE_URL, SITE_NAME, OG_IMAGE_PATH } from '$lib/site';
 
 	let { children }: { children: Snippet } = $props();
 	const repoUrl = 'https://github.com/juddisjudd/svocs';
 	const currentPath = $derived(page.url.pathname.replace(/\/$/, '') || '/');
+
+	let searchDialog: ReturnType<typeof SearchDialog> | undefined = $state();
+
+	function onWindowKeydown(event: KeyboardEvent) {
+		if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+			event.preventDefault();
+			searchDialog?.open();
+		}
+	}
 </script>
+
+<svelte:window onkeydown={onWindowKeydown} />
 
 <svelte:head>
 	<link rel="icon" type="image/svg+xml" href={logoMark} />
 	<link rel="icon" type="image/png" sizes="32x32" href="{base}/favicon-32x32.png" />
 	<link rel="icon" type="image/png" sizes="16x16" href="{base}/favicon-16x16.png" />
 	<link rel="apple-touch-icon" href="{base}/apple-touch-icon.png" />
+
+	<!-- Site-wide social preview defaults — individual pages set their own
+	     og:title/og:description/og:url alongside their <title>, but the
+	     image is the same everywhere, so it only needs to be declared once
+	     here (SvelteKit appends nested svelte:head content, it doesn't
+	     replace it). -->
+	<meta property="og:site_name" content={SITE_NAME} />
+	<meta property="og:image" content="{SITE_URL}{OG_IMAGE_PATH}" />
+	<meta property="og:image:width" content="1200" />
+	<meta property="og:image:height" content="630" />
+	<meta property="og:image:alt" content="{SITE_NAME} — Svelte-powered documentation framework" />
+	<meta name="twitter:card" content="summary_large_image" />
+	<meta name="twitter:image" content="{SITE_URL}{OG_IMAGE_PATH}" />
 </svelte:head>
 
 <a class="skip" href="#main-content">Skip to content</a>
@@ -47,7 +73,7 @@
 
 			<div class="actions">
 				<div class="search-wrap">
-					<SearchBox compact />
+					<SearchBox onOpen={() => searchDialog?.open()} />
 				</div>
 				<ThemeToggle />
 				<a
@@ -66,6 +92,8 @@
 			</div>
 		</div>
 	</header>
+
+	<SearchDialog bind:this={searchDialog} />
 
 	<main id="main-content">
 		{@render children()}
@@ -265,7 +293,7 @@
 	}
 
 	.search-wrap {
-		width: min(26rem, 56vw);
+		width: min(11rem, 40vw);
 	}
 
 	.repo {
@@ -334,10 +362,6 @@
 			display: none;
 		}
 
-		.search-wrap {
-			width: min(18rem, 52vw);
-		}
-
 		.footer-wrap {
 			flex-direction: column;
 		}
@@ -351,7 +375,7 @@
 		}
 
 		.search-wrap {
-			width: min(10rem, 36vw);
+			width: 2.4rem;
 		}
 	}
 </style>

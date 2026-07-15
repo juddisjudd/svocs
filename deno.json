@@ -1,8 +1,10 @@
 {
 	"tasks": {
 		"dev": "deno run -A npm:vite dev",
-		"build": "deno run -A npm:vite build && deno run -A npm:pagefind --site build",
+		"build": "deno run -A npm:vite build && deno run -A scripts/search/postbuild.mjs",
 		"search:index": "deno run -A npm:pagefind --site build",
+		"search:sync:typesense": "bun run scripts/search/sync-typesense.ts",
+		"search:sync:chroma": "bun run scripts/search/sync-chroma.ts",
 		"preview": "deno run -A npm:vite preview",
 		"check": "deno run -A npm:@sveltejs/kit sync && deno run -A npm:svelte-check --tsconfig ./tsconfig.json",
 		"lint": "deno run -A npm:prettier --check . && deno run -A npm:eslint .",

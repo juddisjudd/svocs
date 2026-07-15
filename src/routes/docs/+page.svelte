@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	import { getDocComponentBySlug } from '$lib/core/content';
+	import { SITE_URL } from '$lib/site';
 
 	let { data }: { data: PageData } = $props();
 	const Content = $derived(getDocComponentBySlug(data.entry.slug.split('/')));
@@ -11,6 +12,13 @@
 	{#if data.entry.description}
 		<meta name="description" content={data.entry.description} />
 	{/if}
+
+	<meta property="og:type" content="article" />
+	<meta property="og:title" content={data.entry.title} />
+	{#if data.entry.description}
+		<meta property="og:description" content={data.entry.description} />
+	{/if}
+	<meta property="og:url" content="{SITE_URL}/docs" />
 </svelte:head>
 
 <article>

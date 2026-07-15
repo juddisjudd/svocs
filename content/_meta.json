@@ -12,8 +12,11 @@
 		"configuration-heading": { "type": "separator", "title": "Configuration", "order": 8 },
 		"navigation": { "order": 9 },
 
-		"more-heading": { "type": "separator", "title": "More", "order": 10 },
-		"deployment": { "order": 11 },
-		"about": { "order": 12 }
+		"search-heading": { "type": "separator", "title": "Search", "order": 10 },
+		"search": { "order": 11 },
+
+		"more-heading": { "type": "separator", "title": "More", "order": 12 },
+		"deployment": { "order": 13 },
+		"about": { "order": 14 }
 	}
 }

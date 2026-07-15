@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import { SITE_URL } from '$lib/site';
 
 	const repoUrl = 'https://github.com/juddisjudd/svocs';
 
@@ -18,6 +19,11 @@
 <svelte:head>
 	<title>Showcase | SVOCS</title>
 	<meta name="description" content="Sites and projects built with SVOCS." />
+
+	<meta property="og:type" content="website" />
+	<meta property="og:title" content="Showcase | SVOCS" />
+	<meta property="og:description" content="Sites and projects built with SVOCS." />
+	<meta property="og:url" content="{SITE_URL}/showcase" />
 </svelte:head>
 
 <main class="showcase-page">
