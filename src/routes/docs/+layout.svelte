@@ -567,19 +567,30 @@
 		position: absolute;
 		left: 0.2rem;
 		width: 1px;
+		border-radius: 999px;
 	}
 
+	/* The base rail spans dot-center to dot-center: 0.55em down from the
+	   list's top edge (matching each li's dot offset below) to 0.55em down
+	   from the *last* li's top edge, i.e. one line-height (1.4em) short of
+	   the list's bottom edge — anchoring to the box's bottom edge instead
+	   overshoots past the last dot whenever an item wraps to its own line. */
 	.toc-rail ul::before {
 		top: 0.55em;
-		bottom: 0.55em;
+		bottom: 0.85em;
 		background: var(--line);
 	}
 
 	.toc-rail ul::after {
 		top: 0.55em;
 		height: var(--toc-progress, 0%);
-		background: var(--accent);
-		transition: height 220ms ease;
+		background: linear-gradient(
+			to bottom,
+			color-mix(in srgb, var(--accent) 30%, transparent),
+			var(--accent)
+		);
+		box-shadow: 0 3px 8px -2px color-mix(in srgb, var(--accent) 65%, transparent);
+		transition: height 260ms cubic-bezier(0.23, 1, 0.32, 1);
 	}
 
 	.toc-rail li {
@@ -595,10 +606,11 @@
 		height: 5px;
 		border-radius: 999px;
 		background: var(--line-strong);
-		transform: translate(-50%, -50%);
+		transform: translate(-50%, -50%) scale(1);
 		transition:
 			background-color 200ms ease,
-			box-shadow 200ms ease;
+			box-shadow 200ms ease,
+			transform 200ms ease;
 	}
 
 	.toc-rail li.depth3 {
@@ -611,7 +623,23 @@
 
 	.toc-rail li.active::before {
 		background: var(--accent);
-		box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+		transform: translate(-50%, -50%) scale(1.5);
+		box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent);
+		animation: toc-dot-pulse 2200ms ease-in-out infinite;
+	}
+
+	.toc-rail li:hover::before {
+		transform: translate(-50%, -50%) scale(1.3);
+	}
+
+	@keyframes toc-dot-pulse {
+		0%,
+		100% {
+			box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent);
+		}
+		50% {
+			box-shadow: 0 0 0 7px color-mix(in srgb, var(--accent) 8%, transparent);
+		}
 	}
 
 	.toc-rail a {
@@ -710,6 +738,10 @@
 		.docs-layout,
 		.rail-toggle svg {
 			transition-duration: 0.01ms;
+		}
+
+		.toc-rail li.active::before {
+			animation: none;
 		}
 	}
 </style>

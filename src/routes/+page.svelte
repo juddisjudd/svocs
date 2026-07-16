@@ -402,30 +402,6 @@
 		}
 	}
 
-	.badge {
-		position: relative;
-		margin: 0 0 1.5rem;
-		display: inline-flex;
-		align-items: center;
-		gap: 0.5rem;
-		font-size: 0.8rem;
-		font-weight: 600;
-		letter-spacing: 0.02em;
-		color: var(--text-soft);
-		padding: 0.4rem 0.85rem;
-		border-radius: 999px;
-		border: 1px solid var(--line-strong);
-		background: color-mix(in srgb, var(--bg-elev) 70%, transparent);
-	}
-
-	.badge-dot {
-		width: 0.45rem;
-		height: 0.45rem;
-		border-radius: 999px;
-		background: var(--accent);
-		box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 70%, transparent);
-	}
-
 	.hero h1 {
 		position: relative;
 		margin: 0;
