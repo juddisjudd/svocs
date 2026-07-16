@@ -2,9 +2,7 @@ import { readFileSync } from 'node:fs';
 import { ChromaClient } from 'chromadb';
 import type { SearchDocument } from '../../src/lib/search/types';
 
-// Runs AFTER `vite build` (see scripts/search/postbuild.mjs) — reads the
-// already-prerendered search-index.json straight off disk, same as the
-// Typesense sync script.
+// Runs after `vite build`; reads the prerendered search-index.json off disk.
 const docs: SearchDocument[] = JSON.parse(readFileSync('build/search-index.json', 'utf-8'));
 
 const host = requireEnv('CHROMA_HOST');
@@ -29,11 +27,8 @@ async function main() {
 		headers: { Authorization: `Bearer ${token}` }
 	});
 
-	// Recreate on every sync rather than upserting, so removed/renamed pages
-	// never leave stale entries behind — a full rebuild is cheap at this
-	// content size (see content/search/chroma.md for the security setup
-	// this token needs: a write-scoped credential, never the one shipped
-	// to the browser).
+	// Recreate rather than upsert so removed/renamed pages never leave stale
+	// entries behind.
 	try {
 		await client.deleteCollection({ name: collectionName });
 	} catch {

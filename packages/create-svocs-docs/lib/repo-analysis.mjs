@@ -1,20 +1,6 @@
-// Optional scaffolding step: analyze an existing GitHub repo and generate a
-// baseline content/ tree from it instead of the generic starter pages.
-//
-// This is a strict, gracefully-degrading enhancement — every failure here
-// (bad repo, rate limit, bad key, malformed AI output) falls back one tier
-// (deep -> standard material, LLM -> heuristic -> untouched starter content)
-// and nothing in this module throws past its own function or aborts the
-// scaffold.
-//
-// Scan depths differ in what material the model sees, not just prompt words:
-//   quick    — README + the repo's other markdown docs, one LLM call
-//   standard — quick's material + root manifest/config files, two-phase
-//   deep     — the whole repo via one tarball download; two-phase, and each
-//              page is written from source files the plan picked for it
-// Two-phase = one small JSON "plan" call, then one markdown call per page —
-// so no single response carries a whole docs site inside JSON string
-// literals, the shape that used to blow past max_tokens and truncate.
+// Analyze a GitHub repo and generate a baseline content/ tree. Any failure
+// degrades a tier (deep -> standard material, LLM -> heuristic -> starter
+// content) instead of aborting the scaffold.
 import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { gunzipSync } from 'node:zlib';
@@ -28,13 +14,7 @@ const DEFAULT_MODEL = {
 	openai: 'gpt-4o-mini',
 	openrouter: 'openrouter/auto'
 };
-// Used only when a live fetch of the provider's own model catalog fails —
-// deliberately not an attempt to track each provider's latest releases.
-// Providers ship new models faster than a hardcoded list can be kept
-// current (openai/gpt-5.6-* and anthropic/claude-opus-4-8 both shipped
-// after this file was last hand-updated), so fetchAvailableModels() below
-// asks the provider directly; this is just the safety net for when that
-// ask fails.
+// Safety net for when fetchAvailableModels() fails; not kept current by hand.
 export const FALLBACK_MODELS = {
 	anthropic: [
 		{ id: 'claude-haiku-4-5-20251001', name: 'Claude Haiku 4.5' },
@@ -51,18 +31,9 @@ export const FALLBACK_MODELS = {
 		{ id: 'anthropic/claude-haiku-4.5', name: 'Claude Haiku 4.5' }
 	]
 };
-// Allow-list, not a block-list: OpenAI's /v1/models returns every model it
-// has ever shipped in one flat list — embeddings, Whisper, TTS, DALL-E,
-// moderation, ancient completion-only snapshots — mixed in with the chat
-// models this CLI can actually use. An allow-list fails soft (a genuinely
-// new chat model family that doesn't match just falls back to "Custom model
-// ID…") where a block-list would fail hard (a new non-chat family slipping
-// through and erroring only once the user tries to use it).
+// OpenAI's /v1/models mixes embeddings, TTS, etc. in with chat models;
+// an unmatched new chat family still falls back to "Custom model ID…".
 const OPENAI_CHAT_MODEL_PATTERN = /^(gpt-|o1|o3|o4|chatgpt)/i;
-// Deep scan's file tree exists to let the model infer *what topics exist*
-// (a `cli/` directory implies a CLI reference page), not to read every file
-// — so it only ever needs paths, capped well below what would meaningfully
-// grow the prompt.
 const MAX_TREE_ENTRIES = 300;
 const NOISY_PATH_SEGMENTS = new Set([
 	'node_modules',
@@ -85,19 +56,11 @@ const NOISY_FILENAMES = new Set([
 	'bun.lockb'
 ]);
 
-// Per-call output budgets. Quick scan emits all its pages in one JSON
-// response; standard/deep emit a small plan first, then one markdown body
-// per page — each of these is comfortably within its budget, where the old
-// single-response design regularly hit the limit and truncated mid-JSON.
 const QUICK_SCAN_MAX_TOKENS = 4096;
 const PLAN_MAX_TOKENS = 2048;
 const PAGE_MAX_TOKENS = 4096;
 const SCAN_DEPTH_MAX_PAGES = { quick: 3, standard: 8, deep: 12 };
 
-// Material-gathering caps. Doc/root files ride along in every prompt, so
-// they're capped tighter than the README; the tarball caps only bound what
-// gets indexed into memory, not what reaches the model (page prompts cap
-// each selected source file separately via MAX_SOURCE_FILE_BYTES).
 const MAX_DOC_FILES = 8;
 const MAX_DOC_FILE_BYTES = 50_000;
 const MAX_ROOT_FILES = 12;
@@ -108,8 +71,6 @@ const MAX_TARBALL_BYTES = 100 * 1024 * 1024;
 const MAX_STORED_FILE_BYTES = 100_000;
 const MAX_STORED_TOTAL_BYTES = 5 * 1024 * 1024;
 
-// Root files that answer "how do I actually run/configure this" when the
-// README doesn't: manifests, container/CI setup, env templates, task runners.
 const ROOT_MANIFEST_CANDIDATES = new Set([
 	'pyproject.toml',
 	'Cargo.toml',
@@ -137,9 +98,6 @@ const ROOT_MANIFEST_CANDIDATES = new Set([
 	'next.config.ts'
 ]);
 
-// Allow-list of what gets indexed out of a deep-scan tarball — the model
-// only ever reads text, so binaries/assets are dead weight at best and
-// mojibake at worst.
 const TEXT_FILE_EXTENSIONS = new Set([
 	'.md',
 	'.mdx',
@@ -274,13 +232,8 @@ export async function fetchRepoContext(owner, repo) {
 	};
 }
 
-// READMEs are full of links/images relative to the repo's own file tree
-// (`[LICENSE](LICENSE)`, `![screenshot](docs/img.png)`, `[Install](#install)`).
-// Dropped verbatim into the new docs site those 404 — SvelteKit's prerender
-// crawler follows every same-origin <a href> it finds and fails the build on
-// a 404 by default. Rewriting to absolute GitHub URLs keeps the links
-// genuinely useful (they still point at the right file) while taking them
-// out of the crawler's same-origin scope entirely.
+// Repo-relative README links 404 on the new site and fail SvelteKit's
+// prerender crawl; rewrite them to absolute GitHub URLs.
 function rewriteRelativeLinks(markdown, owner, repo, branch) {
 	const isAbsolute = (url) => /^([a-z][\w+.-]*:)?\/\//i.test(url) || url.startsWith('mailto:');
 
@@ -355,13 +308,8 @@ async function fetchFileTree(owner, repo, branch) {
 	}
 }
 
-// Gathers whatever material the chosen scan depth feeds the model, beyond
-// the README/package.json that fetchRepoContext already got. Deep scan is a
-// single tarball download rather than per-file API calls — the unauthenticated
-// GitHub REST API allows only 60 requests/hour, which file-by-file fetching
-// would burn instantly, while codeload tarballs aren't drawn from that quota.
-// If the tarball fails, deep degrades to standard-depth material (and says
-// so via onWarning) instead of aborting the analysis.
+// Deep scan uses one codeload tarball instead of per-file API calls: the
+// unauthenticated REST API allows only 60 requests/hour, tarballs don't count.
 export async function gatherScanMaterial(owner, repo, repoContext, scanDepth, onWarning) {
 	const branch = repoContext.defaultBranch;
 	const material = { fileTree: null, docFiles: [], rootFiles: [], repoFiles: null };
@@ -400,9 +348,6 @@ export async function gatherScanMaterial(owner, repo, repoContext, scanDepth, on
 	return material;
 }
 
-// The repo's own docs beyond the README: root-level .md files (CONTRIBUTING,
-// USAGE, FAQ, …) and anything under docs/. Changelogs and licenses are
-// excluded — long, and useless for writing docs pages.
 function isDocPath(path) {
 	if (!/\.(md|mdx)$/i.test(path)) {
 		return false;
@@ -455,9 +400,6 @@ function selectFromRepoFiles(repoFiles, predicate, maxFiles, maxBytes) {
 	return selected;
 }
 
-// One request for the entire repo, from codeload rather than the REST API
-// (see gatherScanMaterial for why). Returns a Map of repo-relative path ->
-// file text for every text file worth indexing, or null on any failure.
 async function downloadRepoTarball(owner, repo, branch) {
 	let compressed;
 	try {
@@ -486,10 +428,8 @@ async function downloadRepoTarball(owner, repo, branch) {
 	}
 }
 
-// Minimal tar reader instead of a dependency: entries are 512-byte headers
-// followed by size-padded data. Handles ustar name+prefix and GNU 'L'
-// longname entries, which covers what codeload produces; pax overrides for
-// >255-char paths are rare enough to just let those files be skipped.
+// Handles ustar name+prefix and GNU 'L' longnames, which covers what
+// codeload produces; pax path overrides are rare enough to skip.
 function parseTarball(tar) {
 	const files = new Map();
 	let storedBytes = 0;
@@ -695,12 +635,8 @@ const PROVIDER_KEY_CHECK = {
 	}
 };
 
-// A models-list (or, for OpenRouter, key-info) request costs no tokens on
-// any provider and needs the same auth header a real analysis call does, so
-// it doubles as a cheap key check before spending the user's quota on the
-// actual generation request. OpenRouter's /v1/models is public and would
-// return 200 for literally any key (or none), so it uses /v1/key instead —
-// the one endpoint of the three that's actually gated on the key being real.
+// OpenRouter's /v1/models is public and returns 200 for any key, so it
+// checks /v1/key instead.
 export async function validateApiKey(provider, apiKey) {
 	const check = PROVIDER_KEY_CHECK[provider] ?? PROVIDER_KEY_CHECK.anthropic;
 	try {
@@ -714,10 +650,7 @@ export async function validateApiKey(provider, apiKey) {
 	}
 }
 
-// Every provider ships new models faster than a hardcoded catalog can track
-// (see FALLBACK_MODELS above) — asking the provider's own API for what it
-// currently has is the only way this stays correct. Returns null on any
-// failure so the caller can fall back to FALLBACK_MODELS; never throws.
+// Returns null on any failure so the caller falls back to FALLBACK_MODELS.
 export async function fetchAvailableModels(provider, apiKey) {
 	try {
 		if (provider === 'openai') {
@@ -760,17 +693,8 @@ export async function fetchAvailableModels(provider, apiKey) {
 
 const SYSTEM_PROMPT = `You are a senior technical writer generating documentation pages for a docs site scaffolded from an existing GitHub repository. Ground every claim in the provided repository material (README, docs, config files, source files) — never invent features, commands, options, or configuration the material does not show. Write clear, practical Markdown. Follow the output format instructions in each request exactly.`;
 
-// No request timeout on generation calls, deliberately: they pair with
-// whatever model the user picked (including the slowest one on any given
-// provider) — there's no fixed duration that's "too long" for a real,
-// in-progress generation, only a wrong guess that aborts (and burns the
-// user's quota on) a request that was about to succeed. Ctrl+C during the
-// spinner still cancels immediately, same as any other prompt in this CLI.
-//
-// Quick scan is one call that returns every page as JSON. Standard and deep
-// are two-phase: a small JSON plan call, then one plain-markdown call per
-// page — a failed page is skipped individually instead of discarding the
-// whole analysis, and no response is large enough to hit its token budget.
+// Generation calls have no request timeout on purpose: an aborted slow model
+// burns the user's quota for nothing, and Ctrl+C still cancels.
 export async function generateLlmPages(
 	repoContext,
 	provider,
@@ -945,10 +869,8 @@ async function callOpenAI(apiKey, prompt, model, { maxTokens, json }) {
 	return text;
 }
 
-// OpenRouter proxies to whatever backend the chosen model actually runs on
-// (Anthropic, Google, open-weight models, etc.), most of which don't support
-// OpenAI's response_format: json_object — so unlike callOpenAI, this relies
-// on the prompt's own JSON instructions, same as callAnthropic.
+// Most OpenRouter backends don't support response_format: json_object, so
+// this relies on the prompt's own JSON instructions.
 async function callOpenRouter(apiKey, prompt, model, { maxTokens }) {
 	const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
 		method: 'POST',
@@ -983,9 +905,6 @@ async function callOpenRouter(apiKey, prompt, model, { maxTokens }) {
 	return text;
 }
 
-// Renders the gathered repo material as prompt sections — the same block
-// feeds the quick-scan call, the plan call, and every page call, so the
-// model always writes from identical ground truth.
 function renderRepoMaterial(repoContext, { includeTree = false } = {}) {
 	const parts = [
 		`Project: ${repoContext.name}${repoContext.description ? ` — ${repoContext.description}` : ''}`
@@ -1092,11 +1011,7 @@ function extractJsonObject(rawText) {
 	}
 }
 
-// Both validators clamp an over-long pages array to the tier's budget
-// instead of rejecting it — a model that returns 9 good pages against a
-// budget of 8 should lose one page, not the whole analysis. (The previous
-// hard cap rejected outright, and sat at 8 while the deep prompt asked for
-// up to 12 — every faithful 9-to-12-page deep scan was thrown away.)
+// An over-long pages array is clamped to the budget, not rejected.
 function parseAndValidateLlmOutput(rawText, maxPages) {
 	const { value: parsed, error } = extractJsonObject(rawText);
 	if (error) {
@@ -1164,9 +1079,8 @@ function parseAndValidatePlan(rawText, maxPages) {
 	return { pages };
 }
 
-// Page calls return bare markdown, but models sometimes wrap the whole body
-// in a code fence or lead with the H1 they were told to omit — both are
-// deterministic to strip, so strip them rather than fail the page.
+// Models sometimes fence the whole body or lead with a forbidden H1; strip
+// both rather than fail the page.
 function cleanPageMarkdown(rawText) {
 	let text = rawText.trim();
 	const fenced = text.match(/^```(?:markdown|md)?\s*\n([\s\S]*?)\n```$/);
@@ -1176,11 +1090,8 @@ function cleanPageMarkdown(rawText) {
 	return stripLeadingH1(text).trim();
 }
 
-// Every starter page the template ships, so a repo-analysis scaffold ends up
-// entirely about the analyzed repo — no leftover generic "About SVOCS" /
-// "Theming" / "Deployment" placeholders sitting alongside real generated
-// content. `deployment` is a directory (index + cloudflare-pages +
-// github-pages), not a single file, so it gets its own removal pass below.
+// Every starter page the template ships. `deployment` is a directory, so it
+// gets its own removal pass.
 const REPLACED_CONTENT_KEYS = new Set([
 	'getting-started-heading',
 	'introduction',
@@ -1222,8 +1133,6 @@ export function writeGeneratedPages(targetDir, pages) {
 	}));
 
 	for (const slug of REPLACED_FILE_SLUGS) {
-		// components ships as .svx (an interactive demo page), everything
-		// else as .md — try both rather than hardcode which slug uses which.
 		rmIfExists(join(contentDir, `${slug}.md`));
 		rmIfExists(join(contentDir, `${slug}.svx`));
 		rmIfExists(join(contentDir, `${slug}.meta.json`));
@@ -1246,11 +1155,8 @@ export function writeGeneratedPages(targetDir, pages) {
 	);
 }
 
-// Hand-formatted rather than JSON.stringify(..., null, '\t') so the output
-// matches this project's Prettier config exactly (short arrays collapse onto
-// one line; JSON.stringify always expands them) — otherwise a freshly
-// scaffolded project fails `bun run lint` immediately on its own generated
-// content.
+// Hand-formatted so the output matches the template's Prettier config;
+// JSON.stringify's array expansion fails `bun run lint` in fresh scaffolds.
 function formatPageMeta(page, order) {
 	const lines = ['{', `\t"title": ${JSON.stringify(page.title)},`];
 	if (page.description) {
@@ -1260,13 +1166,8 @@ function formatPageMeta(page, order) {
 	return `${lines.join('\n')}\n`;
 }
 
-// Prettier requires a blank line between a paragraph and an adjacent list or
-// heading — CommonMark allows either, but heuristic-split README sections
-// (and especially LLM output, which isn't reliably consistent about this)
-// can omit it, which fails `bun run lint` in the scaffolded project the
-// moment it's generated. Deterministically fixing spacing here means every
-// path (heuristic and LLM) always produces already-formatted markdown,
-// rather than depending on a prompt instruction the model might not follow.
+// Prettier requires blank lines around lists/headings that CommonMark
+// doesn't; fix spacing here so scaffolded content passes lint as generated.
 function normalizeMarkdownSpacing(content) {
 	const lines = content.split(/\r?\n/);
 	const isListItem = (line) => /^\s*([-*+]|\d+[.)])\s+/.test(line);

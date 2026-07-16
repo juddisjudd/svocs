@@ -23,9 +23,7 @@ export type PageMapNode =
 			children: PageMapNode[];
 	  }
 	| {
-			/** A non-clickable heading, declared via `{ "type": "separator" }`
-			 *  in `_meta.json`, that visually groups the sibling items around
-			 *  it — it has no route and no children of its own. */
+			/** Non-clickable sidebar heading from `_meta.json`; no route, no children. */
 			kind: 'separator';
 			title: string;
 			order: number;
@@ -59,12 +57,6 @@ function finalizeNode(node: MutablePageNode, dirMeta: DirectoryMeta): PageMapNod
 	};
 }
 
-/**
- * Finalizes one directory's worth of page nodes and interleaves them with
- * any `type: 'separator'` entries that directory's `_meta.json` declares,
- * sorting the combined list by `order` (ties broken alphabetically by
- * title) so labels land in the right spot among the pages they group.
- */
 function buildLevel(
 	pageNodes: MutablePageNode[],
 	directory: string,
@@ -110,9 +102,6 @@ export function buildDocsPageMap(
 
 			let node = current.get(segment);
 			if (!node) {
-				// Auto-created intermediate folder node — pick up a custom
-				// title/order from the parent directory's _meta.json if one
-				// is declared for this segment, same as a real document would.
 				const override = dirMeta.get(parentDirectory)?.[segment];
 				node = {
 					slug: currentSlug,

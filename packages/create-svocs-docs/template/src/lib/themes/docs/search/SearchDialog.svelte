@@ -104,9 +104,7 @@
 	}
 
 	function onDialogClick(event: MouseEvent) {
-		// A click that lands on the <dialog> element itself (not a descendant)
-		// is a click on the backdrop area outside the panel — close on it,
-		// same convention as clicking outside any other modal.
+		// A click on the <dialog> element itself is a backdrop click.
 		if (event.target === dialogEl) {
 			dialogEl?.close();
 		}

@@ -27,9 +27,7 @@ const RENAMES = {
 	_nojekyll: '.nojekyll'
 };
 
-// Pagefind ships wired up in the base template; the rest are recipes under
-// recipes/search/<id>/ that get merged into the scaffold on demand — see
-// applySearchBackend(). Order here is display order in the prompt.
+// Order here is display order in the prompt.
 const SEARCH_BACKEND_IDS = ['pagefind', 'orama', 'flexsearch', 'typesense', 'chroma'];
 
 const SEARCH_BACKENDS = {
@@ -72,8 +70,6 @@ const SEARCH_BACKENDS = {
 	}
 };
 
-/** Backend labels are "Name — detail"; the select prompt wants those as
- *  separate label/hint fields, and a couple of other spots just want the name. */
 function splitBackendLabel(label) {
 	const separatorIndex = label.indexOf(' —');
 	if (separatorIndex === -1) {
@@ -126,10 +122,8 @@ function normalizeHexColor(input) {
 	return `#${expanded.toLowerCase()}`;
 }
 
-/** Only touches src/routes/+layout.svelte — --accent is the one literal
- *  color left in the theme block; --accent-soft/--accent-strong/--glow-a
- *  derive from it via color-mix(), so swapping this one line is enough to
- *  re-theme the whole scaffolded site coherently. */
+// --accent is the one literal color in the theme block; the rest derive
+// from it via color-mix().
 function applyAccentColor(targetDir, hex) {
 	if (!hex || hex === DEFAULT_ACCENT) {
 		return;
@@ -189,10 +183,6 @@ ${activeCase}\t\tdefault:
 `;
 }
 
-/** Merges a backend's recipe files in, then rewires resolver.ts, the
- *  vite/postbuild provider defaults, and package.json/deno.json so the
- *  scaffolded project boots straight into the chosen backend. No-op for
- *  pagefind, which the base template already wires up. */
 function applySearchBackend(targetDir, backendId) {
 	if (backendId === 'pagefind') {
 		return;
@@ -239,9 +229,7 @@ function applySearchBackend(targetDir, backendId) {
 	}
 }
 
-// Files that get __SITE_NAME__ / __PACKAGE_NAME__ substitution — every text
-// file we ship, matched by extension rather than a hardcoded path list so
-// future template additions don't need this list updated too.
+// Files that get __SITE_NAME__ / __PACKAGE_NAME__ substitution.
 const TEXT_EXTENSIONS = new Set([
 	'.md',
 	'.svx',
@@ -383,10 +371,7 @@ async function main() {
 		p.intro(pc.bold('create-svocs-docs'));
 	}
 
-	// Every clack prompt resolves to a symbol instead of throwing when the
-	// user hits Ctrl+C — this is the one place that checks for it, so every
-	// `ask*`/`confirm` helper below can await a prompt without its own
-	// cancellation boilerplate.
+	// Clack prompts resolve to a cancel symbol on Ctrl+C instead of throwing.
 	function orExit(value) {
 		if (p.isCancel(value)) {
 			p.cancel('Cancelled.');
@@ -444,10 +429,6 @@ async function main() {
 		return LLM_PROVIDER_LABELS[provider] ?? provider;
 	}
 
-	// A models-list (or, for OpenRouter, key-info) request costs no tokens on
-	// any provider, so this runs before the real (billed) analysis call —
-	// cheap, fast feedback instead of discovering a bad key only after the
-	// "asking the AI" spinner fails.
 	async function validateAndReportKey(provider, apiKey) {
 		const name = providerLabel(provider);
 		const s = p.spinner();
@@ -461,9 +442,6 @@ async function main() {
 		return isValid;
 	}
 
-	// Every provider ships new models faster than a hardcoded list can track,
-	// so this asks the provider directly rather than guessing — see
-	// fetchAvailableModels/FALLBACK_MODELS in lib/repo-analysis.mjs for why.
 	async function askLlmModel(provider, apiKey) {
 		if (!isInteractive) return undefined;
 
@@ -542,12 +520,6 @@ async function main() {
 		return context;
 	}
 
-	// Reassigns the outer `repoContext` closure directly — kept as a function
-	// instead of inlining because both call sites below (the --repo= flag path
-	// and the interactive prompt path) need the exact same behavior. Runs for
-	// every scan depth: even quick scan reads the repo's other .md files, and
-	// deep scan downloads the whole repo as one tarball (falling back to
-	// standard-depth material, with a warning, if that download fails).
 	async function gatherScanMaterialAndReport(owner, repo) {
 		const s = p.spinner();
 		s.start(`Gathering repo material (${scanDepth} scan)`);
@@ -688,8 +660,6 @@ async function main() {
 					s.error(warning ?? `${providerName} analysis failed`);
 				} else {
 					s.stop(`${providerName} analysis complete`);
-					// e.g. standard/deep scans report pages that individually
-					// failed and were skipped — the rest still got generated.
 					if (warning) {
 						p.log.warn(warning);
 					}

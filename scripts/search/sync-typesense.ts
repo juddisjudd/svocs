@@ -2,9 +2,7 @@ import { readFileSync } from 'node:fs';
 import { Client } from 'typesense';
 import type { SearchDocument } from '../../src/lib/search/types';
 
-// Runs AFTER `vite build` (see scripts/search/postbuild.mjs), so this reads
-// the already-prerendered search-index.json straight off disk — no need to
-// re-parse content/ or resolve $lib aliases outside Vite's own build.
+// Runs after `vite build`; reads the prerendered search-index.json off disk.
 const docs: SearchDocument[] = JSON.parse(readFileSync('build/search-index.json', 'utf-8'));
 
 const host = requireEnv('TYPESENSE_HOST');

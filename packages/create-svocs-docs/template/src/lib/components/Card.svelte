@@ -20,9 +20,8 @@
 {/snippet}
 
 {#if href}
-	<!-- Card is a generic pass-through: callers resolve() internal routes
-	     themselves before passing href, since this component also accepts
-	     plain external URLs. -->
+	<!-- Callers resolve() internal routes before passing href; this also
+	     accepts plain external URLs. -->
 	<!-- eslint-disable svelte/no-navigation-without-resolve -->
 	<a
 		class="card"

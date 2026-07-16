@@ -16,11 +16,8 @@
 		[{ text: '- ', cls: 'p' }, { text: 'Preview at ' }, { text: 'bun run dev', cls: 'v' }]
 	];
 
-	// The "rendered" side after the wipe is hand-authored to match LINES
-	// above exactly, so the reveal reads as "this markdown becomes this
-	// page" rather than an unrelated skeleton. The nav mirrors this site's
-	// own content/_meta.json category structure — non-clickable headings
-	// grouping real pages, the actual feature this card is selling.
+	// Hand-authored to match LINES above so the wipe reads as "this markdown
+	// becomes this page".
 	type NavRow = { kind: 'heading' | 'item'; label: string; current?: boolean };
 	const NAV_ROWS: NavRow[] = [
 		{ kind: 'heading', label: 'Getting Started' },
@@ -416,9 +413,7 @@
 			color-mix(in srgb, var(--accent) 65%, transparent),
 			transparent
 		);
-		/* screen blend reads as a bright glint on the default dark panel;
-		   on the light panel (white-ish bg) screen washes out to nearly
-		   invisible, so it flips to multiply there instead. */
+		/* screen washes out on the light panel, which flips to multiply below. */
 		mix-blend-mode: screen;
 		pointer-events: none;
 		animation: sweep 800ms cubic-bezier(0.23, 1, 0.32, 1) both;

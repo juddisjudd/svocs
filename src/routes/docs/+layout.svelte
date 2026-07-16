@@ -323,10 +323,7 @@
 		border-radius: 0.3em;
 		background: var(--bg-soft);
 		border: 1px solid var(--line);
-		/* Long unbroken tokens (env var assignments, provider class paths)
-		   have no whitespace to wrap at — without this they overflow their
-		   container instead of breaking, dragging the whole page into
-		   horizontal scroll at narrow widths. */
+		/* Long unbroken tokens otherwise force horizontal scroll at narrow widths. */
 		overflow-wrap: break-word;
 	}
 
@@ -360,11 +357,8 @@
 		text-decoration-color: currentColor;
 	}
 
-	/* code-frame / code-frame-header / code-frame-body come from the
-	   build-time highlighter (src/lib/build/code-highlighter.ts) inside
-	   mdsvex-compiled markup, and code-copy is appended client-side by
-	   enhanceCodeBlocks() — all markup this component didn't render, so
-	   they need :global. */
+	/* code-frame markup comes from the build-time highlighter, code-copy
+	   from enhanceCodeBlocks() — not this component, hence :global. */
 	.prose :global(.code-frame) {
 		margin: 1rem 0;
 		border: 1px solid var(--line);
@@ -515,9 +509,8 @@
 		border-radius: 0.65rem;
 	}
 
-	/* Mermaid fences ship as a bare pre carrying the diagram source; the lazy
-	   client renderer swaps the text for an inline SVG in place. Until then
-	   the source shows briefly, styled small and dim. */
+	/* Mermaid source shows briefly before the lazy client renderer swaps in
+	   the SVG; style it small and dim until then. */
 	.prose :global(pre.mermaid) {
 		display: flex;
 		justify-content: center;

@@ -56,22 +56,12 @@ function checkIcon(): SVGSVGElement {
 }
 
 /**
- * Progressively enhances the prerendered code frames inside `container` with
- * a copy button. The .code-frame / .code-frame-header / .code-frame-body
- * wrapper (and the filename header) is emitted at build time by
- * src/lib/build/code-highlighter.ts — this only appends a button into the
- * existing .code-frame-body.
+ * Appends a copy button into the .code-frame-body wrapper emitted at build
+ * time by src/lib/build/code-highlighter.ts.
  *
- * Runs as plain DOM manipulation rather than a Svelte template because the
- * markup comes from mdsvex-compiled static HTML, not this component's own
- * template — there's nothing for Svelte to bind to declaratively.
- *
- * IMPORTANT: never move or replace the `<pre>` (or any other node) here.
- * These nodes belong to the mdsvex-compiled Svelte component's fragment, and
- * re-parenting a fragment-boundary node (a doc ending in a code fence)
- * corrupts Svelte's teardown on navigation — every doc page after that
- * renders with an empty body until a full reload. Appending new children
- * into an existing element is safe; re-parenting existing ones is not.
+ * Never move or replace existing nodes here: they belong to the
+ * mdsvex-compiled Svelte fragment, and re-parenting one corrupts teardown on
+ * client-side navigation. Appending new children is safe.
  */
 export function enhanceCodeBlocks(container: HTMLElement | null): void {
 	if (!container) {

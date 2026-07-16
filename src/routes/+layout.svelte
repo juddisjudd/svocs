@@ -126,7 +126,13 @@
 			height="130%"
 			color-interpolation-filters="sRGB"
 		>
-			<feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="4" seed="7" result="noise" />
+			<feTurbulence
+				type="fractalNoise"
+				baseFrequency="0.012"
+				numOctaves="4"
+				seed="7"
+				result="noise"
+			/>
 			<feDisplacementMap
 				in="SourceGraphic"
 				in2="noise"
@@ -145,7 +151,13 @@
 			/>
 			<feComponentTransfer in="alpha-noise" result="threshold">
 				<feFuncA type="linear" slope="16" intercept="1">
-					<animate attributeName="intercept" values="1;-16" dur="0.9s" begin="indefinite" fill="freeze" />
+					<animate
+						attributeName="intercept"
+						values="1;-16"
+						dur="0.9s"
+						begin="indefinite"
+						fill="freeze"
+					/>
 				</feFuncA>
 			</feComponentTransfer>
 			<feComposite in="displaced" in2="threshold" operator="in" />
@@ -173,11 +185,8 @@
 		--line: #2a2523;
 		--line-strong: #3d3532;
 		--accent: #ff3c00;
-		/* Soft/strong and the ambient glow tint derive from --accent rather
-		   than shipping as independent hex values, so a custom accent color
-		   (see create-svocs-docs' --accent prompt) always produces a
-		   coordinated ramp instead of leaving the glow stuck looking
-		   ember-colored regardless of what accent is picked. */
+		/* Derived from --accent so a custom accent produces a coordinated
+		   ramp; keep --accent the only literal color here. */
 		--accent-soft: color-mix(in srgb, var(--accent) 78%, white);
 		--accent-strong: color-mix(in srgb, var(--accent) 60%, white);
 		--accent-contrast: #180806;
@@ -236,20 +245,11 @@
 		--shadow-bar: 0 8px 28px rgba(52, 20, 8, 0.08);
 	}
 
-	/*
-	 * Theme-switch dissolve transition. ThemeToggle wraps the data-theme flip
-	 * in document.startViewTransition() and then restarts the SMIL animations
-	 * inside the #svocs-dissolve SVG filter declared in this layout's markup.
-	 * That filter disintegrates the OLD page snapshot: one feTurbulence
-	 * (Perlin) noise field drives both a growing feDisplacementMap warp and a
-	 * sweeping alpha threshold, so pixels smear and drop out in noise order
-	 * everywhere at once instead of wiping across the screen. The keyframe
-	 * below exists to hold the view transition open for the filter's duration
-	 * (a view transition ends when its pseudo-element animations end) and to
-	 * mop up the last specks with a late fade; if SMIL never fires, the
-	 * effect degrades to that plain fade. Reduced-motion users never enter a
-	 * view transition at all (guarded in ThemeToggle).
-	 */
+	/* Theme-switch dissolve: the #svocs-dissolve filter disintegrates the old
+	   page snapshot (ThemeToggle restarts its SMIL animations). This keyframe
+	   holds the view transition open for the filter's duration — a transition
+	   ends when its pseudo-element animations end — and degrades to a plain
+	   fade if SMIL never fires. */
 	@keyframes -global-svocs-burn-away {
 		0%,
 		70% {

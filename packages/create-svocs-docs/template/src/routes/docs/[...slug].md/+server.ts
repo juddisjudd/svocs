@@ -4,9 +4,8 @@ import type { EntryGenerator, RequestHandler } from './$types';
 
 export const prerender = true;
 
-// Explicit entries rather than relying on the prerender crawler to
-// discover these via the "View as Markdown" page-action links — every doc
-// gets its .md file regardless of whether that link markup ever changes.
+// Explicit entries so every doc gets its .md file without depending on the
+// prerender crawler finding the "View as Markdown" links.
 export const entries: EntryGenerator = () => {
 	return getDocsEntries().map((entry) => ({ slug: entry.slug }));
 };

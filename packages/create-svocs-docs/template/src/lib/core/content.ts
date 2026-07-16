@@ -15,9 +15,8 @@ type ContentModule = {
 export type MetaItemConfig = {
 	title?: string;
 	order?: number;
-	/** `'separator'` items are virtual: a non-clickable heading injected into
-	 *  the sidebar at this position to visually group the items around it.
-	 *  They don't correspond to a file, so `title` and `order` are required. */
+	/** Separators are virtual sidebar headings with no backing file, so
+	 *  `title` and `order` are required. */
 	type?: 'separator';
 };
 
@@ -49,11 +48,7 @@ export type TocItem = {
 	depth: 2 | 3;
 };
 
-/**
- * A page's *unstripped* markdown source, for llms.txt/llms-full.txt/the
- * per-page .md route — the real source (headings, links, code fences
- * intact), not processed HTML.
- */
+/** Unstripped markdown source for llms.txt and the per-page .md route. */
 export type LlmsDocument = {
 	slug: string;
 	url: string;
@@ -185,20 +180,11 @@ function extractWordCount(raw: string): number {
 	return words.length;
 }
 
-/**
- * Directory path ('' for the content root) → that directory's `_meta.json`
- * `items` map. Exported so page-map.ts can read folder title/order
- * overrides and inject `type: 'separator'` entries — content.ts already
- * eagerly globs every `_meta.json`, so this is just a reshape, not a
- * second file read.
- */
+/** Directory path ('' for the content root) → that directory's `_meta.json` items. */
 export function loadMetaByDirectory(): Map<string, Record<string, MetaItemConfig>> {
 	const metaByDirectory = new Map<string, Record<string, MetaItemConfig>>();
 
 	for (const [filePath, mod] of Object.entries(directoryMetaModules)) {
-		// Strips a trailing "_meta.json" and, for nested folders, the slash
-		// before it — leaving '' for the content root and 'guide' for
-		// content/guide/_meta.json.
 		const folder = filePath.slice(CONTENT_PREFIX.length).replace(/\/?_meta\.json$/, '');
 
 		if (mod.items) {
@@ -226,11 +212,8 @@ function applyMetaFallback(
 
 	return {
 		...entry,
-		// _meta.json is the centralized nav config a category/reorg relies
-		// on, so an explicit entry there wins outright over the page's own
-		// frontmatter/sidecar — otherwise reordering or relabeling a page
-		// via _meta.json would be impossible for any page that already
-		// carries its own order/title.
+		// _meta.json wins over the page's own frontmatter/sidecar so nav can
+		// always be reordered centrally.
 		title: itemMeta?.title || entry.title || titleFromSlug(entry.slug),
 		order: itemMeta?.order ?? entry.order ?? 999
 	};
@@ -332,10 +315,7 @@ export function getRawMarkdownBySlug(slugParts: string[]): string | null {
 	return rawContentModules[targetPath] ?? null;
 }
 
-/**
- * Every doc's raw markdown source with its resolved title/description —
- * backs llms.txt and llms-full.txt.
- */
+/** Backs llms.txt and llms-full.txt — raw source, unlike search documents. */
 export function getAllLlmsDocuments(): LlmsDocument[] {
 	const docsEntries = getDocsEntries();
 	const entryBySlug = new Map(docsEntries.map((entry) => [entry.slug, entry]));
@@ -365,14 +345,7 @@ export function getAllLlmsDocuments(): LlmsDocument[] {
 	return documents.sort((a, b) => a.slug.localeCompare(b.slug));
 }
 
-/**
- * The canonical source every search backend's indexer/sync script builds
- * from — reuses the same resolved titles/order (via getDocsEntries) so no
- * indexer re-parses content on its own. Ships in every project regardless
- * of the active search backend; unused, it's dead code with negligible
- * cost, and it means adding a backend later never requires touching this
- * file.
- */
+/** The canonical source every search backend's indexer builds from. */
 export function getAllSearchDocuments(): SearchDocument[] {
 	const docsEntries = getDocsEntries();
 	const entryBySlug = new Map(docsEntries.map((entry) => [entry.slug, entry]));

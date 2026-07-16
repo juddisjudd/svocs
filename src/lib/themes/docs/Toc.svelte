@@ -5,10 +5,8 @@
 
 	let { items, activeId }: { items: TocItem[]; activeId?: string } = $props();
 
-	// One continuous SVG path traced through every item at its depth's x
-	// offset, with the active item's span lit via stroke-dasharray — the
-	// highlight glides along the path and bends around indentation corners
-	// instead of jumping between items.
+	// One continuous SVG path through every item, with the active span lit
+	// via stroke-dasharray so the highlight glides instead of jumping.
 	let pathD = $state('');
 	let totalLength = $state(0);
 	let segments = $state.raw<{ start: number; length: number }[]>([]);
@@ -54,10 +52,8 @@
 		segments = segs;
 	}
 
-	// Item heights aren't knowable until the list is in the DOM (and shift on
-	// resize or font swap), so the path has to come from measurement. Reading
-	// `items` synchronously here makes the attachment re-run when the TOC
-	// changes; the ResizeObserver covers wraps and font swaps in between.
+	// The synchronous measure() reads `items`, re-running the attachment on
+	// TOC changes; the ResizeObserver covers wraps and font swaps between.
 	const measureRail: Attachment<HTMLDivElement> = (el) => {
 		measure(el);
 		const observer = new ResizeObserver(() => measure(el));

@@ -84,16 +84,10 @@
 		return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 	}
 
-	// Backends vary in whether (and how) they mark up matches in the excerpt
-	// they return — Pagefind and Typesense already wrap them in <mark>, Orama/
-	// FlexSearch/Chroma don't mark anything. Stripping to plain text first and
-	// re-highlighting from the query terms here, rather than trusting each
-	// backend's own markup, means every backend looks and behaves identically
-	// in the dialog, matching the "swap backends, UI doesn't change" premise
-	// the rest of this search setup is built on. escapeHtml runs before
-	// <mark> insertion (not after) so excerpt text containing literal `<`/`>`
-	// — plausible here, since these are docs about markup and components —
-	// can't break out of the wrapping the {@html} render below relies on.
+	// Backends disagree on excerpt markup, so strip to plain text and
+	// re-highlight from the query terms — every backend renders identically.
+	// escapeHtml must run before <mark> insertion so literal <> in excerpts
+	// can't break out of the {@html} render below.
 	function highlightExcerpt(excerpt: string, currentQuery: string): string {
 		const escaped = escapeHtml(stripHtml(excerpt));
 		const terms = currentQuery.trim().split(/\s+/).filter(Boolean).map(escapeRegExp);
@@ -132,9 +126,7 @@
 	}
 
 	function onDialogClick(event: MouseEvent) {
-		// A click that lands on the <dialog> element itself (not a descendant)
-		// is a click on the backdrop area outside the panel — close on it,
-		// same convention as clicking outside any other modal.
+		// A click on the <dialog> element itself is a backdrop click.
 		if (event.target === dialogEl) {
 			dialogEl?.close();
 		}

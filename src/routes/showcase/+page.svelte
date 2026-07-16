@@ -4,8 +4,6 @@
 
 	const repoUrl = 'https://github.com/juddisjudd/svocs';
 
-	// Real showcase entries land here as they come in — this site is the
-	// first, honest one: dogfooding, not a placeholder testimonial.
 	const showcaseSites = [
 		{
 			title: 'SVOCS Docs',

@@ -326,13 +326,7 @@
 		<!-- OG social cards -->
 		<article class="card span-3">
 			<div class="mock-og" aria-hidden="true">
-				<img
-					src={asset('/og-card-example.png')}
-					alt=""
-					loading="lazy"
-					width="1200"
-					height="630"
-				/>
+				<img src={asset('/og-card-example.png')} alt="" loading="lazy" width="1200" height="630" />
 			</div>
 			<h2>Social cards for every page</h2>
 			<p>
@@ -415,10 +409,8 @@
 		--ease-out: cubic-bezier(0.23, 1, 0.32, 1);
 		--radius-card: 1rem;
 		--radius-inner: 0.5rem;
-		/* Mockup/"code editor" panels get their own dedicated dark palette —
-		   distinct from the page's --bg-* tokens so they read as editor
-		   screenshots. Overridden with a light-editor palette below under
-		   [data-theme='light'], rather than staying dark in both themes. */
+		/* Dedicated palette for the "editor screenshot" mockup panels;
+		   overridden under [data-theme='light'] below. */
 		--panel: #0e0c0c;
 		--panel-soft: #191616;
 		--panel-bone: #272322;
@@ -441,9 +433,7 @@
 		gap: 5rem;
 	}
 
-	/* Light-editor palette for the mockup panels — a warm off-white "paper"
-	   surface with darkened syntax colors for contrast, rather than the
-	   panels staying dark inside an otherwise light page. */
+	/* Light-editor palette so the panels don't stay dark on a light page. */
 	:global([data-theme='light']) .home {
 		--panel: #fbf6f3;
 		--panel-soft: #f2e8e3;

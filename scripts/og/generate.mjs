@@ -1,17 +1,7 @@
-// Pre-renders a 1200x630 Open Graph card for every prerendered HTML page.
-// Runs after `vite build` (see the package.json build script); the root
-// layout points each route's og:image at /og/<route>.png, which is exactly
-// where this writes. Set SVOCS_OG=0 to skip generation entirely.
-//
-// Rendering is satori (HTML-ish object tree -> SVG) + resvg (SVG -> PNG),
-// deliberately NOT a headless-browser screenshot: scaffolds that never use
-// Mermaid diagrams shouldn't need Chromium in CI just to build social
-// cards. The Satoshi woff2 files the site already ships are decompressed
-// to TTF in-memory via wawoff2, since satori doesn't read woff2.
-//
-// Titles and descriptions are read back out of the built HTML rather than
-// re-parsing content/ — the pages already rendered their own og:title and
-// meta description, so the card can never drift from the real tags.
+// Renders a 1200x630 Open Graph card per prerendered page into build/og/,
+// after `vite build`. satori + resvg, not a headless-browser screenshot, so
+// builds never need Chromium. Titles/descriptions come from the built HTML's
+// own meta tags. Set SVOCS_OG=0 to skip.
 import satori from 'satori';
 import { Resvg } from '@resvg/resvg-js';
 import wawoff2 from 'wawoff2';
@@ -118,9 +108,7 @@ const h = (type, style, ...children) => ({
 	props: { style, children: children.length <= 1 ? children[0] : children }
 });
 
-// Parent segments are prettified slugs; the last crumb uses the page's real
-// title so acronyms and punctuation survive ("Docs / OG Images", not
-// "Docs / Og images").
+// The last crumb uses the page's real title so acronyms survive.
 function crumbsFor(routePath, title) {
 	if (routePath === '/') {
 		return '';
@@ -229,10 +217,8 @@ function card({ title, description, routePath }) {
 
 // ---- render
 
-// Decompressed strictly one at a time — wawoff2's WASM module corrupts its
-// output when decompress calls overlap. .slice() then copies the view into
-// an ArrayBuffer of exactly the right size, since the raw view aliases the
-// WASM heap.
+// Decompress one at a time — wawoff2's WASM corrupts output on overlapping
+// calls — and .slice() the view, which aliases the WASM heap.
 const fonts = [];
 for (const { file, weight } of [
 	{ file: 'static/fonts/satoshi-500.woff2', weight: 500 },
@@ -250,7 +236,9 @@ const files = collectHtmlFiles(BUILD_DIR);
 
 for (const file of files) {
 	// build/docs/theming.html -> /docs/theming -> build/og/docs/theming.png
-	const rel = relative(BUILD_DIR, file).replace(/\\/g, '/').replace(/\.html$/, '');
+	const rel = relative(BUILD_DIR, file)
+		.replace(/\\/g, '/')
+		.replace(/\.html$/, '');
 	const routePath = rel === 'index' ? '/' : `/${rel.replace(/\/index$/, '')}`;
 	const outFile = join(OUT_DIR, routePath === '/' ? 'index.png' : `${routePath.slice(1)}.png`);
 
@@ -267,8 +255,7 @@ for (const file of files) {
 
 console.log(`og: generated ${files.length} card(s) into ${OUT_DIR}/.`);
 
-// Like the pagefind index, `vite preview` serves .svelte-kit/output/client,
-// not build/ — mirror the cards there so previews show them too.
+// `vite preview` serves .svelte-kit/output/client, not build/.
 const previewClientDir = '.svelte-kit/output/client';
 if (existsSync(previewClientDir)) {
 	cpSync(OUT_DIR, join(previewClientDir, 'og'), { recursive: true });

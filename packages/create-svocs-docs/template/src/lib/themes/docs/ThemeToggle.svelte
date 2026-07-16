@@ -20,10 +20,8 @@
 
 	function toggle() {
 		const next: Theme = theme === 'dark' ? 'light' : 'dark';
-		// The dissolve effect (see the ::view-transition rules and the
-		// #svocs-dissolve filter in +layout.svelte) only runs when the browser
-		// supports view transitions and the user hasn't asked for reduced
-		// motion; otherwise the switch stays instant.
+		// The dissolve (#svocs-dissolve filter in +layout.svelte) needs view
+		// transitions and motion allowed; otherwise switch instantly.
 		if (
 			!document.startViewTransition ||
 			window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -35,10 +33,8 @@
 			applyTheme(next);
 			await tick();
 		});
-		// The filter's SMIL animations are parked at begin="indefinite" and can
-		// only start once the snapshot pseudo-elements exist, hence the ready
-		// hook. A fresh turbulence seed keeps repeated toggles from dissolving
-		// in the identical pattern.
+		// The SMIL animations can only start once the snapshot pseudo-elements
+		// exist; a fresh turbulence seed varies the pattern per toggle.
 		transition.ready
 			.then(() => {
 				document

@@ -4,20 +4,10 @@ import type { SearchClient } from './types';
 let cached: SearchClient | undefined;
 
 /**
- * Resolves the active search backend behind one function call, so
- * SearchDialog never needs backend-specific knowledge. Each branch is a
- * literal-string dynamic import so a bundler can dead-code-eliminate every
- * unreachable branch entirely — not just skip fetching its chunk, but skip
- * resolving its module graph too. That matters beyond bundle size: a
- * provider with a broken transitive dependency (chromadb's optional
- * @chroma-core/default-embed, for one) would otherwise fail every build
- * regardless of which provider is actually selected, since a non-constant
- * discriminant forces the bundler to still resolve every branch.
- *
- * $env/static/public (not /dynamic/public) is what makes the discriminant
- * a real compile-time constant — vite.config.ts defaults
- * PUBLIC_SVOCS_SEARCH_PROVIDER to 'pagefind' so the static import always
- * has a value to resolve, keeping the zero-config default working.
+ * Resolves the active search backend. The switch must stay on the
+ * $env/static/public constant with literal-string imports so the bundler
+ * drops unselected branches — a broken dep in an unused provider would
+ * otherwise fail every build.
  */
 export async function getSearchClient(): Promise<SearchClient> {
 	if (cached) {

@@ -4,9 +4,7 @@ import type { RequestHandler } from './$types';
 
 export const prerender = true;
 
-// Prerendered regardless of the active backend so the build never depends
-// on which provider is selected, but the raw documents are only ever
-// computed when actually needed — other deployments never pay for this.
+// Prerendered regardless of backend; documents are only computed when needed.
 export const GET: RequestHandler = async () => {
 	if (env.PUBLIC_SVOCS_SEARCH_PROVIDER !== 'orama') {
 		error(404, 'Orama search is not enabled for this site.');

@@ -10,12 +10,8 @@ void main() {
 }
 `;
 
-	// Domain-warped fbm (fractal Brownian motion) over a 2D simplex noise
-	// field — the classic Inigo Quilez "warp" technique: feed one fbm's
-	// output back in as an offset into a second, then a third. That's what
-	// gives the result its directionless, turbulent mottling rather than
-	// obviously-repeating noise bands, which is what actually reads as
-	// fabric grain instead of a generic gradient.
+	// Domain-warped fbm over 2D simplex noise (Inigo Quilez's warp technique):
+	// the nested fbm feedback is what reads as fabric grain, not noise bands.
 	const FRAG_SRC = `
 precision highp float;
 
@@ -91,9 +87,7 @@ void main() {
 	sheen += mouseInfluence * smoothstep(0.5, 0.88, grain) * 0.55;
 	color = mix(color, u_colorSheen, clamp(sheen, 0.0, 0.5));
 
-	// Wide, shallow falloff — most of the canvas stays clearly visible at
-	// rest, mouse hover isn't the only way to see the texture. Only the
-	// far corners recede toward colorDeep.
+	// Wide, shallow falloff: only the far corners recede toward colorDeep.
 	vec2 center = vec2(aspect * 0.5, 0.42);
 	float vignette = smoothstep(1.9, 0.2, distance(st, center));
 	color = mix(u_colorDeep, color, mix(0.62, 1.0, vignette));
@@ -138,10 +132,7 @@ void main() {
 		if (!gl.getProgramParameter(program, gl.LINK_STATUS)) return;
 		gl.useProgram(program);
 
-		// One oversized triangle covering the viewport is cheaper than a
-		// quad (2 triangles, 6 verts, a diagonal seam) — standard
-		// full-screen-shader trick, no seam because the extra area past
-		// clip space just gets clipped.
+		// Standard full-screen-triangle trick; the overflow gets clipped.
 		const positionBuffer = gl.createBuffer();
 		gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
 		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
@@ -157,14 +148,9 @@ void main() {
 		const uColorMid = gl.getUniformLocation(program, 'u_colorMid');
 		const uColorSheen = gl.getUniformLocation(program, 'u_colorSheen');
 
-		// getComputedStyle().getPropertyValue('--foo') returns a custom
-		// property's *literal specified text* — fine for a plain hex
-		// literal, but --glow-a/--accent-soft are color-mix() expressions
-		// (derived from --accent so a custom brand color stays coordinated
-		// instead of leaving the glow stuck ember-colored). Resolving a
-		// function value requires assigning it to a real color property on
-		// a probe element and reading that back, since only ordinary
-		// properties get resolved to rgb(...) by getComputedStyle.
+		// getPropertyValue('--foo') returns the literal specified text, so
+		// color-mix() vars must be assigned to a probe element's color and
+		// read back resolved.
 		const probe = document.createElement('div');
 		probe.style.cssText = 'position:absolute; width:0; height:0; visibility:hidden;';
 		document.body.appendChild(probe);
@@ -177,20 +163,14 @@ void main() {
 			const resolved = getComputedStyle(probe).color;
 			const nums = resolved.match(/[\d.]+/g);
 			if (!nums || nums.length < 3) return fallback;
-			// A color-mix() result serializes as color(srgb r g b) — already
-			// 0-1 normalized — while a plain literal serializes as the legacy
-			// rgb(r, g, b) — 0-255. Dividing the former by 255 collapses
-			// everything toward black, so the two formats need branching.
+			// color-mix() serializes as color(srgb r g b) with 0-1 channels;
+			// plain literals serialize as rgb() with 0-255.
 			return resolved.startsWith('color(')
 				? [Number(nums[0]), Number(nums[1]), Number(nums[2])]
 				: [Number(nums[0]) / 255, Number(nums[1]) / 255, Number(nums[2]) / 255];
 		}
 
-		// The dark-theme brand palette already has a near-black base and a
-		// warm ember-brown "glow" tone (--bg / --glow-a) — reused here
-		// rather than hardcoding a separate velvet palette, so this stays
-		// in sync with the site's actual colors (including light mode and
-		// any custom --accent) instead of drifting into its own thing.
+		// Reuses the site's theme vars so the shader tracks any custom accent.
 		let colorDeep: [number, number, number] = [0, 0, 0];
 		let colorMid: [number, number, number] = [0, 0, 0];
 		let colorSheen: [number, number, number] = [1, 1, 1];
@@ -220,10 +200,8 @@ void main() {
 			mouseActiveTarget = 0;
 		}
 
-		// canvas itself is pointer-events:none (it must never intercept
-		// clicks on the hero's real buttons/links), so mouse tracking
-		// listens on the section instead — pointermove still bubbles up
-		// through it from anything the cursor is actually over.
+		// The canvas is pointer-events:none, so mouse tracking listens on the
+		// hero section instead.
 		const section = canvas.closest('.hero') ?? canvas;
 		if (!reducedMotion) {
 			section.addEventListener('pointermove', onPointerMove as EventListener);
@@ -306,14 +284,8 @@ void main() {
 		width: 100%;
 		display: block;
 		pointer-events: none;
-		/* Percentage-based (not a fixed rem radius) so the feather scales with
-		   the container at any viewport width — a fixed-size ellipse reads as
-		   a hard-edged blob on wide screens once it doesn't reach fully
-		   transparent before the box edge. Tighter than a full-bleed wash on
-		   purpose: the visible core roughly tracks the hero's actual text
-		   column (.lede maxes out at 42rem) rather than spreading edge to
-		   edge, with a long fade tail so it still dissolves smoothly rather
-		   than clipping. */
+		/* Percentage-based so the feather scales with the container; a fixed
+		   radius reads as a hard-edged blob on wide screens. */
 		mask-image: radial-gradient(46% 70% at 50% 26%, black 20%, transparent 90%);
 		-webkit-mask-image: radial-gradient(46% 70% at 50% 26%, black 20%, transparent 90%);
 		opacity: 0.95;
