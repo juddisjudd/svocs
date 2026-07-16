@@ -4,8 +4,10 @@ build
 .git
 .github
 
-# Not needed to build the main site
+# Not needed to build the main site, except the CLI package.json,
+# which +page.svelte imports at build time for the version badge
 packages
+!packages/create-svocs-docs/package.json
 
 # Local-only / editor / tooling
 .claude
