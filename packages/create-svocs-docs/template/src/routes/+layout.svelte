@@ -1,12 +1,20 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import { page } from '$app/state';
 	import type { Snippet } from 'svelte';
 	import SearchBox from '$lib/themes/docs/SearchBox.svelte';
 	import SearchDialog from '$lib/themes/docs/search/SearchDialog.svelte';
 	import ThemeToggle from '$lib/themes/docs/ThemeToggle.svelte';
-	import { SITE_NAME } from '$lib/site';
+	import { SITE_NAME, SITE_URL } from '$lib/site';
 
 	let { children }: { children: Snippet } = $props();
+
+	// Every prerendered route gets a matching social card from
+	// scripts/og/generate.mjs (build/og/<route>.png), so the URL derives
+	// straight from the path. Set SITE_URL to make these absolute — most
+	// scrapers require absolute og:image URLs.
+	const currentPath = $derived(page.url.pathname.replace(/\/$/, '') || '/');
+	const ogImage = $derived(`${SITE_URL}/og${currentPath === '/' ? '/index' : currentPath}.png`);
 
 	let searchDialog: ReturnType<typeof SearchDialog> | undefined = $state();
 
@@ -19,6 +27,15 @@
 </script>
 
 <svelte:window onkeydown={onWindowKeydown} />
+
+<svelte:head>
+	<meta property="og:site_name" content={SITE_NAME} />
+	<meta property="og:image" content={ogImage} />
+	<meta property="og:image:width" content="1200" />
+	<meta property="og:image:height" content="630" />
+	<meta name="twitter:card" content="summary_large_image" />
+	<meta name="twitter:image" content={ogImage} />
+</svelte:head>
 
 <a class="skip" href="#main-content">Skip to content</a>
 

@@ -14,12 +14,13 @@
 		"configuration-heading": { "type": "separator", "title": "Configuration", "order": 10 },
 		"theming": { "order": 11 },
 		"navigation": { "order": 12 },
+		"og-images": { "order": 13 },
 
-		"search-heading": { "type": "separator", "title": "Search", "order": 13 },
-		"search": { "order": 14 },
+		"search-heading": { "type": "separator", "title": "Search", "order": 14 },
+		"search": { "order": 15 },
 
-		"more-heading": { "type": "separator", "title": "More", "order": 15 },
-		"deployment": { "order": 16 },
-		"about": { "order": 17 }
+		"more-heading": { "type": "separator", "title": "More", "order": 16 },
+		"deployment": { "order": 17 },
+		"about": { "order": 18 }
 	}
 }

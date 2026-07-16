@@ -6,4 +6,3 @@
  */
 export const SITE_URL = 'https://svocs.dev';
 export const SITE_NAME = 'SVOCS';
-export const OG_IMAGE_PATH = '/1200x630-OG.png';

@@ -61,8 +61,6 @@ echo hello
 
 ## Diagrams and math
 
-Both render to static output at build time, so no client-side JS ships for either.
-
 Mermaid diagrams use a ` ```mermaid ` fence and render to inline SVG:
 
 ````md
@@ -73,9 +71,9 @@ graph LR
 ```
 ````
 
-Rendering a diagram needs a real browser at build time, because Mermaid's layout engine runs in one via Playwright. Run `npx playwright install chromium` once after `bun install` if `bun run build` fails looking for a browser. This isn't installed automatically, so a fresh scaffold that never uses diagrams doesn't pay for a ~100MB download it'll never need.
+Mermaid's layout engine needs a real browser, so instead of driving a headless Chromium at build time, the diagram renders in the reader's browser. The mermaid library loads lazily and only on pages that actually contain a diagram; every other page ships none of it, and builds need no browser anywhere — locally, in Docker, or in CI. Diagrams pick the dark or light theme active when the page loads.
 
-LaTeX math uses `$inline$` and `$$block$$` syntax, rendered via KaTeX:
+LaTeX math uses `$inline$` and `$$block$$` syntax, rendered via KaTeX to static HTML at build time — no client-side JS ships for it:
 
 ```md
 Inline: $E = mc^2$.

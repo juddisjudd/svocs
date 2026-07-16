@@ -1,0 +1,6 @@
+{
+	"title": "OG Images",
+	"description": "Every page gets a branded 1200×630 social preview card, generated at build time with no browser required.",
+	"order": 7,
+	"tags": ["configuration"]
+}

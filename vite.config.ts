@@ -3,15 +3,11 @@ import rehypeSlug from 'rehype-slug';
 import rehypeAutolinkHeadings from 'rehype-autolink-headings';
 import rehypeKatex from 'rehype-katex-svelte';
 import remarkMath from 'remark-math';
-import remarkMermaid from 'remark-mermaidjs';
-import { visit } from 'unist-util-visit';
 import { defineConfig } from 'vitest/config';
 import { playwright } from '@vitest/browser-playwright';
 import adapter from '@sveltejs/adapter-static';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { highlightWithFilename } from './src/lib/build/code-highlighter';
-import type { Root, Paragraph } from 'mdast';
-import type { Element } from 'hast';
 
 // $env/static/public (used in src/lib/search/resolver.ts) requires this to
 // be defined at build time — a real compile-time constant lets the bundler
@@ -28,8 +24,7 @@ type MdsvexRehypePlugin = NonNullable<MdsvexOptions['rehypePlugins']>[number];
 type MdsvexRemarkPlugin = NonNullable<MdsvexOptions['remarkPlugins']>[number];
 
 // KaTeX renders math to static HTML/CSS at build time (unlike MathJax, which
-// needs a client-side runtime) — the same "no JS shipped for content
-// rendering" approach remark-mermaidjs (below) uses for diagrams. remarkMath
+// needs a client-side runtime). remarkMath
 // only parses $inline$/$$block$$ syntax into mdast math nodes; rehypeKatex
 // does the actual rendering once those nodes reach the hast/rehype stage.
 //
@@ -48,46 +43,15 @@ type MdsvexRemarkPlugin = NonNullable<MdsvexOptions['remarkPlugins']>[number];
 //   build with "w is not defined"-style errors. rehype-katex-svelte wraps
 //   KaTeX's output in an escaped {@html "..."} block instead.
 //
-// remark-mermaidjs renders ```mermaid fences to static SVG at build time via
-// a headless Playwright browser (reuses this project's existing Playwright
-// install — no separate puppeteer copy). It has to be a *remark* plugin, not
-// the more commonly recommended rehype-mermaid: mdsvex applies its own code
-// fence highlighter (highlightWithFilename below) to every fenced block
-// during its remark-stage pass, before any rehype plugin ever runs, which
-// consumes/rewrites the ```mermaid block first and leaves rehype-mermaid
-// nothing to match (see https://github.com/pngwn/MDsveX/issues/737).
-// remark-mermaidjs runs earlier in the same remark pass mdsvex's own
-// highlighter uses, so it transforms the code node before that collision
-// happens. No dark/light theming — it renders once at build time to a
-// static SVG, so it can't react to the runtime theme toggle; left at
-// Mermaid's default theme rather than hardcoding one that'd look wrong in
-// the other mode.
-// remark-mermaidjs replaces the ```mermaid code node with a *paragraph*
-// mdast node carrying the rendered SVG via `data.hChildren` — the paragraph
-// type is just a carrier, mdast-to-hast still renders it as a literal <p>
-// regardless of what hChildren override it holds. Mermaid's SVG output uses
-// <foreignObject><div> for text labels, and a <div> can't legally nest
-// inside a <p> — browsers silently "repair" that at runtime, but Svelte 5's
-// compiler validates HTML nesting and fails the build over it
-// (`node_invalid_placement`). Retargeting the render to a <div> via
-// `data.hName` (an mdast-to-hast override respected regardless of the
-// node's own type) sidesteps the invalid nesting without needing to patch
-// remark-mermaidjs itself.
-function remarkMermaidBlockFix() {
-	return (tree: Root) => {
-		visit(tree, 'paragraph', (node: Paragraph) => {
-			const svg = (node.data as { hChildren?: Element[] } | undefined)?.hChildren?.[0];
-			if (svg?.type === 'element' && svg.tagName === 'svg') {
-				node.data = { ...node.data, hName: 'div' };
-			}
-		});
-	};
-}
-
+// Mermaid fences are NOT rendered at build time — that would require a
+// headless browser (every build-time mermaid tool drives one for layout
+// measurement), and shipping Chromium as a build dependency is exactly what
+// this pipeline avoids. Instead highlightWithFilename passes ```mermaid
+// fences through as `<pre class="mermaid">` carrying the raw source, and the
+// docs layout lazy-imports mermaid in the reader's browser only on pages
+// that actually contain one (src/lib/themes/docs/mermaid.ts).
 const remarkPlugins: NonNullable<MdsvexOptions['remarkPlugins']> = [
-	remarkMath as unknown as MdsvexRemarkPlugin,
-	remarkMermaid as unknown as MdsvexRemarkPlugin,
-	remarkMermaidBlockFix as unknown as MdsvexRemarkPlugin
+	remarkMath as unknown as MdsvexRemarkPlugin
 ];
 
 const rehypePlugins: NonNullable<MdsvexOptions['rehypePlugins']> = [

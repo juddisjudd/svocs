@@ -51,6 +51,15 @@ export async function highlightWithFilename(
 	filename?: string,
 	optimise?: boolean
 ): Promise<string> {
+	// Mermaid fences skip highlighting and the code-frame entirely: the raw
+	// source ships as a bare <pre class="mermaid"> that the docs layout's
+	// lazy client-side renderer (src/lib/themes/docs/mermaid.ts) turns into a
+	// diagram in place. Rendering at build time instead would put a headless
+	// browser back into every diagram-using build.
+	if (lang === 'mermaid') {
+		return `<pre class="mermaid">${escapeText(code)}</pre>`;
+	}
+
 	const html = await code_highlighter(code, lang, metastring, filename, optimise);
 
 	const name = metastring?.match(/filename="([^"]+)"/)?.[1];

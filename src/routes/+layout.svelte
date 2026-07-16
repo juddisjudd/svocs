@@ -6,11 +6,15 @@
 	import SearchBox from '$lib/themes/docs/SearchBox.svelte';
 	import SearchDialog from '$lib/themes/docs/search/SearchDialog.svelte';
 	import ThemeToggle from '$lib/themes/docs/ThemeToggle.svelte';
-	import { SITE_URL, SITE_NAME, OG_IMAGE_PATH } from '$lib/site';
+	import { SITE_URL, SITE_NAME } from '$lib/site';
 
 	let { children }: { children: Snippet } = $props();
 	const repoUrl = 'https://github.com/juddisjudd/svocs';
 	const currentPath = $derived(page.url.pathname.replace(/\/$/, '') || '/');
+
+	// Every prerendered route gets a matching card from scripts/og/generate.mjs
+	// (build/og/<route>.png), so the URL is derivable straight from the path.
+	const ogImage = $derived(`${SITE_URL}/og${currentPath === '/' ? '/index' : currentPath}.png`);
 
 	let searchDialog: ReturnType<typeof SearchDialog> | undefined = $state();
 
@@ -31,17 +35,16 @@
 	<link rel="apple-touch-icon" href="{base}/apple-touch-icon.png" />
 
 	<!-- Site-wide social preview defaults — individual pages set their own
-	     og:title/og:description/og:url alongside their <title>, but the
-	     image is the same everywhere, so it only needs to be declared once
-	     here (SvelteKit appends nested svelte:head content, it doesn't
-	     replace it). -->
+	     og:title/og:description/og:url alongside their <title>, while the
+	     image URL is derived from the route here in one place (SvelteKit
+	     appends nested svelte:head content, it doesn't replace it). -->
 	<meta property="og:site_name" content={SITE_NAME} />
-	<meta property="og:image" content="{SITE_URL}{OG_IMAGE_PATH}" />
+	<meta property="og:image" content={ogImage} />
 	<meta property="og:image:width" content="1200" />
 	<meta property="og:image:height" content="630" />
 	<meta property="og:image:alt" content="{SITE_NAME} — Svelte-powered documentation framework" />
 	<meta name="twitter:card" content="summary_large_image" />
-	<meta name="twitter:image" content="{SITE_URL}{OG_IMAGE_PATH}" />
+	<meta name="twitter:image" content={ogImage} />
 </svelte:head>
 
 <a class="skip" href="#main-content">Skip to content</a>

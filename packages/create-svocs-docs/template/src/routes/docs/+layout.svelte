@@ -8,6 +8,7 @@
 	import SidebarTree from '$lib/themes/docs/SidebarTree.svelte';
 	import Toc from '$lib/themes/docs/Toc.svelte';
 	import { enhanceCodeBlocks } from '$lib/themes/docs/code-blocks';
+	import { renderMermaidBlocks } from '$lib/themes/docs/mermaid';
 	import { observeHeadings } from '$lib/themes/docs/scroll-spy';
 
 	let { data, children }: { data: LayoutData; children: Snippet } = $props();
@@ -40,6 +41,7 @@
 	$effect(() => {
 		void currentPath;
 		enhanceCodeBlocks(proseEl ?? null);
+		renderMermaidBlocks(proseEl ?? null);
 		return observeHeadings(
 			proseEl ?? null,
 			toc.map((item) => item.id),
@@ -488,6 +490,27 @@
 		.prose :global(.code-copy) {
 			opacity: 1;
 		}
+	}
+
+	.prose :global(img) {
+		max-width: 100%;
+		border: 1px solid var(--line);
+		border-radius: 0.65rem;
+	}
+
+	/* Mermaid fences ship as a bare pre carrying the diagram source; the lazy
+	   client renderer swaps the text for an inline SVG in place. Until then
+	   the source shows briefly, styled small and dim. */
+	.prose :global(pre.mermaid) {
+		display: flex;
+		justify-content: center;
+		margin: 1rem 0;
+		padding: 0.5rem 0;
+		border: none;
+		background: transparent;
+		overflow-x: auto;
+		font-size: 0.8rem;
+		color: var(--text-dim);
 	}
 
 	.prose :global(blockquote) {

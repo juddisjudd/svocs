@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { resolve } from '$app/paths';
+	import { resolve, asset } from '$app/paths';
 	import type { PageData } from './$types';
 	import DocTypewriter from './DocTypewriter.svelte';
 	import VelvetBackground from './VelvetBackground.svelte';
@@ -63,11 +63,9 @@
 		'Dark / light mode',
 		'SEO metadata + sitemap',
 		'Copy / view as Markdown',
-		'llms.txt for AI tools',
 		'5 pluggable search backends',
 		'Accent-color theming',
 		'Sub-path deploys',
-		'AI-generated docs from a repo',
 		'Mermaid diagrams',
 		'LaTeX math'
 	];
@@ -322,6 +320,44 @@
 			<p>
 				The same project and scripts run under Bun, pnpm, or Deno. Pick whichever toolchain you
 				already use.
+			</p>
+		</article>
+
+		<!-- OG social cards -->
+		<article class="card span-3">
+			<div class="mock-og" aria-hidden="true">
+				<img
+					src={asset('/og-card-example.png')}
+					alt=""
+					loading="lazy"
+					width="1200"
+					height="630"
+				/>
+			</div>
+			<h2>Social cards for every page</h2>
+			<p>
+				Each route gets its own branded 1200×630 preview card at build time, recolored by your
+				accent. No browser, no image service.
+			</p>
+		</article>
+
+		<!-- AI-ready -->
+		<article class="card span-3">
+			<div class="mock-code" aria-hidden="true">
+				<span class="ln"><i class="c"># every site ships llms.txt</i></span>
+				<span class="ln"><i class="k">GET</i> /llms.txt</span>
+				<span class="ln"></span>
+				<span class="ln"><i class="c"># draft pages from a real repo</i></span>
+				<span class="ln"
+					>bunx create-svocs-docs <i class="a">--repo</i><i class="p">=</i><i class="v"
+						>owner/repo</i
+					></span
+				>
+			</div>
+			<h2>AI-ready out of the box</h2>
+			<p>
+				<code>llms.txt</code> and per-page Markdown endpoints ship with every site, and the CLI can draft
+				a docs baseline from an existing repo.
 			</p>
 		</article>
 	</section>
@@ -979,6 +1015,18 @@
 	}
 
 	/* --- runtimes mockup --- */
+
+	.mock-og {
+		border-radius: var(--radius-inner);
+		border: 1px solid var(--panel-line);
+		overflow: hidden;
+	}
+
+	.mock-og img {
+		display: block;
+		width: 100%;
+		height: auto;
+	}
 
 	.mock-runtimes {
 		display: grid;
