@@ -1,6 +1,6 @@
 ## Sub-path hosting and BASE_PATH
 
-Project sites are served from `https://<user>.github.io/<repo>/` — a sub-path, not the domain root. Tell the build about it with the `BASE_PATH` environment variable:
+Project sites are served from `https://<user>.github.io/<repo>/`, a sub-path rather than the domain root. Tell the build about it with the `BASE_PATH` environment variable:
 
 ```sh
 BASE_PATH=/my-repo bun run build

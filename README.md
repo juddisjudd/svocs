@@ -6,7 +6,7 @@
 
 # SVOCS
 
-SVOCS is a markdown-first documentation/blog site generator built on SvelteKit + Svelte 5.
+SVOCS is a markdown-first documentation site generator built on SvelteKit + Svelte 5.
 
 ## Current baseline
 

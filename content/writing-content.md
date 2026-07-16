@@ -1,10 +1,10 @@
 ## Authoring model
 
-Use plain markdown (`.md`) for most pages. Switch to `.svx` only when a page needs a live Svelte component inline — everything else about the two file types is identical: frontmatter, sidecars, GFM, code blocks.
+Use plain markdown (`.md`) for most pages, and switch to `.svx` only when a page needs a live Svelte component inline. Everything else about the two file types is identical: frontmatter, sidecars, GFM, code blocks.
 
 ## Frontmatter
 
-Set page metadata directly in the file with YAML frontmatter — no sidecar file required:
+Set page metadata directly in the file with YAML frontmatter; no sidecar file is required:
 
 ```md filename="content/example.md"
 ---
@@ -26,7 +26,7 @@ Your content starts here.
 
 ## Sidecar overrides
 
-A `name.meta.json` file next to `name.md` takes priority over frontmatter for any field it sets — useful when you want to tweak nav ordering without touching the prose file, or for content synced in from elsewhere:
+A `name.meta.json` file next to `name.md` takes priority over frontmatter for any field it sets. That's useful when you want to tweak nav ordering without touching the prose file, or for content synced in from elsewhere:
 
 ```json filename="content/example.meta.json"
 {
@@ -34,7 +34,7 @@ A `name.meta.json` file next to `name.md` takes priority over frontmatter for an
 }
 ```
 
-Frontmatter still supplies everything the sidecar doesn't override. `_meta.json` — a separate, folder-level file — sits above both; see [Navigation](/docs/navigation) for how that precedence works.
+Frontmatter still supplies everything the sidecar doesn't override. `_meta.json`, a separate folder-level file, sits above both; see [Navigation](/docs/navigation) for how that precedence works.
 
 ## Headings
 
@@ -65,7 +65,7 @@ echo hello
 
 ## Diagrams and math
 
-Both render to static output at build time — no client-side JS ships for either, matching the rest of this project's "almost no JavaScript" approach.
+Both render to static output at build time, so no client-side JS ships for either.
 
 Mermaid diagrams use a ` ```mermaid ` fence and render to inline SVG:
 
@@ -77,7 +77,7 @@ graph LR
 ```
 ````
 
-Rendering a diagram needs a real browser at build time (Mermaid's layout engine runs in one, via Playwright) — run `npx playwright install chromium` once after `bun install` if `bun run build` fails looking for a browser. This isn't installed automatically, so a fresh scaffold that never uses diagrams doesn't pay for a ~100MB download it'll never need.
+Rendering a diagram needs a real browser at build time, because Mermaid's layout engine runs in one via Playwright. Run `npx playwright install chromium` once after `bun install` if `bun run build` fails looking for a browser. This isn't installed automatically, so a fresh scaffold that never uses diagrams doesn't pay for a ~100MB download it'll never need.
 
 LaTeX math uses `$inline$` and `$$block$$` syntax, rendered via KaTeX:
 
@@ -93,8 +93,8 @@ $$
 
 ## Components
 
-`.svx` files (not `.md`) can import and use Svelte components inline — see the [Components](/docs/components) page for the full built-in set (Callout, Tabs, Steps, Cards, Collapse, Bleed, Banner, FileTree, ImageZoom) and how to import them.
+`.svx` files (not `.md`) can import and use Svelte components inline. See the [Components](/docs/components) page for the full built-in set (Callout, Tabs, Steps, Cards, Collapse, Bleed, Banner, FileTree, ImageZoom) and how to import them.
 
-> **Watch out:** avoid writing a literal script-tag as inline code (single backticks) — unlike
+> **Watch out:** avoid writing a literal script-tag as inline code (single backticks). Unlike
 > fenced code blocks, inline spans aren't protected from Svelte's own tag parsing and will break
 > the build. Describe it in prose instead, or put it inside a fenced code block.

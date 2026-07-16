@@ -1,6 +1,6 @@
 {
 	"title": "Search",
-	"description": "Five interchangeable backends behind one switch — Pagefind, Orama, FlexSearch, Typesense, and Chroma.",
+	"description": "Five interchangeable backends behind one switch: Pagefind, Orama, FlexSearch, Typesense, and Chroma.",
 	"order": 1,
 	"tags": ["search"]
 }

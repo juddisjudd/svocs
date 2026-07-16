@@ -24,7 +24,7 @@
 
 	const pageTitle = 'SVOCS — Beautiful docs with Svelte & Markdown';
 	const pageDescription =
-		'SVOCS is a simple, powerful and flexible docs and blog generator with everything you love from Svelte. Markdown-first authoring, static export, zero-config search.';
+		'SVOCS is a docs generator built on SvelteKit. Write Markdown, add Svelte components where you need them, and ship a static site with search built in.';
 
 	const extras = [
 		'Table of contents',
@@ -65,9 +65,9 @@
 		</h1>
 
 		<p class="lede anim" style:--i={2}>
-			Simple, powerful and flexible site generation with everything you love from Svelte. Write
-			plain Markdown, drop in components where it counts, ship prerendered pages with almost no
-			JavaScript.
+			A static site generator built on SvelteKit. You write plain Markdown and get prerendered pages
+			with almost no JavaScript; when a page needs interactivity, drop a real Svelte component into
+			the prose.
 		</p>
 
 		<div class="actions anim" style:--i={3}>
@@ -125,10 +125,10 @@
 		<!-- Docs UX — big showcase card -->
 		<article class="card span-4 rows-2">
 			<DocTypewriter />
-			<h2>Full-power docs in minutes</h2>
+			<h2>A complete docs UI</h2>
 			<p>
-				Top nav, sidebar tree, breadcrumbs, table of contents and heading anchors — generated from
-				your file tree, ordered by <code>_meta.json</code>. No fragile config maze.
+				Top nav, sidebar tree, breadcrumbs, table of contents and heading anchors, all generated
+				from your file tree and ordered by one <code>_meta.json</code> file.
 			</p>
 		</article>
 
@@ -158,7 +158,10 @@
 				</div>
 			</div>
 			<h2>Zero-config full-text search</h2>
-			<p>Pagefind indexes every page at build time. No server, no API keys, no setup.</p>
+			<p>
+				Pagefind indexes every page at build time. Search runs in the browser, so there is no server
+				to run and nothing to configure.
+			</p>
 		</article>
 
 		<!-- Markdown + components -->
@@ -176,8 +179,8 @@
 			</div>
 			<h2>Markdown meets Svelte</h2>
 			<p>
-				Write <code>.md</code> for speed, upgrade to <code>.svx</code> and drop in live Svelte components
-				where interactivity matters.
+				Write <code>.md</code> for plain pages. Rename a file to <code>.svx</code> when it needs a live
+				Svelte component in the prose.
 			</p>
 		</article>
 
@@ -216,9 +219,7 @@
 				<span class="ln"><i class="p">);</i></span>
 			</div>
 			<h2>Runes-first reactivity</h2>
-			<p>
-				Theme state, sidebar, search — all built on Svelte 5 runes. No stores, no legacy patterns.
-			</p>
+			<p>The theme, sidebar, and search dialog are built on Svelte 5 runes rather than stores.</p>
 		</article>
 
 		<!-- Performance stats -->
@@ -254,8 +255,8 @@
 			</div>
 			<h2>Bring your own runtime</h2>
 			<p>
-				First-class Bun, pnpm and Deno workflows. Same project, same scripts, your choice of
-				toolchain.
+				The same project and scripts run under Bun, pnpm, or Deno. Pick whichever toolchain you
+				already use.
 			</p>
 		</article>
 	</section>
@@ -296,8 +297,8 @@
 	<!-- ============ FINAL CTA ============ -->
 	<section class="cta">
 		<div class="cta-glow" aria-hidden="true"></div>
-		<h2>Ship docs your users will love.</h2>
-		<p>Markdown in, beautiful static site out. Get running in under a minute.</p>
+		<h2>Set up your docs in a minute.</h2>
+		<p>One command scaffolds a working site. Everything after that is Markdown.</p>
 		<div class="actions">
 			<a class="btn primary" href={resolve('/docs/getting-started')}>
 				Get started

@@ -10,7 +10,7 @@
 | Build command          | `npm run build`            |
 | Build output directory | `build`                    |
 
-That's it — sites deploy at the root of a `*.pages.dev` domain, so no `BASE_PATH` is needed.
+That's it. Sites deploy at the root of a `*.pages.dev` domain, so no `BASE_PATH` is needed.
 
 > Prefer Bun? Set the build command to `bun run build`. Cloudflare's build image detects `bun.lock` and provisions Bun automatically.
 
@@ -25,12 +25,12 @@ bunx wrangler pages deploy build --project-name my-docs
 
 ## Production tips
 
-- **Preview deployments** — every pull request automatically gets its own preview URL.
-- **Custom domains** — add one under **Custom domains** in the project settings; TLS is provisioned for you.
-- **Redirects/headers** — drop a `_redirects` or `_headers` file into `static/` and it ships with the build:
+- **Preview deployments**: every pull request automatically gets its own preview URL.
+- **Custom domains**: add one under **Custom domains** in the project settings; TLS is provisioned for you.
+- **Redirects/headers**: drop a `_redirects` or `_headers` file into `static/` and it ships with the build:
 
 ```txt filename="static/_redirects"
 /old-guide  /docs/getting-started  301
 ```
 
-- **Search works out of the box** — the Pagefind index is part of `build/`, no extra step required.
+- **Search works out of the box**: the Pagefind index is part of `build/`, so no extra step is required.

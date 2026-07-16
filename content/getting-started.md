@@ -1,6 +1,6 @@
 ## Scaffold a project
 
-The fastest way to start is the `create-svocs-docs` starter, which drops in a working SVOCS site with this exact page structure — sidebar, search, theming, and all:
+The fastest way to start is the `create-svocs-docs` starter, which sets up a working SVOCS site with the same page structure as this one:
 
 ```sh filename="bun"
 bunx create-svocs-docs@latest my-docs
@@ -28,7 +28,7 @@ bun run dev
 
 Your new site is live at `http://localhost:5173`.
 
-The prompts also let you pick an accent color, a search backend, and, optionally, generate baseline content from an existing GitHub repo instead of the generic starter pages — see [Theming](/docs/theming) and [Repo Analysis](/docs/repo-analysis).
+The prompts also let you pick an accent color, a search backend, and, optionally, generate baseline content from an existing GitHub repo instead of the generic starter pages. See [Theming](/docs/theming) and [Repo Analysis](/docs/repo-analysis).
 
 ## Add a page
 
@@ -43,7 +43,7 @@ description: My first SVOCS page.
 Hello from SVOCS.
 ```
 
-Save it, and `/docs/hello` appears — no route file, no manual registration. The sidebar picks it up automatically, sorted alongside your other pages.
+Save it, and `/docs/hello` appears without any route file or registration step. The sidebar picks it up automatically, sorted alongside your other pages.
 
 ## Control the sidebar
 
@@ -57,7 +57,7 @@ Ordering and labels come from a `_meta.json` file next to the pages it applies t
 }
 ```
 
-`_meta.json` is also how you group pages under category headings, like "Getting Started" and "Guides" in this sidebar — see [Navigation](/docs/navigation) for the full schema.
+`_meta.json` is also how you group pages under category headings, like "Getting Started" and "Guides" in this sidebar. See [Navigation](/docs/navigation) for the full schema.
 
 ## Build for production
 
