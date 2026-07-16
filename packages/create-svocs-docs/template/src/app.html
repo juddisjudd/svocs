@@ -11,6 +11,10 @@
 			type="font/woff2"
 			crossorigin
 		/>
+		<!-- Self-hosted (see static/katex/), not loaded from a CDN, matching the
+		     Satoshi font. Small enough (~7KB gzipped) to load globally rather
+		     than conditionally per-page. -->
+		<link rel="stylesheet" href="%sveltekit.assets%/katex/katex.min.css" />
 		<style>
 			@font-face {
 				font-family: 'Satoshi';

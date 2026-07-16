@@ -63,6 +63,34 @@ echo hello
 ```
 ````
 
+## Diagrams and math
+
+Both render to static output at build time — no client-side JS ships for either, matching the rest of this project's "almost no JavaScript" approach.
+
+Mermaid diagrams use a ` ```mermaid ` fence and render to inline SVG:
+
+````md
+```mermaid
+graph LR
+  A[content/*.md] --> B[mdsvex]
+  B --> C[page]
+```
+````
+
+Rendering a diagram needs a real browser at build time (Mermaid's layout engine runs in one, via Playwright) — run `npx playwright install chromium` once after `bun install` if `bun run build` fails looking for a browser. This isn't installed automatically, so a fresh scaffold that never uses diagrams doesn't pay for a ~100MB download it'll never need.
+
+LaTeX math uses `$inline$` and `$$block$$` syntax, rendered via KaTeX:
+
+```md
+Inline: $E = mc^2$.
+
+Block:
+
+$$
+t = \max\left(1, \left\lceil \frac{w}{200} \right\rceil\right)
+$$
+```
+
 ## Components
 
 `.svx` files (not `.md`) can import and use Svelte components inline — see the [Components](/docs/components) page for the full built-in set (Callout, Tabs, Steps, Cards, Collapse, Bleed, Banner, FileTree, ImageZoom) and how to import them.

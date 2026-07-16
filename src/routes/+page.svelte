@@ -32,13 +32,15 @@
 		'Anchor links',
 		'Reading time',
 		'Dark / light mode',
-		'SEO metadata',
+		'SEO metadata + sitemap',
 		'Copy / view as Markdown',
 		'llms.txt for AI tools',
 		'5 pluggable search backends',
 		'Accent-color theming',
 		'Sub-path deploys',
-		'AI-generated docs from a repo'
+		'AI-generated docs from a repo',
+		'Mermaid diagrams',
+		'LaTeX math'
 	];
 </script>
 

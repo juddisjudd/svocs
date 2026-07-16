@@ -1,6 +1,6 @@
 {
 	"name": "create-svocs-docs",
-	"version": "0.9.0",
+	"version": "0.10.0",
 	"description": "Scaffold a new SVOCS documentation site.",
 	"type": "module",
 	"license": "MIT",
