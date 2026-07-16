@@ -3,20 +3,25 @@
 //
 // This is a strict, gracefully-degrading enhancement — every failure here
 // (bad repo, rate limit, bad key, malformed AI output) falls back one tier
-// (LLM -> heuristic -> untouched starter content) and nothing in this module
-// throws past its own function or aborts the scaffold.
+// (deep -> standard material, LLM -> heuristic -> untouched starter content)
+// and nothing in this module throws past its own function or aborts the
+// scaffold.
+//
+// Scan depths differ in what material the model sees, not just prompt words:
+//   quick    — README + the repo's other markdown docs, one LLM call
+//   standard — quick's material + root manifest/config files, two-phase
+//   deep     — the whole repo via one tarball download; two-phase, and each
+//              page is written from source files the plan picked for it
+// Two-phase = one small JSON "plan" call, then one markdown call per page —
+// so no single response carries a whole docs site inside JSON string
+// literals, the shape that used to blow past max_tokens and truncate.
 import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { gunzipSync } from 'node:zlib';
 
 const GITHUB_API = 'https://api.github.com';
 const RAW_BASE = 'https://raw.githubusercontent.com';
 const README_CANDIDATES = ['README.md', 'readme.md', 'Readme.md', 'README.MD'];
-const CONTRIBUTING_CANDIDATES = [
-	'CONTRIBUTING.md',
-	'contributing.md',
-	'.github/CONTRIBUTING.md',
-	'CONTRIBUTING.MD'
-];
 const MAX_README_BYTES = 300_000;
 const DEFAULT_MODEL = {
 	anthropic: 'claude-haiku-4-5-20251001',
@@ -79,7 +84,129 @@ const NOISY_FILENAMES = new Set([
 	'bun.lock',
 	'bun.lockb'
 ]);
-const SCAN_DEPTH_MAX_TOKENS = { quick: 2048, standard: 4096, deep: 8192 };
+
+// Per-call output budgets. Quick scan emits all its pages in one JSON
+// response; standard/deep emit a small plan first, then one markdown body
+// per page — each of these is comfortably within its budget, where the old
+// single-response design regularly hit the limit and truncated mid-JSON.
+const QUICK_SCAN_MAX_TOKENS = 4096;
+const PLAN_MAX_TOKENS = 2048;
+const PAGE_MAX_TOKENS = 4096;
+const SCAN_DEPTH_MAX_PAGES = { quick: 3, standard: 8, deep: 12 };
+
+// Material-gathering caps. Doc/root files ride along in every prompt, so
+// they're capped tighter than the README; the tarball caps only bound what
+// gets indexed into memory, not what reaches the model (page prompts cap
+// each selected source file separately via MAX_SOURCE_FILE_BYTES).
+const MAX_DOC_FILES = 8;
+const MAX_DOC_FILE_BYTES = 50_000;
+const MAX_ROOT_FILES = 12;
+const MAX_ROOT_FILE_BYTES = 20_000;
+const MAX_SOURCES_PER_PAGE = 5;
+const MAX_SOURCE_FILE_BYTES = 20_000;
+const MAX_TARBALL_BYTES = 100 * 1024 * 1024;
+const MAX_STORED_FILE_BYTES = 100_000;
+const MAX_STORED_TOTAL_BYTES = 5 * 1024 * 1024;
+
+// Root files that answer "how do I actually run/configure this" when the
+// README doesn't: manifests, container/CI setup, env templates, task runners.
+const ROOT_MANIFEST_CANDIDATES = new Set([
+	'pyproject.toml',
+	'Cargo.toml',
+	'go.mod',
+	'composer.json',
+	'Gemfile',
+	'build.gradle',
+	'build.gradle.kts',
+	'pom.xml',
+	'Dockerfile',
+	'docker-compose.yml',
+	'docker-compose.yaml',
+	'compose.yaml',
+	'Makefile',
+	'justfile',
+	'Taskfile.yml',
+	'.env.example',
+	'.env.sample',
+	'deno.json',
+	'tsconfig.json',
+	'svelte.config.js',
+	'vite.config.ts',
+	'vite.config.js',
+	'next.config.js',
+	'next.config.ts'
+]);
+
+// Allow-list of what gets indexed out of a deep-scan tarball — the model
+// only ever reads text, so binaries/assets are dead weight at best and
+// mojibake at worst.
+const TEXT_FILE_EXTENSIONS = new Set([
+	'.md',
+	'.mdx',
+	'.markdown',
+	'.txt',
+	'.js',
+	'.mjs',
+	'.cjs',
+	'.jsx',
+	'.ts',
+	'.mts',
+	'.cts',
+	'.tsx',
+	'.svelte',
+	'.vue',
+	'.astro',
+	'.py',
+	'.rb',
+	'.go',
+	'.rs',
+	'.java',
+	'.kt',
+	'.kts',
+	'.c',
+	'.h',
+	'.cpp',
+	'.hpp',
+	'.cc',
+	'.cs',
+	'.php',
+	'.swift',
+	'.scala',
+	'.sh',
+	'.bash',
+	'.ps1',
+	'.bat',
+	'.yml',
+	'.yaml',
+	'.toml',
+	'.json',
+	'.jsonc',
+	'.ini',
+	'.cfg',
+	'.conf',
+	'.env',
+	'.example',
+	'.sample',
+	'.html',
+	'.css',
+	'.scss',
+	'.less',
+	'.sql',
+	'.graphql',
+	'.gql',
+	'.proto',
+	'.xml',
+	'.gradle',
+	'.properties'
+]);
+const EXTENSIONLESS_TEXT_FILES = new Set([
+	'dockerfile',
+	'makefile',
+	'justfile',
+	'gemfile',
+	'procfile',
+	'codeowners'
+]);
 
 export function parseGithubRepo(input) {
 	const trimmed = (input ?? '').trim();
@@ -228,23 +355,204 @@ async function fetchFileTree(owner, repo, branch) {
 	}
 }
 
-// Deep scan's only addition over the default fetch: the file tree (so the
-// model can infer topics the README doesn't spell out) and CONTRIBUTING.md
-// (so a "Contributing" page can be grounded in real content instead of
-// invented). Both go through the same unauthenticated GitHub REST API the
-// default fetch already uses — no token needed, same as fetchRepoContext.
-export async function fetchDeepRepoContext(owner, repo, branch) {
-	const [fileTree, contributingRaw] = await Promise.all([
-		fetchFileTree(owner, repo, branch),
-		fetchRawFile(owner, repo, branch, CONTRIBUTING_CANDIDATES)
-	]);
+// Gathers whatever material the chosen scan depth feeds the model, beyond
+// the README/package.json that fetchRepoContext already got. Deep scan is a
+// single tarball download rather than per-file API calls — the unauthenticated
+// GitHub REST API allows only 60 requests/hour, which file-by-file fetching
+// would burn instantly, while codeload tarballs aren't drawn from that quota.
+// If the tarball fails, deep degrades to standard-depth material (and says
+// so via onWarning) instead of aborting the analysis.
+export async function gatherScanMaterial(owner, repo, repoContext, scanDepth, onWarning) {
+	const branch = repoContext.defaultBranch;
+	const material = { fileTree: null, docFiles: [], rootFiles: [], repoFiles: null };
 
-	return {
-		fileTree,
-		contributing: contributingRaw
-			? rewriteRelativeLinks(truncate(contributingRaw, MAX_README_BYTES), owner, repo, branch)
-			: null
-	};
+	if (scanDepth === 'deep') {
+		const repoFiles = await downloadRepoTarball(owner, repo, branch);
+		if (repoFiles) {
+			material.repoFiles = repoFiles;
+			material.fileTree = [...repoFiles.keys()].slice(0, MAX_TREE_ENTRIES);
+			material.docFiles = selectFromRepoFiles(
+				repoFiles,
+				isDocPath,
+				MAX_DOC_FILES,
+				MAX_DOC_FILE_BYTES
+			);
+			material.rootFiles = selectFromRepoFiles(
+				repoFiles,
+				isRootManifestPath,
+				MAX_ROOT_FILES,
+				MAX_ROOT_FILE_BYTES
+			);
+			return material;
+		}
+		onWarning?.("Couldn't download the repo archive — using standard-depth material instead.");
+	}
+
+	material.fileTree = await fetchFileTree(owner, repo, branch);
+	const docPaths = (material.fileTree ?? []).filter(isDocPath).slice(0, MAX_DOC_FILES);
+	material.docFiles = await fetchRawFiles(owner, repo, branch, docPaths, MAX_DOC_FILE_BYTES);
+
+	if (scanDepth !== 'quick') {
+		const rootPaths = (material.fileTree ?? []).filter(isRootManifestPath).slice(0, MAX_ROOT_FILES);
+		material.rootFiles = await fetchRawFiles(owner, repo, branch, rootPaths, MAX_ROOT_FILE_BYTES);
+	}
+
+	return material;
+}
+
+// The repo's own docs beyond the README: root-level .md files (CONTRIBUTING,
+// USAGE, FAQ, …) and anything under docs/. Changelogs and licenses are
+// excluded — long, and useless for writing docs pages.
+function isDocPath(path) {
+	if (!/\.(md|mdx)$/i.test(path)) {
+		return false;
+	}
+	if (
+		/(^|\/)(readme|changelog|changes|history|license|licence|notice|code_of_conduct|security)[^/]*$/i.test(
+			path
+		)
+	) {
+		return false;
+	}
+	const segments = path.split('/');
+	return (
+		segments.length === 1 ||
+		segments[0] === 'docs' ||
+		segments[0] === 'doc' ||
+		segments[0] === 'content' ||
+		segments[0] === '.github'
+	);
+}
+
+function isRootManifestPath(path) {
+	if (/^\.github\/workflows\/[^/]+\.ya?ml$/.test(path)) {
+		return true;
+	}
+	return !path.includes('/') && ROOT_MANIFEST_CANDIDATES.has(path);
+}
+
+async function fetchRawFiles(owner, repo, branch, paths, maxBytes) {
+	const results = await Promise.all(
+		paths.map(async (path) => {
+			const content = await fetchRawFile(owner, repo, branch, [path]);
+			return content ? { path, content: truncate(content, maxBytes) } : null;
+		})
+	);
+	return results.filter(Boolean);
+}
+
+function selectFromRepoFiles(repoFiles, predicate, maxFiles, maxBytes) {
+	const selected = [];
+	for (const [path, content] of repoFiles) {
+		if (!predicate(path)) {
+			continue;
+		}
+		selected.push({ path, content: truncate(content, maxBytes) });
+		if (selected.length >= maxFiles) {
+			break;
+		}
+	}
+	return selected;
+}
+
+// One request for the entire repo, from codeload rather than the REST API
+// (see gatherScanMaterial for why). Returns a Map of repo-relative path ->
+// file text for every text file worth indexing, or null on any failure.
+async function downloadRepoTarball(owner, repo, branch) {
+	let compressed;
+	try {
+		const res = await fetch(`https://codeload.github.com/${owner}/${repo}/tar.gz/${branch}`, {
+			signal: AbortSignal.timeout(120_000)
+		});
+		if (!res.ok) {
+			return null;
+		}
+		const declaredLength = Number(res.headers.get('content-length') ?? 0);
+		if (declaredLength > MAX_TARBALL_BYTES) {
+			return null;
+		}
+		compressed = Buffer.from(await res.arrayBuffer());
+	} catch {
+		return null;
+	}
+	if (compressed.length > MAX_TARBALL_BYTES) {
+		return null;
+	}
+
+	try {
+		return parseTarball(gunzipSync(compressed));
+	} catch {
+		return null;
+	}
+}
+
+// Minimal tar reader instead of a dependency: entries are 512-byte headers
+// followed by size-padded data. Handles ustar name+prefix and GNU 'L'
+// longname entries, which covers what codeload produces; pax overrides for
+// >255-char paths are rare enough to just let those files be skipped.
+function parseTarball(tar) {
+	const files = new Map();
+	let storedBytes = 0;
+	let offset = 0;
+	let longName = null;
+
+	while (offset + 512 <= tar.length) {
+		const header = tar.subarray(offset, offset + 512);
+		offset += 512;
+		if (header.every((byte) => byte === 0)) {
+			break;
+		}
+
+		const size = parseInt(header.toString('ascii', 124, 136).replace(/\0/g, '').trim(), 8) || 0;
+		const typeflag = String.fromCharCode(header[156]);
+		const data = tar.subarray(offset, offset + size);
+		offset += size + ((512 - (size % 512)) % 512);
+
+		if (typeflag === 'L') {
+			longName = data.toString('utf8').replace(/\0+$/, '');
+			continue;
+		}
+
+		const rawName = longName ?? readTarHeaderName(header);
+		longName = null;
+		if (typeflag !== '0' && typeflag !== '\0') {
+			continue;
+		}
+
+		// codeload nests everything under a "<repo>-<ref>/" top directory.
+		const path = rawName.split('/').slice(1).join('/');
+		if (!path || !isStorableRepoFile(path, size)) {
+			continue;
+		}
+		if (storedBytes + size > MAX_STORED_TOTAL_BYTES) {
+			continue;
+		}
+		files.set(path, data.toString('utf8'));
+		storedBytes += size;
+	}
+
+	return files;
+}
+
+function readTarHeaderName(header) {
+	const name = header.toString('utf8', 0, 100).replace(/\0.*$/, '');
+	const prefix = header.toString('utf8', 345, 500).replace(/\0.*$/, '');
+	return prefix ? `${prefix}/${name}` : name;
+}
+
+function isStorableRepoFile(path, size) {
+	if (size === 0 || size > MAX_STORED_FILE_BYTES) {
+		return false;
+	}
+	if (isNoisyPath(path)) {
+		return false;
+	}
+	const filename = path.split('/').pop().toLowerCase();
+	if (EXTENSIONLESS_TEXT_FILES.has(filename)) {
+		return true;
+	}
+	const dot = filename.lastIndexOf('.');
+	return dot > 0 && TEXT_FILE_EXTENSIONS.has(filename.slice(dot));
 }
 
 export function generateHeuristicPages(repoContext) {
@@ -450,44 +758,130 @@ export async function fetchAvailableModels(provider, apiKey) {
 	}
 }
 
-// No request timeout here, deliberately: Deep Scan can ask for up to 8192
-// output tokens, and pairs with whatever model the user picked (including
-// the slowest one on any given provider) — there's no fixed duration that's
-// "too long" for a real, in-progress generation, only a wrong guess that
-// aborts (and burns the user's quota on) a request that was about to
-// succeed. Ctrl+C during the spinner still cancels immediately, same as any
-// other prompt in this CLI.
-export async function generateLlmPages(repoContext, provider, apiKey, model, scanDepth, onWarning) {
+const SYSTEM_PROMPT = `You are a senior technical writer generating documentation pages for a docs site scaffolded from an existing GitHub repository. Ground every claim in the provided repository material (README, docs, config files, source files) — never invent features, commands, options, or configuration the material does not show. Write clear, practical Markdown. Follow the output format instructions in each request exactly.`;
+
+// No request timeout on generation calls, deliberately: they pair with
+// whatever model the user picked (including the slowest one on any given
+// provider) — there's no fixed duration that's "too long" for a real,
+// in-progress generation, only a wrong guess that aborts (and burns the
+// user's quota on) a request that was about to succeed. Ctrl+C during the
+// spinner still cancels immediately, same as any other prompt in this CLI.
+//
+// Quick scan is one call that returns every page as JSON. Standard and deep
+// are two-phase: a small JSON plan call, then one plain-markdown call per
+// page — a failed page is skipped individually instead of discarding the
+// whole analysis, and no response is large enough to hit its token budget.
+export async function generateLlmPages(
+	repoContext,
+	provider,
+	apiKey,
+	model,
+	scanDepth,
+	onWarning,
+	onProgress
+) {
 	if (!apiKey) {
 		return null;
 	}
 
 	const resolvedModel = model || DEFAULT_MODEL[provider] || DEFAULT_MODEL.anthropic;
-	const maxTokens = SCAN_DEPTH_MAX_TOKENS[scanDepth] ?? SCAN_DEPTH_MAX_TOKENS.standard;
-	const prompt = buildAnalysisPrompt(repoContext, scanDepth);
+	const maxPages = SCAN_DEPTH_MAX_PAGES[scanDepth] ?? SCAN_DEPTH_MAX_PAGES.standard;
 
-	let rawText;
-	try {
-		if (provider === 'openai') {
-			rawText = await callOpenAI(apiKey, prompt, resolvedModel, maxTokens);
-		} else if (provider === 'openrouter') {
-			rawText = await callOpenRouter(apiKey, prompt, resolvedModel, maxTokens);
-		} else {
-			rawText = await callAnthropic(apiKey, prompt, resolvedModel, maxTokens);
+	if (scanDepth === 'quick') {
+		let rawText;
+		try {
+			rawText = await callLlm(provider, apiKey, resolvedModel, buildQuickPrompt(repoContext), {
+				maxTokens: QUICK_SCAN_MAX_TOKENS,
+				json: true
+			});
+		} catch (error) {
+			onWarning?.(`${provider} request failed: ${error.message}`);
+			return null;
 		}
+
+		const result = parseAndValidateLlmOutput(rawText, maxPages);
+		if (result.error) {
+			onWarning?.(
+				`AI response was not valid (${result.error}) — falling back to heuristic analysis`
+			);
+			return null;
+		}
+		return result.pages;
+	}
+
+	onProgress?.('Planning the docs structure');
+	let planText;
+	try {
+		planText = await callLlm(
+			provider,
+			apiKey,
+			resolvedModel,
+			buildPlanPrompt(repoContext, scanDepth),
+			{ maxTokens: PLAN_MAX_TOKENS, json: true }
+		);
 	} catch (error) {
-		onWarning?.(`${provider} request failed: ${error.message}`);
+		onWarning?.(`${provider} request failed while planning pages: ${error.message}`);
 		return null;
 	}
 
-	const pages = parseAndValidateLlmOutput(rawText);
-	if (!pages) {
-		onWarning?.('AI response was not valid — falling back to heuristic analysis');
+	const plan = parseAndValidatePlan(planText, maxPages);
+	if (plan.error) {
+		onWarning?.(`AI page plan was not valid (${plan.error}) — falling back to heuristic analysis`);
+		return null;
 	}
-	return pages;
+
+	const pages = [];
+	const failures = [];
+	for (const [index, entry] of plan.pages.entries()) {
+		onProgress?.(`Writing "${entry.title}" (${index + 1}/${plan.pages.length})`);
+		try {
+			const rawPage = await callLlm(
+				provider,
+				apiKey,
+				resolvedModel,
+				buildPagePrompt(repoContext, entry),
+				{ maxTokens: PAGE_MAX_TOKENS, json: false }
+			);
+			const content = cleanPageMarkdown(rawPage);
+			if (!content) {
+				throw new Error('empty page body');
+			}
+			pages.push({
+				slug: kebabCase(entry.slug),
+				title: entry.title,
+				description: entry.description,
+				content
+			});
+		} catch (error) {
+			failures.push(`"${entry.title}" (${error.message})`);
+		}
+	}
+
+	if (pages.length === 0) {
+		onWarning?.(
+			`AI page generation failed for every planned page — falling back to heuristic analysis. Last error: ${failures[failures.length - 1] ?? 'unknown'}`
+		);
+		return null;
+	}
+	if (failures.length > 0) {
+		onWarning?.(
+			`${failures.length} of ${plan.pages.length} planned pages failed and were skipped: ${failures.join(', ')}`
+		);
+	}
+	return dedupeSlugs(pages);
 }
 
-async function callAnthropic(apiKey, prompt, model, maxTokens) {
+function callLlm(provider, apiKey, model, prompt, options) {
+	if (provider === 'openai') {
+		return callOpenAI(apiKey, prompt, model, options);
+	}
+	if (provider === 'openrouter') {
+		return callOpenRouter(apiKey, prompt, model, options);
+	}
+	return callAnthropic(apiKey, prompt, model, options);
+}
+
+async function callAnthropic(apiKey, prompt, model, { maxTokens }) {
 	const res = await fetch('https://api.anthropic.com/v1/messages', {
 		method: 'POST',
 		headers: {
@@ -498,6 +892,7 @@ async function callAnthropic(apiKey, prompt, model, maxTokens) {
 		body: JSON.stringify({
 			model,
 			max_tokens: maxTokens,
+			system: SYSTEM_PROMPT,
 			messages: [{ role: 'user', content: prompt }]
 		})
 	});
@@ -507,14 +902,17 @@ async function callAnthropic(apiKey, prompt, model, maxTokens) {
 	}
 
 	const data = await res.json();
-	const text = data.content?.[0]?.text;
+	if (data.stop_reason === 'max_tokens') {
+		throw new Error('response hit the token limit and was truncated');
+	}
+	const text = data.content?.find((block) => block.type === 'text')?.text;
 	if (!text) {
 		throw new Error('Anthropic response had no text content');
 	}
 	return text;
 }
 
-async function callOpenAI(apiKey, prompt, model, maxTokens) {
+async function callOpenAI(apiKey, prompt, model, { maxTokens, json }) {
 	const res = await fetch('https://api.openai.com/v1/chat/completions', {
 		method: 'POST',
 		headers: {
@@ -524,8 +922,11 @@ async function callOpenAI(apiKey, prompt, model, maxTokens) {
 		body: JSON.stringify({
 			model,
 			max_tokens: maxTokens,
-			response_format: { type: 'json_object' },
-			messages: [{ role: 'user', content: prompt }]
+			...(json ? { response_format: { type: 'json_object' } } : {}),
+			messages: [
+				{ role: 'system', content: SYSTEM_PROMPT },
+				{ role: 'user', content: prompt }
+			]
 		})
 	});
 
@@ -534,6 +935,9 @@ async function callOpenAI(apiKey, prompt, model, maxTokens) {
 	}
 
 	const data = await res.json();
+	if (data.choices?.[0]?.finish_reason === 'length') {
+		throw new Error('response hit the token limit and was truncated');
+	}
 	const text = data.choices?.[0]?.message?.content;
 	if (!text) {
 		throw new Error('OpenAI response had no message content');
@@ -545,7 +949,7 @@ async function callOpenAI(apiKey, prompt, model, maxTokens) {
 // (Anthropic, Google, open-weight models, etc.), most of which don't support
 // OpenAI's response_format: json_object — so unlike callOpenAI, this relies
 // on the prompt's own JSON instructions, same as callAnthropic.
-async function callOpenRouter(apiKey, prompt, model, maxTokens) {
+async function callOpenRouter(apiKey, prompt, model, { maxTokens }) {
 	const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
 		method: 'POST',
 		headers: {
@@ -557,7 +961,10 @@ async function callOpenRouter(apiKey, prompt, model, maxTokens) {
 		body: JSON.stringify({
 			model,
 			max_tokens: maxTokens,
-			messages: [{ role: 'user', content: prompt }]
+			messages: [
+				{ role: 'system', content: SYSTEM_PROMPT },
+				{ role: 'user', content: prompt }
+			]
 		})
 	});
 
@@ -566,6 +973,9 @@ async function callOpenRouter(apiKey, prompt, model, maxTokens) {
 	}
 
 	const data = await res.json();
+	if (data.choices?.[0]?.finish_reason === 'length') {
+		throw new Error('response hit the token limit and was truncated');
+	}
 	const text = data.choices?.[0]?.message?.content;
 	if (!text) {
 		throw new Error('OpenRouter response had no message content');
@@ -573,84 +983,132 @@ async function callOpenRouter(apiKey, prompt, model, maxTokens) {
 	return text;
 }
 
-const SCAN_DEPTH_RULES = {
-	quick: {
-		pageBudget: '1 to 3',
-		guidance:
-			'Favor brevity over coverage: a single overview/introduction page, plus at most 2 more pages and only if the README clearly describes genuinely separate major topics (e.g. installation vs usage). Summarize rather than reproduce the README in full.'
-	},
-	standard: {
-		pageBudget: '1 to 8',
-		guidance:
-			"Each subsequent page should cover one genuinely distinct topic implied by the README (installation, usage, configuration, etc.) — don't invent features the README doesn't mention."
-	},
-	deep: {
-		pageBudget: '1 to 12',
-		guidance:
-			'Be thorough: cover every genuinely distinct topic the README, file tree, and CONTRIBUTING content imply (installation, usage, configuration, API/CLI reference, examples, architecture, contributing). Use the file tree only to infer what topics exist — e.g. a `cli/` directory implies a CLI reference page exists as a topic — never invent details about those topics beyond what the README, package.json, or CONTRIBUTING content actually state.'
-	}
-};
+// Renders the gathered repo material as prompt sections — the same block
+// feeds the quick-scan call, the plan call, and every page call, so the
+// model always writes from identical ground truth.
+function renderRepoMaterial(repoContext, { includeTree = false } = {}) {
+	const parts = [
+		`Project: ${repoContext.name}${repoContext.description ? ` — ${repoContext.description}` : ''}`
+	];
 
-function buildAnalysisPrompt(repoContext, scanDepth = 'standard') {
-	const tier = SCAN_DEPTH_RULES[scanDepth] ?? SCAN_DEPTH_RULES.standard;
-
-	const packageInfo = repoContext.packageJson
-		? `package.json:\n${JSON.stringify(
-				{ name: repoContext.packageJson.name, description: repoContext.packageJson.description },
+	if (repoContext.packageJson) {
+		const pkg = repoContext.packageJson;
+		parts.push(
+			`package.json:\n${JSON.stringify(
+				{ name: pkg.name, description: pkg.description, scripts: pkg.scripts, bin: pkg.bin },
 				null,
 				2
 			)}`
-		: '(no package.json found)';
+		);
+	}
 
-	const fileTreeSection = repoContext.fileTree?.length
-		? `\n\nFile tree (${repoContext.fileTree.length} files, build artifacts and lockfiles filtered out):\n${repoContext.fileTree.join('\n')}`
-		: '';
-	const contributingSection = repoContext.contributing
-		? `\n\nCONTRIBUTING:\n"""\n${repoContext.contributing}\n"""`
-		: '';
+	parts.push(`README:\n"""\n${repoContext.readme ?? '(no README found)'}\n"""`);
 
-	return `You are generating baseline documentation pages for a new docs site, based on an existing project's README.
+	for (const file of [...(repoContext.docFiles ?? []), ...(repoContext.rootFiles ?? [])]) {
+		parts.push(`${file.path}:\n"""\n${file.content}\n"""`);
+	}
 
-Project: ${repoContext.name}${repoContext.description ? ` — ${repoContext.description}` : ''}
+	if (includeTree && repoContext.fileTree?.length) {
+		parts.push(
+			`File tree (${repoContext.fileTree.length} files, build artifacts and lockfiles filtered out):\n${repoContext.fileTree.join('\n')}`
+		);
+	}
 
-${packageInfo}
+	return parts.join('\n\n');
+}
 
-README:
-"""
-${repoContext.readme ?? '(no README found)'}
-"""${fileTreeSection}${contributingSection}
+function buildQuickPrompt(repoContext) {
+	return `Generate baseline documentation pages from the repository material below.
+
+${renderRepoMaterial(repoContext)}
 
 Produce ONLY a single JSON object (no markdown code fences, no commentary) of this exact shape:
 {"pages": [{"slug": "kebab-case-slug", "title": "Page Title", "description": "One sentence summary.", "content": "Markdown body, no frontmatter."}]}
 
 Rules:
-- ${tier.pageBudget} pages.
+- 1 to ${SCAN_DEPTH_MAX_PAGES.quick} pages. Favor brevity over coverage: a single overview/introduction page, plus at most 2 more and only if the material clearly describes genuinely separate major topics (e.g. installation vs usage). Summarize rather than reproduce the README in full.
 - The first page must be a general overview/introduction to the project.
-- ${tier.guidance}
 - slugs must be unique, lowercase, kebab-case.
 - content must be plain Markdown with no YAML frontmatter and no top-level "# Title" heading (the page title is rendered separately).
 - Output must be valid JSON and nothing else.`;
 }
 
-function parseAndValidateLlmOutput(rawText) {
+function buildPlanPrompt(repoContext, scanDepth) {
+	const maxPages = SCAN_DEPTH_MAX_PAGES[scanDepth] ?? SCAN_DEPTH_MAX_PAGES.standard;
+	const deep = scanDepth === 'deep';
+
+	return `Plan the page structure for a docs site generated from the repository material below. Do not write the pages yet — only the plan.
+
+${renderRepoMaterial(repoContext, { includeTree: true })}
+
+Produce ONLY a single JSON object (no markdown code fences, no commentary) of this exact shape:
+{"pages": [{"slug": "kebab-case-slug", "title": "Page Title", "description": "One sentence summary.", "outline": "2-4 sentences on what this page should cover.", "sources": ["path/from/file/tree"]}]}
+
+Rules:
+- 1 to ${maxPages} pages, each covering one genuinely distinct topic the material supports (installation, usage, configuration${deep ? ', API/CLI reference, examples, architecture, contributing' : ', etc.'}) — do not invent topics the material doesn't mention.
+- The first page must be a general overview/introduction to the project.
+${
+	deep
+		? `- "sources" lists up to ${MAX_SOURCES_PER_PAGE} file-tree paths whose contents that page should be written from — pick the files most relevant to each topic (e.g. the CLI entry point for a CLI reference page).`
+		: '- "sources" may be an empty array; all of the material above is provided again when each page is written.'
+}
+- slugs must be unique, lowercase, kebab-case.
+- Output must be valid JSON and nothing else.`;
+}
+
+function buildPagePrompt(repoContext, entry) {
+	const sourceSections = entry.sources
+		.map((path) => {
+			const content = repoContext.repoFiles?.get(path);
+			return content ? `${path}:\n"""\n${truncate(content, MAX_SOURCE_FILE_BYTES)}\n"""` : null;
+		})
+		.filter(Boolean)
+		.join('\n\n');
+
+	return `Write one documentation page for a docs site generated from the repository material below.
+
+${renderRepoMaterial(repoContext)}${sourceSections ? `\n\nSource files selected for this page:\n\n${sourceSections}` : ''}
+
+Page to write:
+- Title: ${entry.title}
+- Purpose: ${entry.description || '(no description)'}${entry.outline ? `\n- Outline: ${entry.outline}` : ''}
+
+Rules:
+- Output ONLY the Markdown body of this page — no JSON, no code fences wrapping the whole document, no commentary before or after.
+- No YAML frontmatter and no top-level "# Title" heading (the page title is rendered separately).
+- Cover only this page's topic; other pages in the site cover the rest.
+- Ground everything in the material above — never invent features, commands, or configuration.`;
+}
+
+function extractJsonObject(rawText) {
 	const jsonMatch = rawText.match(/\{[\s\S]*\}/);
 	if (!jsonMatch) {
-		return null;
+		return { error: 'no JSON object found in the response' };
 	}
-
-	let parsed;
 	try {
-		parsed = JSON.parse(jsonMatch[0]);
+		return { value: JSON.parse(jsonMatch[0]) };
 	} catch {
-		return null;
+		return { error: "the response's JSON did not parse" };
+	}
+}
+
+// Both validators clamp an over-long pages array to the tier's budget
+// instead of rejecting it — a model that returns 9 good pages against a
+// budget of 8 should lose one page, not the whole analysis. (The previous
+// hard cap rejected outright, and sat at 8 while the deep prompt asked for
+// up to 12 — every faithful 9-to-12-page deep scan was thrown away.)
+function parseAndValidateLlmOutput(rawText, maxPages) {
+	const { value: parsed, error } = extractJsonObject(rawText);
+	if (error) {
+		return { error };
 	}
 
-	if (!Array.isArray(parsed?.pages) || parsed.pages.length === 0 || parsed.pages.length > 8) {
-		return null;
+	if (!Array.isArray(parsed?.pages) || parsed.pages.length === 0) {
+		return { error: 'the response had no "pages" array' };
 	}
 
 	const pages = [];
-	for (const page of parsed.pages) {
+	for (const page of parsed.pages.slice(0, maxPages)) {
 		if (
 			typeof page?.slug !== 'string' ||
 			typeof page?.title !== 'string' ||
@@ -659,7 +1117,7 @@ function parseAndValidateLlmOutput(rawText) {
 			!page.title.trim() ||
 			!page.content.trim()
 		) {
-			return null;
+			return { error: 'a page was missing its slug, title, or content' };
 		}
 		pages.push({
 			slug: kebabCase(page.slug),
@@ -669,7 +1127,53 @@ function parseAndValidateLlmOutput(rawText) {
 		});
 	}
 
-	return dedupeSlugs(pages);
+	return { pages: dedupeSlugs(pages) };
+}
+
+function parseAndValidatePlan(rawText, maxPages) {
+	const { value: parsed, error } = extractJsonObject(rawText);
+	if (error) {
+		return { error };
+	}
+
+	if (!Array.isArray(parsed?.pages) || parsed.pages.length === 0) {
+		return { error: 'the plan had no "pages" array' };
+	}
+
+	const pages = [];
+	for (const entry of parsed.pages.slice(0, maxPages)) {
+		if (
+			typeof entry?.slug !== 'string' ||
+			typeof entry?.title !== 'string' ||
+			!entry.slug.trim() ||
+			!entry.title.trim()
+		) {
+			return { error: 'a planned page was missing its slug or title' };
+		}
+		pages.push({
+			slug: entry.slug.trim(),
+			title: entry.title.trim(),
+			description: typeof entry.description === 'string' ? entry.description.trim() : '',
+			outline: typeof entry.outline === 'string' ? entry.outline.trim() : '',
+			sources: Array.isArray(entry.sources)
+				? entry.sources.filter((s) => typeof s === 'string').slice(0, MAX_SOURCES_PER_PAGE)
+				: []
+		});
+	}
+
+	return { pages };
+}
+
+// Page calls return bare markdown, but models sometimes wrap the whole body
+// in a code fence or lead with the H1 they were told to omit — both are
+// deterministic to strip, so strip them rather than fail the page.
+function cleanPageMarkdown(rawText) {
+	let text = rawText.trim();
+	const fenced = text.match(/^```(?:markdown|md)?\s*\n([\s\S]*?)\n```$/);
+	if (fenced) {
+		text = fenced[1].trim();
+	}
+	return stripLeadingH1(text).trim();
 }
 
 // Every starter page the template ships, so a repo-analysis scaffold ends up

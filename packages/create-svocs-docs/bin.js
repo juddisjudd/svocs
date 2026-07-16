@@ -7,9 +7,9 @@ import * as p from '@clack/prompts';
 import pc from 'picocolors';
 import {
 	fetchAvailableModels,
-	fetchDeepRepoContext,
 	fetchRepoContext,
 	FALLBACK_MODELS,
+	gatherScanMaterial,
 	generateHeuristicPages,
 	generateLlmPages,
 	parseGithubRepo,
@@ -93,12 +93,20 @@ const CUSTOM_MODEL_VALUE = '__custom__';
 
 const SCAN_DEPTH_IDS = ['quick', 'standard', 'deep'];
 const SCAN_DEPTHS = [
-	{ value: 'quick', label: 'Quick Scan', hint: '1-3 pages, README only — fastest, cheapest' },
-	{ value: 'standard', label: 'Standard Scan', hint: '1-8 pages, README only (default)' },
+	{
+		value: 'quick',
+		label: 'Quick Scan',
+		hint: '1-3 pages from the README + other .md docs — fastest, cheapest'
+	},
+	{
+		value: 'standard',
+		label: 'Standard Scan',
+		hint: '1-8 pages, also reads root config/manifest files (default)'
+	},
 	{
 		value: 'deep',
 		label: 'Deep Scan',
-		hint: '1-12 pages, also pulls the file tree + CONTRIBUTING.md'
+		hint: '1-12 pages, downloads the whole repo and writes each page from source (several AI calls)'
 	}
 ];
 
@@ -534,19 +542,24 @@ async function main() {
 		return context;
 	}
 
-	// Reassigns the outer `repoContext`/`scanDepth` closures directly — kept as
-	// a function instead of inlining because both call sites below (the
-	// --repo= flag path and the interactive prompt path) need the exact same
-	// "only for deep scans, merge in file tree + CONTRIBUTING" behavior.
-	async function fetchDeepContextIfNeeded(owner, repo) {
-		if (scanDepth !== 'deep') {
-			return;
-		}
+	// Reassigns the outer `repoContext` closure directly — kept as a function
+	// instead of inlining because both call sites below (the --repo= flag path
+	// and the interactive prompt path) need the exact same behavior. Runs for
+	// every scan depth: even quick scan reads the repo's other .md files, and
+	// deep scan downloads the whole repo as one tarball (falling back to
+	// standard-depth material, with a warning, if that download fails).
+	async function gatherScanMaterialAndReport(owner, repo) {
 		const s = p.spinner();
-		s.start('Fetching extra repo context for deep scan');
-		const deepContext = await fetchDeepRepoContext(owner, repo, repoContext.defaultBranch);
-		repoContext = { ...repoContext, ...deepContext };
-		s.stop('Fetched extra repo context');
+		s.start(`Gathering repo material (${scanDepth} scan)`);
+		let warning = null;
+		const material = await gatherScanMaterial(owner, repo, repoContext, scanDepth, (message) => {
+			warning = message;
+		});
+		repoContext = { ...repoContext, ...material };
+		s.stop('Gathered repo material');
+		if (warning) {
+			p.log.warn(warning);
+		}
 	}
 
 	if (repoFlag) {
@@ -566,7 +579,7 @@ async function main() {
 						llmApiKey = '';
 					}
 					if (llmApiKey) {
-						await fetchDeepContextIfNeeded(parsed.owner, parsed.repo);
+						await gatherScanMaterialAndReport(parsed.owner, parsed.repo);
 					}
 				}
 			}
@@ -627,7 +640,7 @@ async function main() {
 						} else {
 							llmModel = await askLlmModel(llmProvider, llmApiKey);
 							scanDepth = await askScanDepth();
-							await fetchDeepContextIfNeeded(parsed.owner, parsed.repo);
+							await gatherScanMaterialAndReport(parsed.owner, parsed.repo);
 						}
 					}
 				}
@@ -668,12 +681,18 @@ async function main() {
 					scanDepth,
 					(message) => {
 						warning = message;
-					}
+					},
+					(message) => s.message(message)
 				);
-				if (warning) {
-					s.error(warning);
+				if (!generatedPages) {
+					s.error(warning ?? `${providerName} analysis failed`);
 				} else {
 					s.stop(`${providerName} analysis complete`);
+					// e.g. standard/deep scans report pages that individually
+					// failed and were skipped — the rest still got generated.
+					if (warning) {
+						p.log.warn(warning);
+					}
 				}
 			}
 		}
