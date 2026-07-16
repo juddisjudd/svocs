@@ -11,9 +11,43 @@ import { join } from 'node:path';
 const GITHUB_API = 'https://api.github.com';
 const RAW_BASE = 'https://raw.githubusercontent.com';
 const README_CANDIDATES = ['README.md', 'readme.md', 'Readme.md', 'README.MD'];
+const CONTRIBUTING_CANDIDATES = [
+	'CONTRIBUTING.md',
+	'contributing.md',
+	'.github/CONTRIBUTING.md',
+	'CONTRIBUTING.MD'
+];
 const MAX_README_BYTES = 300_000;
-const ANTHROPIC_MODEL = 'claude-haiku-4-5-20251001';
-const OPENAI_MODEL = 'gpt-4o-mini';
+const DEFAULT_MODEL = {
+	anthropic: 'claude-haiku-4-5-20251001',
+	openai: 'gpt-4o-mini'
+};
+// Deep scan's file tree exists to let the model infer *what topics exist*
+// (a `cli/` directory implies a CLI reference page), not to read every file
+// — so it only ever needs paths, capped well below what would meaningfully
+// grow the prompt.
+const MAX_TREE_ENTRIES = 300;
+const NOISY_PATH_SEGMENTS = new Set([
+	'node_modules',
+	'.git',
+	'dist',
+	'build',
+	'.next',
+	'.svelte-kit',
+	'coverage',
+	'vendor',
+	'target',
+	'__pycache__',
+	'.venv'
+]);
+const NOISY_FILENAMES = new Set([
+	'package-lock.json',
+	'yarn.lock',
+	'pnpm-lock.yaml',
+	'bun.lock',
+	'bun.lockb'
+]);
+const SCAN_DEPTH_MAX_TOKENS = { quick: 2048, standard: 4096, deep: 8192 };
 
 export function parseGithubRepo(input) {
 	const trimmed = (input ?? '').trim();
@@ -123,6 +157,62 @@ async function fetchRawFile(owner, repo, branch, candidates) {
 
 function truncate(text, maxBytes) {
 	return text.length <= maxBytes ? text : `${text.slice(0, maxBytes)}\n\n[truncated]`;
+}
+
+function isNoisyPath(path) {
+	const segments = path.split('/');
+	if (NOISY_FILENAMES.has(segments[segments.length - 1])) {
+		return true;
+	}
+	return segments.some((segment) => NOISY_PATH_SEGMENTS.has(segment));
+}
+
+async function fetchFileTree(owner, repo, branch) {
+	try {
+		const res = await fetch(
+			`${GITHUB_API}/repos/${owner}/${repo}/git/trees/${branch}?recursive=1`,
+			{
+				headers: {
+					'User-Agent': 'create-svocs-docs',
+					Accept: 'application/vnd.github+json',
+					'X-GitHub-Api-Version': '2022-11-28'
+				},
+				signal: AbortSignal.timeout(15_000)
+			}
+		);
+		if (!res.ok) {
+			return null;
+		}
+		const data = await res.json();
+		if (!Array.isArray(data.tree)) {
+			return null;
+		}
+		return data.tree
+			.filter((entry) => entry.type === 'blob' && !isNoisyPath(entry.path))
+			.map((entry) => entry.path)
+			.slice(0, MAX_TREE_ENTRIES);
+	} catch {
+		return null;
+	}
+}
+
+// Deep scan's only addition over the default fetch: the file tree (so the
+// model can infer topics the README doesn't spell out) and CONTRIBUTING.md
+// (so a "Contributing" page can be grounded in real content instead of
+// invented). Both go through the same unauthenticated GitHub REST API the
+// default fetch already uses — no token needed, same as fetchRepoContext.
+export async function fetchDeepRepoContext(owner, repo, branch) {
+	const [fileTree, contributingRaw] = await Promise.all([
+		fetchFileTree(owner, repo, branch),
+		fetchRawFile(owner, repo, branch, CONTRIBUTING_CANDIDATES)
+	]);
+
+	return {
+		fileTree,
+		contributing: contributingRaw
+			? rewriteRelativeLinks(truncate(contributingRaw, MAX_README_BYTES), owner, repo, branch)
+			: null
+	};
 }
 
 export function generateHeuristicPages(repoContext) {
@@ -250,19 +340,42 @@ function dedupeSlugs(pages) {
 	});
 }
 
-export async function generateLlmPages(repoContext, provider, apiKey, onWarning) {
+// A models-list request costs no tokens on either provider and needs the
+// same auth header a real analysis call does, so it doubles as a cheap key
+// check before spending the user's quota on the actual generation request.
+export async function validateApiKey(provider, apiKey) {
+	try {
+		const res =
+			provider === 'openai'
+				? await fetch('https://api.openai.com/v1/models', {
+						headers: { authorization: `Bearer ${apiKey}` },
+						signal: AbortSignal.timeout(10_000)
+					})
+				: await fetch('https://api.anthropic.com/v1/models', {
+						headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+						signal: AbortSignal.timeout(10_000)
+					});
+		return res.ok;
+	} catch {
+		return false;
+	}
+}
+
+export async function generateLlmPages(repoContext, provider, apiKey, model, scanDepth, onWarning) {
 	if (!apiKey) {
 		return null;
 	}
 
-	const prompt = buildAnalysisPrompt(repoContext);
+	const resolvedModel = model || DEFAULT_MODEL[provider] || DEFAULT_MODEL.anthropic;
+	const maxTokens = SCAN_DEPTH_MAX_TOKENS[scanDepth] ?? SCAN_DEPTH_MAX_TOKENS.standard;
+	const prompt = buildAnalysisPrompt(repoContext, scanDepth);
 
 	let rawText;
 	try {
 		rawText =
 			provider === 'openai'
-				? await callOpenAI(apiKey, prompt)
-				: await callAnthropic(apiKey, prompt);
+				? await callOpenAI(apiKey, prompt, resolvedModel, maxTokens)
+				: await callAnthropic(apiKey, prompt, resolvedModel, maxTokens);
 	} catch (error) {
 		onWarning?.(`${provider} request failed: ${error.message}`);
 		return null;
@@ -275,7 +388,7 @@ export async function generateLlmPages(repoContext, provider, apiKey, onWarning)
 	return pages;
 }
 
-async function callAnthropic(apiKey, prompt) {
+async function callAnthropic(apiKey, prompt, model, maxTokens) {
 	const res = await fetch('https://api.anthropic.com/v1/messages', {
 		method: 'POST',
 		headers: {
@@ -284,8 +397,8 @@ async function callAnthropic(apiKey, prompt) {
 			'anthropic-version': '2023-06-01'
 		},
 		body: JSON.stringify({
-			model: ANTHROPIC_MODEL,
-			max_tokens: 4096,
+			model,
+			max_tokens: maxTokens,
 			messages: [{ role: 'user', content: prompt }]
 		}),
 		signal: AbortSignal.timeout(30_000)
@@ -303,7 +416,7 @@ async function callAnthropic(apiKey, prompt) {
 	return text;
 }
 
-async function callOpenAI(apiKey, prompt) {
+async function callOpenAI(apiKey, prompt, model, maxTokens) {
 	const res = await fetch('https://api.openai.com/v1/chat/completions', {
 		method: 'POST',
 		headers: {
@@ -311,7 +424,8 @@ async function callOpenAI(apiKey, prompt) {
 			authorization: `Bearer ${apiKey}`
 		},
 		body: JSON.stringify({
-			model: OPENAI_MODEL,
+			model,
+			max_tokens: maxTokens,
 			response_format: { type: 'json_object' },
 			messages: [{ role: 'user', content: prompt }]
 		}),
@@ -330,7 +444,27 @@ async function callOpenAI(apiKey, prompt) {
 	return text;
 }
 
-function buildAnalysisPrompt(repoContext) {
+const SCAN_DEPTH_RULES = {
+	quick: {
+		pageBudget: '1 to 3',
+		guidance:
+			'Favor brevity over coverage: a single overview/introduction page, plus at most 2 more pages and only if the README clearly describes genuinely separate major topics (e.g. installation vs usage). Summarize rather than reproduce the README in full.'
+	},
+	standard: {
+		pageBudget: '1 to 8',
+		guidance:
+			"Each subsequent page should cover one genuinely distinct topic implied by the README (installation, usage, configuration, etc.) — don't invent features the README doesn't mention."
+	},
+	deep: {
+		pageBudget: '1 to 12',
+		guidance:
+			'Be thorough: cover every genuinely distinct topic the README, file tree, and CONTRIBUTING content imply (installation, usage, configuration, API/CLI reference, examples, architecture, contributing). Use the file tree only to infer what topics exist — e.g. a `cli/` directory implies a CLI reference page exists as a topic — never invent details about those topics beyond what the README, package.json, or CONTRIBUTING content actually state.'
+	}
+};
+
+function buildAnalysisPrompt(repoContext, scanDepth = 'standard') {
+	const tier = SCAN_DEPTH_RULES[scanDepth] ?? SCAN_DEPTH_RULES.standard;
+
 	const packageInfo = repoContext.packageJson
 		? `package.json:\n${JSON.stringify(
 				{ name: repoContext.packageJson.name, description: repoContext.packageJson.description },
@@ -338,6 +472,13 @@ function buildAnalysisPrompt(repoContext) {
 				2
 			)}`
 		: '(no package.json found)';
+
+	const fileTreeSection = repoContext.fileTree?.length
+		? `\n\nFile tree (${repoContext.fileTree.length} files, build artifacts and lockfiles filtered out):\n${repoContext.fileTree.join('\n')}`
+		: '';
+	const contributingSection = repoContext.contributing
+		? `\n\nCONTRIBUTING:\n"""\n${repoContext.contributing}\n"""`
+		: '';
 
 	return `You are generating baseline documentation pages for a new docs site, based on an existing project's README.
 
@@ -348,15 +489,15 @@ ${packageInfo}
 README:
 """
 ${repoContext.readme ?? '(no README found)'}
-"""
+"""${fileTreeSection}${contributingSection}
 
 Produce ONLY a single JSON object (no markdown code fences, no commentary) of this exact shape:
 {"pages": [{"slug": "kebab-case-slug", "title": "Page Title", "description": "One sentence summary.", "content": "Markdown body, no frontmatter."}]}
 
 Rules:
-- 1 to 8 pages.
+- ${tier.pageBudget} pages.
 - The first page must be a general overview/introduction to the project.
-- Each subsequent page should cover one genuinely distinct topic implied by the README (installation, usage, configuration, etc.) — don't invent features the README doesn't mention.
+- ${tier.guidance}
 - slugs must be unique, lowercase, kebab-case.
 - content must be plain Markdown with no YAML frontmatter and no top-level "# Title" heading (the page title is rendered separately).
 - Output must be valid JSON and nothing else.`;

@@ -6,10 +6,12 @@ import { spawnSync } from 'node:child_process';
 import * as p from '@clack/prompts';
 import pc from 'picocolors';
 import {
+	fetchDeepRepoContext,
 	fetchRepoContext,
 	generateHeuristicPages,
 	generateLlmPages,
 	parseGithubRepo,
+	validateApiKey,
 	writeGeneratedPages
 } from './lib/repo-analysis.mjs';
 
@@ -77,6 +79,37 @@ function splitBackendLabel(label) {
 	}
 	return { name: label.slice(0, separatorIndex), hint: label.slice(separatorIndex + 2).trim() };
 }
+
+// Deliberately short — every provider ships new models faster than this CLI
+// gets updated. The "Custom model ID…" option (appended where this is used)
+// is the escape hatch, not an afterthought.
+const LLM_MODELS = {
+	anthropic: [
+		{
+			value: 'claude-haiku-4-5-20251001',
+			label: 'Claude Haiku 4.5',
+			hint: 'fastest, cheapest (default)'
+		},
+		{ value: 'claude-sonnet-5', label: 'Claude Sonnet 5', hint: 'balanced' },
+		{ value: 'claude-opus-4-8', label: 'Claude Opus 4.8', hint: 'highest quality, slowest' }
+	],
+	openai: [
+		{ value: 'gpt-4o-mini', label: 'GPT-4o mini', hint: 'fastest, cheapest (default)' },
+		{ value: 'gpt-4o', label: 'GPT-4o', hint: 'higher quality' }
+	]
+};
+const CUSTOM_MODEL_VALUE = '__custom__';
+
+const SCAN_DEPTH_IDS = ['quick', 'standard', 'deep'];
+const SCAN_DEPTHS = [
+	{ value: 'quick', label: 'Quick Scan', hint: '1-3 pages, README only — fastest, cheapest' },
+	{ value: 'standard', label: 'Standard Scan', hint: '1-8 pages, README only (default)' },
+	{
+		value: 'deep',
+		label: 'Deep Scan',
+		hint: '1-12 pages, also pulls the file tree + CONTRIBUTING.md'
+	}
+];
 
 const DEFAULT_ACCENT = '#ff3c00';
 
@@ -324,6 +357,19 @@ async function main() {
 		process.exitCode = 1;
 		return;
 	}
+	const llmModelFlag = args
+		.find((arg) => arg.startsWith('--llm-model='))
+		?.slice('--llm-model='.length);
+	const scanDepthFlag = args
+		.find((arg) => arg.startsWith('--scan-depth='))
+		?.slice('--scan-depth='.length);
+	if (scanDepthFlag && !SCAN_DEPTH_IDS.includes(scanDepthFlag)) {
+		console.error(
+			`Unknown --scan-depth: "${scanDepthFlag}". Expected one of: ${SCAN_DEPTH_IDS.join(', ')}.`
+		);
+		process.exitCode = 1;
+		return;
+	}
 	const accentFlagRaw = args.find((arg) => arg.startsWith('--accent='))?.slice('--accent='.length);
 	const accentFlag = accentFlagRaw ? normalizeHexColor(accentFlagRaw) : undefined;
 	if (accentFlagRaw && !accentFlag) {
@@ -395,6 +441,48 @@ async function main() {
 		);
 	}
 
+	function providerLabel(provider) {
+		return provider === 'openai' ? 'OpenAI' : 'Anthropic';
+	}
+
+	// A models-list request costs no tokens on either provider, so this runs
+	// before the real (billed) analysis call — cheap, fast feedback instead of
+	// discovering a bad key only after the "asking the AI" spinner fails.
+	async function validateAndReportKey(provider, apiKey) {
+		const name = providerLabel(provider);
+		const s = p.spinner();
+		s.start(`Validating ${name} API key`);
+		const isValid = await validateApiKey(provider, apiKey);
+		if (isValid) {
+			s.stop(`${name} API key validated ✓`);
+		} else {
+			s.error(`${name} API key invalid ✗`);
+		}
+		return isValid;
+	}
+
+	async function askLlmModel(provider) {
+		if (!isInteractive) return undefined;
+		const choice = orExit(
+			await p.select({
+				message: 'Model',
+				initialValue: LLM_MODELS[provider][0].value,
+				options: [...LLM_MODELS[provider], { value: CUSTOM_MODEL_VALUE, label: 'Custom model ID…' }]
+			})
+		);
+		if (choice !== CUSTOM_MODEL_VALUE) {
+			return choice;
+		}
+		return orExit(await p.text({ message: 'Model ID', placeholder: 'e.g. gpt-5' }));
+	}
+
+	async function askScanDepth() {
+		if (!isInteractive) return 'standard';
+		return orExit(
+			await p.select({ message: 'Scan depth', initialValue: 'standard', options: SCAN_DEPTHS })
+		);
+	}
+
 	const targetDir = resolve(targetArg ?? (await ask('Project directory', 'my-docs')));
 	const dirName = basename(targetDir);
 
@@ -415,6 +503,8 @@ async function main() {
 	let repoAnalysisMode = null;
 	let llmProvider = null;
 	let llmApiKey = '';
+	let llmModel = null;
+	let scanDepth = 'standard';
 
 	async function fetchAndReportRepo(owner, repo) {
 		const s = p.spinner();
@@ -426,6 +516,21 @@ async function main() {
 		}
 		s.stop(`Fetched ${owner}/${repo}`);
 		return context;
+	}
+
+	// Reassigns the outer `repoContext`/`scanDepth` closures directly — kept as
+	// a function instead of inlining because both call sites below (the
+	// --repo= flag path and the interactive prompt path) need the exact same
+	// "only for deep scans, merge in file tree + CONTRIBUTING" behavior.
+	async function fetchDeepContextIfNeeded(owner, repo) {
+		if (scanDepth !== 'deep') {
+			return;
+		}
+		const s = p.spinner();
+		s.start('Fetching extra repo context for deep scan');
+		const deepContext = await fetchDeepRepoContext(owner, repo, repoContext.defaultBranch);
+		repoContext = { ...repoContext, ...deepContext };
+		s.stop('Fetched extra repo context');
 	}
 
 	if (repoFlag) {
@@ -442,6 +547,14 @@ async function main() {
 						(llmProvider === 'openai'
 							? process.env.OPENAI_API_KEY
 							: process.env.ANTHROPIC_API_KEY) ?? '';
+					llmModel = llmModelFlag;
+					scanDepth = scanDepthFlag ?? 'standard';
+					if (llmApiKey && !(await validateAndReportKey(llmProvider, llmApiKey))) {
+						llmApiKey = '';
+					}
+					if (llmApiKey) {
+						await fetchDeepContextIfNeeded(parsed.owner, parsed.repo);
+					}
 				}
 			}
 		}
@@ -489,11 +602,19 @@ async function main() {
 							})
 						);
 						llmApiKey = await askSecret(
-							`${llmProvider === 'openai' ? 'OpenAI' : 'Anthropic'} API key (used once, never saved)`
+							`${providerLabel(llmProvider)} API key (used once, never saved)`
 						);
 						if (!llmApiKey) {
 							p.log.warn('No key entered — using heuristic analysis instead.');
 							repoAnalysisMode = 'heuristic';
+						} else if (!(await validateAndReportKey(llmProvider, llmApiKey))) {
+							llmApiKey = '';
+							repoAnalysisMode = 'heuristic';
+							p.log.warn('Falling back to heuristic analysis.');
+						} else {
+							llmModel = await askLlmModel(llmProvider);
+							scanDepth = await askScanDepth();
+							await fetchDeepContextIfNeeded(parsed.owner, parsed.repo);
 						}
 					}
 				}
@@ -522,13 +643,20 @@ async function main() {
 			if (!llmApiKey) {
 				p.log.warn('No LLM key available — using heuristic analysis instead.');
 			} else {
-				const providerName = llmProvider === 'openai' ? 'OpenAI' : 'Anthropic';
+				const providerName = providerLabel(llmProvider);
 				const s = p.spinner();
 				s.start(`Asking ${providerName} to analyze the repo`);
 				let warning = null;
-				generatedPages = await generateLlmPages(repoContext, llmProvider, llmApiKey, (message) => {
-					warning = message;
-				});
+				generatedPages = await generateLlmPages(
+					repoContext,
+					llmProvider,
+					llmApiKey,
+					llmModel,
+					scanDepth,
+					(message) => {
+						warning = message;
+					}
+				);
 				if (warning) {
 					s.error(warning);
 				} else {
