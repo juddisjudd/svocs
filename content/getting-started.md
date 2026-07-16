@@ -3,7 +3,7 @@
 The fastest way to start is the `create-svocs-docs` starter, which drops in a working SVOCS site with this exact page structure — sidebar, search, theming, and all:
 
 ```sh filename="bun"
-bunx create-svocs-docs my-docs
+bunx create-svocs-docs@latest my-docs
 ```
 
 ```sh filename="npm"

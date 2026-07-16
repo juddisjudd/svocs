@@ -69,11 +69,39 @@
 		};
 	});
 
-	function toPlainText(input: string): string {
+	function stripHtml(input: string): string {
 		return input
 			.replace(/<[^>]+>/g, '')
 			.replace(/\s+/g, ' ')
 			.trim();
+	}
+
+	function escapeHtml(input: string): string {
+		return input.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+	}
+
+	function escapeRegExp(input: string): string {
+		return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+	}
+
+	// Backends vary in whether (and how) they mark up matches in the excerpt
+	// they return — Pagefind and Typesense already wrap them in <mark>, Orama/
+	// FlexSearch/Chroma don't mark anything. Stripping to plain text first and
+	// re-highlighting from the query terms here, rather than trusting each
+	// backend's own markup, means every backend looks and behaves identically
+	// in the dialog, matching the "swap backends, UI doesn't change" premise
+	// the rest of this search setup is built on. escapeHtml runs before
+	// <mark> insertion (not after) so excerpt text containing literal `<`/`>`
+	// — plausible here, since these are docs about markup and components —
+	// can't break out of the wrapping the {@html} render below relies on.
+	function highlightExcerpt(excerpt: string, currentQuery: string): string {
+		const escaped = escapeHtml(stripHtml(excerpt));
+		const terms = currentQuery.trim().split(/\s+/).filter(Boolean).map(escapeRegExp);
+		if (terms.length === 0) {
+			return escaped;
+		}
+		const pattern = new RegExp(`(${terms.join('|')})`, 'gi');
+		return escaped.replace(pattern, '<mark>$1</mark>');
 	}
 
 	function goToResult(url: string) {
@@ -159,7 +187,7 @@
 								onclick={() => goToResult(result.url)}
 							>
 								<strong>{result.title}</strong>
-								<span>{toPlainText(result.excerpt)}</span>
+								<span>{@html highlightExcerpt(result.excerpt, query)}</span>
 							</button>
 						</li>
 					{/each}
@@ -291,5 +319,12 @@
 	span {
 		font-size: 0.84rem;
 		color: var(--muted);
+	}
+
+	span :global(mark) {
+		background: color-mix(in srgb, var(--accent) 28%, transparent);
+		color: var(--accent-strong);
+		border-radius: 0.15rem;
+		padding: 0 0.1em;
 	}
 </style>

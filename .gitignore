@@ -1,5 +1,15 @@
 node_modules
 
+# This repo's canonical package manager is bun (see packageManager in
+# package.json) — bun.lock is the one lockfile that's actually committed.
+# Ignoring the others means an accidental `npm install`/`pnpm install` can't
+# silently reintroduce a second, drifting lockfile the way package-lock.json
+# did from the very first commit.
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+deno.lock
+
 # Output
 .output
 .vercel

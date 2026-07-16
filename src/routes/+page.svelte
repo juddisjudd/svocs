@@ -7,7 +7,7 @@
 
 	let { data }: { data: PageData } = $props();
 
-	const installCommand = 'bunx create-svocs-docs';
+	const installCommand = 'bunx create-svocs-docs@latest';
 	let copied = $state(false);
 	let copyTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -30,15 +30,15 @@
 		'Table of contents',
 		'Breadcrumbs',
 		'Anchor links',
-		'i18n routing',
 		'Reading time',
-		'RSS feeds',
-		'Mermaid diagrams',
-		'LaTeX math',
-		'OG images',
+		'Dark / light mode',
 		'SEO metadata',
-		'Pluggable themes',
-		'Remote content'
+		'Copy / view as Markdown',
+		'llms.txt for AI tools',
+		'5 pluggable search backends',
+		'Accent-color theming',
+		'Sub-path deploys',
+		'AI-generated docs from a repo'
 	];
 </script>
 
@@ -223,7 +223,7 @@
 		<article class="card span-3 stats-card">
 			<div class="stats" aria-hidden="true">
 				<div class="stat">
-					<strong>&le;50<small>KB</small></strong>
+					<strong>&le;100<small>KB</small></strong>
 					<span>JS shipped, gzipped</span>
 				</div>
 				<div class="stat">
@@ -231,8 +231,8 @@
 					<span>Lighthouse targets</span>
 				</div>
 				<div class="stat">
-					<strong>100<small>/s</small></strong>
-					<span>pages compiled</span>
+					<strong>~10<small>s</small></strong>
+					<span>cold build, every page</span>
 				</div>
 			</div>
 			<h2>Static export, tiny footprint</h2>
