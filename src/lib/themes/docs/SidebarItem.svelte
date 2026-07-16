@@ -86,13 +86,24 @@
 	}
 
 	.separator {
-		margin: 0.6rem 0 0.1rem;
+		display: flex;
+		align-items: center;
+		gap: 0.55rem;
+		margin: 1.35rem 0 0.3rem;
 		padding: 0 0.6rem;
-		font-size: 0.72rem;
-		font-weight: 700;
+		font-size: 0.68rem;
+		font-weight: 600;
 		text-transform: uppercase;
-		letter-spacing: 0.06em;
+		letter-spacing: 0.1em;
 		color: var(--text-dim);
+	}
+
+	/* Trailing hairline marks these as group dividers, not dimmer nav links. */
+	.separator::after {
+		content: '';
+		flex: 1;
+		height: 1px;
+		background: var(--line);
 	}
 
 	li.separator:first-child {

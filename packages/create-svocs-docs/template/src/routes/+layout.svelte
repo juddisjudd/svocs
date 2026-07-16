@@ -117,6 +117,17 @@
 		--accent-strong: color-mix(in srgb, var(--accent) 60%, white);
 		--accent-contrast: #180806;
 		--danger: #ff7d6b;
+		/* Prism token palette. Keywords ride the accent ramp so a custom accent
+		   recolors code too; the rest are warm neutrals plus one cool contrast
+		   (property/attr-name) so dense code stays scannable. */
+		--code-comment: #857468;
+		--code-keyword: var(--accent-soft);
+		--code-string: #c8b482;
+		--code-function: #e0af68;
+		--code-number: #e39a86;
+		--code-property: #8fb8b2;
+		--code-punctuation: #8d7f77;
+		--code-operator: #b3a49b;
 		--glow-a: color-mix(in srgb, var(--accent) 10%, black);
 		--glow-b: #0e0c0c;
 		--shadow-card:
@@ -143,6 +154,14 @@
 		--accent-strong: color-mix(in srgb, var(--accent) 76%, black);
 		--accent-contrast: #180806;
 		--danger: #b8321c;
+		--code-comment: #97867c;
+		--code-keyword: var(--accent-soft);
+		--code-string: #8a6d2f;
+		--code-function: #a05e14;
+		--code-number: #ab4a30;
+		--code-property: #33695f;
+		--code-punctuation: #8d7f77;
+		--code-operator: #6f6058;
 		--glow-a: color-mix(in srgb, var(--accent) 15%, white);
 		--glow-b: #efe7e2;
 		--shadow-card:

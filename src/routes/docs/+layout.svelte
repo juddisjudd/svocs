@@ -6,6 +6,7 @@
 	import { resolve } from '$app/paths';
 	import { getBreadcrumbsByPath, type PageMapNode } from '$lib/core/page-map';
 	import SidebarTree from '$lib/themes/docs/SidebarTree.svelte';
+	import Toc from '$lib/themes/docs/Toc.svelte';
 	import { enhanceCodeBlocks } from '$lib/themes/docs/code-blocks';
 	import { observeHeadings } from '$lib/themes/docs/scroll-spy';
 
@@ -33,10 +34,6 @@
 
 	type TocItem = { id: string; text: string; depth: number };
 	const toc = $derived((page.data.toc ?? []) as TocItem[]);
-	const activeTocIndex = $derived(toc.findIndex((item) => item.id === activeHeadingId));
-	const tocProgress = $derived(
-		activeTocIndex > 0 && toc.length > 1 ? (activeTocIndex / (toc.length - 1)) * 100 : 0
-	);
 
 	// Re-scan for un-enhanced code blocks and re-attach the TOC scroll-spy
 	// whenever navigation swaps in a new doc page's static markup.
@@ -184,31 +181,7 @@
 
 	<nav class="toc-rail" aria-label="Table of contents">
 		{#if toc.length > 0}
-			<p class="toc-title">
-				<svg viewBox="0 0 16 16" aria-hidden="true">
-					<path
-						d="M2.5 4.5h11M2.5 8h11M2.5 11.5h7"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="1.4"
-						stroke-linecap="round"
-					/>
-				</svg>
-				On this page
-			</p>
-			<ul style:--toc-progress="{tocProgress}%">
-				{#each toc as item, i (item.id)}
-					<li
-						class:depth3={item.depth === 3}
-						class:read={activeTocIndex >= 0 && i <= activeTocIndex}
-						class:active={i === activeTocIndex}
-					>
-						<a href={`#${item.id}`} aria-current={i === activeTocIndex ? 'true' : undefined}>
-							{item.text}
-						</a>
-					</li>
-				{/each}
-			</ul>
+			<Toc items={toc} activeId={activeHeadingId} />
 		{/if}
 	</nav>
 </div>
@@ -419,6 +392,72 @@
 		padding: 0.9rem 1rem;
 		padding-right: 3rem;
 		overflow: auto;
+		color: var(--text-soft);
+	}
+
+	/* Prism token colors — mdsvex tokenizes fences at build time but ships no
+	   theme, so without these rules code renders monochrome. Palette lives in
+	   the --code-* vars beside the rest of the theme (src/routes/+layout.svelte). */
+	.prose :global(.token.comment),
+	.prose :global(.token.prolog),
+	.prose :global(.token.doctype),
+	.prose :global(.token.cdata) {
+		color: var(--code-comment);
+		font-style: italic;
+	}
+
+	.prose :global(.token.punctuation) {
+		color: var(--code-punctuation);
+	}
+
+	.prose :global(.token.keyword),
+	.prose :global(.token.tag),
+	.prose :global(.token.selector),
+	.prose :global(.token.important),
+	.prose :global(.token.atrule) {
+		color: var(--code-keyword);
+	}
+
+	.prose :global(.token.string),
+	.prose :global(.token.char),
+	.prose :global(.token.attr-value),
+	.prose :global(.token.regex),
+	.prose :global(.token.inserted) {
+		color: var(--code-string);
+	}
+
+	.prose :global(.token.function),
+	.prose :global(.token.class-name) {
+		color: var(--code-function);
+	}
+
+	.prose :global(.token.number),
+	.prose :global(.token.boolean),
+	.prose :global(.token.constant),
+	.prose :global(.token.symbol),
+	.prose :global(.token.deleted) {
+		color: var(--code-number);
+	}
+
+	.prose :global(.token.property),
+	.prose :global(.token.attr-name),
+	.prose :global(.token.builtin),
+	.prose :global(.token.variable),
+	.prose :global(.token.entity) {
+		color: var(--code-property);
+	}
+
+	.prose :global(.token.operator),
+	.prose :global(.token.url) {
+		color: var(--code-operator);
+	}
+
+	.prose :global(.token.bold) {
+		font-weight: 600;
+	}
+
+	.prose :global(.token.italic) {
+		font-style: italic;
 	}
 
 	.prose :global(.code-copy) {
@@ -535,140 +574,6 @@
 		font-size: 0.8rem;
 	}
 
-	.toc-title {
-		display: flex;
-		align-items: center;
-		gap: 0.4rem;
-		margin: 0 0 0.9rem;
-		font-weight: 700;
-		color: var(--text);
-	}
-
-	.toc-title svg {
-		width: 0.8rem;
-		height: 0.8rem;
-		color: var(--text-dim);
-	}
-
-	/* A vertical rail (::before) with an accent "read" overlay (::after)
-	   that grows toward the active heading, plus a per-item dot — inspired
-	   by scroll-spy TOC treatments, not a literal copy of any one of them. */
-	.toc-rail ul {
-		position: relative;
-		list-style: none;
-		margin: 0;
-		padding: 0 0 0 1rem;
-		display: grid;
-		gap: 0.55rem;
-	}
-
-	.toc-rail ul::before,
-	.toc-rail ul::after {
-		content: '';
-		position: absolute;
-		left: 0.2rem;
-		width: 1px;
-		border-radius: 999px;
-	}
-
-	/* The base rail spans dot-center to dot-center: 0.55em down from the
-	   list's top edge (matching each li's dot offset below) to 0.55em down
-	   from the *last* li's top edge, i.e. one line-height (1.4em) short of
-	   the list's bottom edge — anchoring to the box's bottom edge instead
-	   overshoots past the last dot whenever an item wraps to its own line. */
-	.toc-rail ul::before {
-		top: 0.55em;
-		bottom: 0.85em;
-		background: var(--line);
-	}
-
-	.toc-rail ul::after {
-		top: 0.55em;
-		height: var(--toc-progress, 0%);
-		background: linear-gradient(
-			to bottom,
-			color-mix(in srgb, var(--accent) 30%, transparent),
-			var(--accent)
-		);
-		box-shadow: 0 3px 8px -2px color-mix(in srgb, var(--accent) 65%, transparent);
-		transition: height 260ms cubic-bezier(0.23, 1, 0.32, 1);
-	}
-
-	.toc-rail li {
-		position: relative;
-	}
-
-	.toc-rail li::before {
-		content: '';
-		position: absolute;
-		left: -0.8rem;
-		top: 0.55em;
-		width: 5px;
-		height: 5px;
-		border-radius: 999px;
-		background: var(--line-strong);
-		transform: translate(-50%, -50%) scale(1);
-		transition:
-			background-color 200ms ease,
-			box-shadow 200ms ease,
-			transform 200ms ease;
-	}
-
-	.toc-rail li.depth3 {
-		padding-left: 0.85rem;
-	}
-
-	.toc-rail li.read::before {
-		background: var(--accent);
-	}
-
-	.toc-rail li.active::before {
-		background: var(--accent);
-		transform: translate(-50%, -50%) scale(1.5);
-		box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent);
-		animation: toc-dot-pulse 2200ms ease-in-out infinite;
-	}
-
-	.toc-rail li:hover::before {
-		transform: translate(-50%, -50%) scale(1.3);
-	}
-
-	@keyframes toc-dot-pulse {
-		0%,
-		100% {
-			box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent);
-		}
-		50% {
-			box-shadow: 0 0 0 7px color-mix(in srgb, var(--accent) 8%, transparent);
-		}
-	}
-
-	.toc-rail a {
-		display: block;
-		text-decoration: none;
-		color: var(--text-dim);
-		line-height: 1.4;
-		transition: color 120ms ease;
-	}
-
-	.toc-rail li.read a {
-		color: var(--text-soft);
-	}
-
-	.toc-rail li.active a {
-		color: var(--accent-strong);
-		font-weight: 600;
-	}
-
-	.toc-rail a:hover {
-		color: var(--text);
-	}
-
-	.toc-rail li.read a:hover,
-	.toc-rail li.active a:hover {
-		color: var(--accent-soft);
-	}
-
 	/* ---- responsive ---- */
 
 	@media (max-width: 1100px) {
@@ -739,10 +644,6 @@
 		.docs-layout,
 		.rail-toggle svg {
 			transition-duration: 0.01ms;
-		}
-
-		.toc-rail li.active::before {
-			animation: none;
 		}
 	}
 </style>
