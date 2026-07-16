@@ -402,6 +402,11 @@ function parseAndValidateLlmOutput(rawText) {
 	return dedupeSlugs(pages);
 }
 
+// Every starter page the template ships, so a repo-analysis scaffold ends up
+// entirely about the analyzed repo — no leftover generic "About SVOCS" /
+// "Theming" / "Deployment" placeholders sitting alongside real generated
+// content. `deployment` is a directory (index + cloudflare-pages +
+// github-pages), not a single file, so it gets its own removal pass below.
 const REPLACED_CONTENT_KEYS = new Set([
 	'getting-started-heading',
 	'introduction',
@@ -409,15 +414,27 @@ const REPLACED_CONTENT_KEYS = new Set([
 	'guides-heading',
 	'writing-content',
 	'components',
-	'ai'
+	'ai',
+	'configuration-heading',
+	'theming',
+	'navigation',
+	'search',
+	'more-heading',
+	'deployment',
+	'about'
 ]);
 const REPLACED_FILE_SLUGS = [
 	'introduction',
 	'getting-started',
 	'writing-content',
 	'components',
-	'ai'
+	'ai',
+	'theming',
+	'navigation',
+	'search',
+	'about'
 ];
+const REPLACED_DIR_SLUGS = ['deployment'];
 
 export function writeGeneratedPages(targetDir, pages) {
 	if (!pages || pages.length === 0) {
@@ -436,6 +453,9 @@ export function writeGeneratedPages(targetDir, pages) {
 		rmIfExists(join(contentDir, `${slug}.md`));
 		rmIfExists(join(contentDir, `${slug}.svx`));
 		rmIfExists(join(contentDir, `${slug}.meta.json`));
+	}
+	for (const slug of REPLACED_DIR_SLUGS) {
+		rmIfExists(join(contentDir, slug), { recursive: true });
 	}
 
 	normalized.forEach((page, index) => {
@@ -513,9 +533,9 @@ function normalizeMarkdownSpacing(content) {
 	return collapsed.join('\n');
 }
 
-function rmIfExists(path) {
+function rmIfExists(path, options) {
 	if (existsSync(path)) {
-		rmSync(path);
+		rmSync(path, options);
 	}
 }
 

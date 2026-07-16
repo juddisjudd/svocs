@@ -5,6 +5,7 @@
 // that DO need real content already read it from the prerendered
 // build/search-index.json instead of re-parsing content/ themselves.
 import { spawnSync } from 'node:child_process';
+import { cpSync, existsSync } from 'node:fs';
 
 const provider = process.env.PUBLIC_SVOCS_SEARCH_PROVIDER || 'pagefind';
 
@@ -20,9 +21,25 @@ function run(command, args) {
 	}
 }
 
+// `vite preview` never looks at adapter-static's `build/` output — SvelteKit's
+// preview server serves the pre-adapter `.svelte-kit/output/client` directory
+// instead (see @sveltejs/kit's exports/vite/preview). Everything Vite itself
+// writes there (prerendered routes, `static/`) shows up fine; Pagefind's index
+// doesn't, because the CLI runs after `vite build` and writes straight into
+// `build/`, a tree `vite preview` never reads from. Mirroring the index into
+// `output/client` too is what makes `bun run preview` actually work for it.
+function mirrorIntoPreviewOutput() {
+	const previewClientDir = '.svelte-kit/output/client';
+	if (!existsSync(previewClientDir)) {
+		return;
+	}
+	cpSync('build/pagefind', `${previewClientDir}/pagefind`, { recursive: true });
+}
+
 switch (provider) {
 	case 'pagefind':
 		run('pagefind', ['--site', 'build']);
+		mirrorIntoPreviewOutput();
 		break;
 	case 'orama':
 	case 'flexsearch':

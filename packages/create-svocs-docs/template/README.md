@@ -25,11 +25,11 @@ bun run preview
 
 ## Adding content
 
-Drop a `.md` (or `.svx` for live components) file under `content/` — it becomes a route automatically. See `content/writing-content.md` and `content/navigation.md` (once you've deployed, at `/docs/writing-content` and `/docs/navigation`) for the full authoring and sidebar-configuration guide.
+Drop a `.md` (or `.svx` for live components) file under `content/` — it becomes a route automatically. See the [Writing Content](https://svocs.dev/docs/writing-content) and [Navigation](https://svocs.dev/docs/navigation) guides for the full authoring and sidebar-configuration schema.
 
 ## Deploying
 
-See `/docs/deployment` once the dev server is running, or `content/deployment/index.md` directly. Deploying under a sub-path (like GitHub Pages project sites)? Set the `BASE_PATH` environment variable at build time:
+See the [Deployment guide](https://svocs.dev/docs/deployment) for Cloudflare Pages, GitHub Pages, and other static hosts. Deploying under a sub-path (like GitHub Pages project sites)? Set the `BASE_PATH` environment variable at build time:
 
 ```sh
 BASE_PATH=/my-repo bun run build
