@@ -5,10 +5,10 @@ SVOCS is a markdown-first documentation site generator built on SvelteKit and Sv
 ## Why SVOCS
 
 - **Markdown-first, components when you need them.** `.md` files are plain prose. Switch a file to `.svx` and it can import and render real Svelte components inline.
-- **File-system routing.** `content/` maps directly to `/docs/*` — no route config to maintain.
-- **Zero-config search.** Every build indexes your docs with Pagefind. No server, no API keys.
+- **File-system routing.** `content/` maps directly to `/docs/*`, with no route config to maintain.
+- **Zero-config search.** Every build indexes your docs with Pagefind, and search runs in the browser without a server or API keys.
 - **Static output.** Every page prerenders via `adapter-static`. The Svelte compiler moves work to build time, so readers download very little JavaScript.
-- **Runes-first.** Sidebar state, theme, search — all built on Svelte 5 runes, no legacy stores.
+- **Runes-first.** Sidebar state, theme, and search are built on Svelte 5 runes instead of legacy stores.
 
 ## How the pieces fit together
 
@@ -20,7 +20,7 @@ src/lib/core/       Content pipeline: parsing, page-map, metadata
 src/lib/themes/docs/ The docs theme: sidebar, search, TOC
 ```
 
-`_meta.json` is the file worth understanding first — it controls everything about how your sidebar looks, independent of your file names. The [Navigation](/docs/navigation) guide covers it in full, including how to group pages under non-clickable category labels like the ones in this sidebar.
+`_meta.json` is the file worth understanding first: it controls how your sidebar looks, independent of your file names. The [Navigation](/docs/navigation) guide covers it in full, including how to group pages under non-clickable category labels like the ones in this sidebar.
 
 ## Next steps
 

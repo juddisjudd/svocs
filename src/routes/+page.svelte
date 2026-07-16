@@ -22,7 +22,7 @@
 		}
 	}
 
-	const pageTitle = 'SVOCS — Beautiful docs with Svelte & Markdown';
+	const pageTitle = 'SVOCS - Beautiful docs with Svelte & Markdown';
 	const pageDescription =
 		'SVOCS is a docs generator built on SvelteKit. Write Markdown, add Svelte components where you need them, and ship a static site with search built in.';
 

@@ -17,8 +17,8 @@ Analyze an existing GitHub repo for a baseline docs setup? (y/N) y
 GitHub repo (owner/repo or URL): owner/repo
 
 Analysis mode:
-  1) Heuristic — reorganizes the README, no AI, no key needed (default)
-  2) LLM-powered — an AI rewrites the content into docs pages (bring your own key)
+  1) Heuristic — splits the README into pages, no API key needed (default)
+  2) LLM-powered — an AI writes the docs pages (bring your own key)
 ```
 
 Picking LLM-powered adds a provider prompt, then a masked key prompt. The key is typed once, used for validation plus that single analysis request, and never written to disk.

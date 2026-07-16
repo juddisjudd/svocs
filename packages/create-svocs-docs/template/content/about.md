@@ -1,6 +1,6 @@
 ## About this site
 
-This is a starting point, not a finished product. Replace this page — and everything else under `content/` — with your own documentation.
+This is a starting point, not a finished product. Replace this page (and everything else under `content/`) with your own documentation.
 
 ## Built with SVOCS
 

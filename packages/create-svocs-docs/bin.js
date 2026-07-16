@@ -52,7 +52,7 @@ const SEARCH_BACKENDS = {
 			'Typesense needs a running server (self-hosted or Typesense Cloud) plus env vars:',
 			'  sync-only:   TYPESENSE_HOST, TYPESENSE_ADMIN_API_KEY',
 			'  client-safe: PUBLIC_TYPESENSE_HOST, PUBLIC_TYPESENSE_COLLECTION_NAME, PUBLIC_TYPESENSE_SEARCH_API_KEY',
-			'`bun run build` will fail until those are set — dev/preview still work, search just errors.',
+			'`bun run build` will fail until those are set. Dev/preview still work; search just errors.',
 			'The sync script always runs via `bun`, even if you scaffolded with another package manager.',
 			'Full setup: https://svocs.dev/docs/search/typesense'
 		]
@@ -65,7 +65,7 @@ const SEARCH_BACKENDS = {
 			'Chroma needs a running server plus env vars:',
 			'  sync-only:   CHROMA_HOST, CHROMA_ADMIN_TOKEN',
 			'  client-safe: PUBLIC_CHROMA_HOST, PUBLIC_CHROMA_COLLECTION_NAME, PUBLIC_CHROMA_TOKEN',
-			'`bun run build` will fail until those are set — dev/preview still work, search just errors.',
+			'`bun run build` will fail until those are set. Dev/preview still work; search just errors.',
 			'The sync script always runs via `bun`, even if you scaffolded with another package manager.',
 			'Read the security section before deploying: https://svocs.dev/docs/search/chroma'
 		]
@@ -96,7 +96,7 @@ const SCAN_DEPTHS = [
 	{
 		value: 'quick',
 		label: 'Quick Scan',
-		hint: '1-3 pages from the README + other .md docs — fastest, cheapest'
+		hint: '1-3 pages from the README + other .md docs; the fastest and cheapest option'
 	},
 	{
 		value: 'standard',
@@ -145,7 +145,7 @@ function applyAccentColor(targetDir, hex) {
 function describeRepoFetchError(error) {
 	switch (error) {
 		case 'rate-limited':
-			return 'GitHub API rate limit hit — try again shortly';
+			return 'GitHub API rate limit hit; try again shortly';
 		case 'network':
 			return "Couldn't reach GitHub";
 		default:
@@ -473,7 +473,7 @@ async function main() {
 		if (fetched?.length) {
 			s.stop(`Found ${fetched.length} model${fetched.length === 1 ? '' : 's'}`);
 		} else {
-			s.error("Couldn't fetch the model list — showing a small fallback set");
+			s.error("Couldn't fetch the model list; showing a small fallback set");
 		}
 
 		const models = fetched?.length ? fetched : FALLBACK_MODELS[provider];
@@ -535,7 +535,7 @@ async function main() {
 		s.start(`Fetching ${owner}/${repo}`);
 		const context = await fetchRepoContext(owner, repo);
 		if (context?.error) {
-			s.error(`${describeRepoFetchError(context.error)} — skipping analysis.`);
+			s.error(`${describeRepoFetchError(context.error)}. Skipping analysis.`);
 			return null;
 		}
 		s.stop(`Fetched ${owner}/${repo}`);
@@ -565,7 +565,7 @@ async function main() {
 	if (repoFlag) {
 		const parsed = parseGithubRepo(repoFlag);
 		if (!parsed) {
-			p.log.warn(`Couldn't parse "--repo=${repoFlag}" as a GitHub repo — skipping analysis.`);
+			p.log.warn(`Couldn't parse "--repo=${repoFlag}" as a GitHub repo; skipping analysis.`);
 		} else {
 			repoContext = await fetchAndReportRepo(parsed.owner, parsed.repo);
 			if (repoContext) {
@@ -593,7 +593,7 @@ async function main() {
 			const repoInput = await ask('GitHub repo (owner/repo or URL)', '');
 			const parsed = parseGithubRepo(repoInput);
 			if (!parsed) {
-				p.log.warn("Couldn't parse that as a GitHub repo — skipping analysis.");
+				p.log.warn("Couldn't parse that as a GitHub repo; skipping analysis.");
 			} else {
 				repoContext = await fetchAndReportRepo(parsed.owner, parsed.repo);
 				if (repoContext) {
@@ -605,12 +605,12 @@ async function main() {
 								{
 									value: 'heuristic',
 									label: 'Heuristic',
-									hint: 'reorganizes the README, no AI, no key needed'
+									hint: 'splits the README into pages, no API key needed'
 								},
 								{
 									value: 'llm',
 									label: 'LLM-powered',
-									hint: 'an AI rewrites the content into docs pages (bring your own key)'
+									hint: 'an AI writes the docs pages (bring your own key)'
 								}
 							]
 						})
@@ -631,7 +631,7 @@ async function main() {
 							`${providerLabel(llmProvider)} API key (used once, never saved)`
 						);
 						if (!llmApiKey) {
-							p.log.warn('No key entered — using heuristic analysis instead.');
+							p.log.warn('No key entered; using heuristic analysis instead.');
 							repoAnalysisMode = 'heuristic';
 						} else if (!(await validateAndReportKey(llmProvider, llmApiKey))) {
 							llmApiKey = '';
@@ -667,11 +667,11 @@ async function main() {
 		let generatedPages = null;
 		if (repoAnalysisMode === 'llm') {
 			if (!llmApiKey) {
-				p.log.warn('No LLM key available — using heuristic analysis instead.');
+				p.log.warn('No LLM key available; using heuristic analysis instead.');
 			} else {
 				const providerName = providerLabel(llmProvider);
 				const s = p.spinner();
-				s.start(`Asking ${providerName} to analyze the repo (no timeout — press Ctrl+C to cancel)`);
+				s.start(`Asking ${providerName} to analyze the repo (no timeout; press Ctrl+C to cancel)`);
 				let warning = null;
 				generatedPages = await generateLlmPages(
 					repoContext,
@@ -704,7 +704,7 @@ async function main() {
 			p.log.success(`Generated ${generatedPages.length} docs page(s) from the repo.`);
 		} else {
 			p.log.warn(
-				"Couldn't generate any content from that repo — leaving the starter content as-is."
+				"Couldn't generate any content from that repo; leaving the starter content as-is."
 			);
 		}
 	}
@@ -714,7 +714,7 @@ async function main() {
 		if (!existsSync(gitDir)) {
 			const result = spawnSync('git', ['init'], { cwd: targetDir, stdio: 'ignore' });
 			if (result.error || result.status !== 0) {
-				p.log.warn('Skipped git init — git not available.');
+				p.log.warn('Skipped git init (git not available).');
 			}
 		}
 	}

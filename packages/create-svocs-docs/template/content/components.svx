@@ -15,7 +15,7 @@
 </script>
 
 <Banner id="components-intro">
-	These components ship with SVOCS — import them from `$lib/components` in any `.svx` file.
+	These components ship with SVOCS. Import them from `$lib/components` in any `.svx` file.
 </Banner>
 
 ## Callout
@@ -76,7 +76,7 @@ Create `content/example.md` with frontmatter or a sidecar `.meta.json`.
 
 ### Register it in the sidebar
 
-Folders pick up ordering automatically from each page's `order` field — no extra step for a flat page.
+Folders pick up ordering automatically from each page's `order` field, so a flat page needs no extra step.
 
 ### Preview it
 
@@ -96,7 +96,7 @@ Run `bun run dev` and visit `/docs/example`.
 
 <Collapse title="Why mdsvex instead of raw Markdown?">
 
-It compiles Markdown straight to Svelte components, so `.svx` files can mix prose with live, interactive components — no separate MDX runtime required.
+It compiles Markdown straight to Svelte components, so `.svx` files can mix prose with live components without a separate MDX runtime.
 
 </Collapse>
 
@@ -115,7 +115,7 @@ It compiles Markdown straight to Svelte components, so `.svx` files can mix pros
 
 ## Bleed
 
-Break wide content — a table, a diagram, a screenshot — out of the prose column's side padding:
+Break wide content (a table, a diagram, a screenshot) out of the prose column's side padding:
 
 <Bleed>
 

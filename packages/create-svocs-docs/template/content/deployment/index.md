@@ -1,6 +1,6 @@
 ## Static output
 
-`bun run build` prerenders every page with `adapter-static` and writes plain HTML, CSS, and JS to `build/` — there's no Node server, no functions, and no environment variables needed at runtime. That output can be deployed to any static host.
+`bun run build` prerenders every page with `adapter-static` and writes plain HTML, CSS, and JS to `build/`. The output needs no Node server, serverless functions, or environment variables at runtime. That output can be deployed to any static host.
 
 ## Cloudflare Pages
 
@@ -18,4 +18,4 @@ This is wired into `vite.config.ts`'s `paths.base`, which every internal link an
 
 ## Any other static host
 
-Anywhere that can serve a directory of static files — Vercel, Netlify, S3 plus a CDN, your own server behind nginx — works the same way: run the build, upload `build/`, done.
+Anywhere that can serve a directory of static files (Vercel, Netlify, S3 plus a CDN, your own server behind nginx) works the same way: run the build and upload `build/`.
