@@ -250,7 +250,7 @@ function dedupeSlugs(pages) {
 	});
 }
 
-export async function generateLlmPages(repoContext, provider, apiKey) {
+export async function generateLlmPages(repoContext, provider, apiKey, onWarning) {
 	if (!apiKey) {
 		return null;
 	}
@@ -264,13 +264,13 @@ export async function generateLlmPages(repoContext, provider, apiKey) {
 				? await callOpenAI(apiKey, prompt)
 				: await callAnthropic(apiKey, prompt);
 	} catch (error) {
-		console.warn(`  (${provider} request failed: ${error.message})`);
+		onWarning?.(`${provider} request failed: ${error.message}`);
 		return null;
 	}
 
 	const pages = parseAndValidateLlmOutput(rawText);
 	if (!pages) {
-		console.warn('  (AI response was not valid — falling back to heuristic analysis)');
+		onWarning?.('AI response was not valid — falling back to heuristic analysis');
 	}
 	return pages;
 }

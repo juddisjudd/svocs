@@ -1,6 +1,6 @@
 {
 	"name": "create-svocs-docs",
-	"version": "0.5.0",
+	"version": "0.6.0",
 	"description": "Scaffold a new SVOCS documentation site.",
 	"type": "module",
 	"license": "MIT",
@@ -30,5 +30,9 @@
 	],
 	"engines": {
 		"node": ">=18"
+	},
+	"dependencies": {
+		"@clack/prompts": "^1.7.0",
+		"picocolors": "^1.1.1"
 	}
 }

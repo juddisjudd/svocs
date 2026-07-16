@@ -2,8 +2,9 @@
 import { existsSync, readdirSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, dirname, resolve, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createInterface } from 'node:readline/promises';
 import { spawnSync } from 'node:child_process';
+import * as p from '@clack/prompts';
+import pc from 'picocolors';
 import {
 	fetchRepoContext,
 	generateHeuristicPages,
@@ -66,6 +67,16 @@ const SEARCH_BACKENDS = {
 		]
 	}
 };
+
+/** Backend labels are "Name — detail"; the select prompt wants those as
+ *  separate label/hint fields, and a couple of other spots just want the name. */
+function splitBackendLabel(label) {
+	const separatorIndex = label.indexOf(' —');
+	if (separatorIndex === -1) {
+		return { name: label, hint: undefined };
+	}
+	return { name: label.slice(0, separatorIndex), hint: label.slice(separatorIndex + 2).trim() };
+}
 
 const DEFAULT_ACCENT = '#ff3c00';
 
@@ -321,71 +332,70 @@ async function main() {
 		return;
 	}
 
-	const rl = createInterface({ input: process.stdin, output: process.stdout });
-	const isInteractive = process.stdin.isTTY;
+	const isInteractive = Boolean(process.stdin.isTTY);
 
-	async function ask(question, fallback) {
-		if (!isInteractive) return fallback;
-		const answer = (await rl.question(question)).trim();
-		return answer || fallback;
+	if (isInteractive) {
+		p.intro(pc.bold('create-svocs-docs'));
 	}
 
-	async function confirm(question, fallback) {
-		if (!isInteractive) return fallback;
-		const answer = (await rl.question(`${question} (${fallback ? 'Y/n' : 'y/N'}) `))
-			.trim()
-			.toLowerCase();
-		if (!answer) return fallback;
-		return answer === 'y' || answer === 'yes';
-	}
-
-	async function askSecret(question) {
-		if (!isInteractive) return '';
-		process.stdout.write(question);
-		// Swallow every echo readline writes while the answer is typed — no
-		// asterisks, input is simply hidden (same UX as a typical sudo/ssh
-		// password prompt). This is deliberately not a targeted "replace each
-		// visible character with *" patch: readline's line-redraw internals
-		// (backspace, terminal width changes) are version- and
-		// platform-specific and can involve ANSI escape sequences, which a
-		// naive character substitution would corrupt. A full swallow makes no
-		// assumptions about what gets written, so it can't get that wrong —
-		// we just print one manual newline afterward to land the cursor
-		// correctly for whatever prompt comes next.
-		const originalWrite = process.stdout.write.bind(process.stdout);
-		process.stdout.write = () => true;
-		try {
-			return (await rl.question('')).trim();
-		} finally {
-			process.stdout.write = originalWrite;
-			process.stdout.write('\n');
+	// Every clack prompt resolves to a symbol instead of throwing when the
+	// user hits Ctrl+C — this is the one place that checks for it, so every
+	// `ask*`/`confirm` helper below can await a prompt without its own
+	// cancellation boilerplate.
+	function orExit(value) {
+		if (p.isCancel(value)) {
+			p.cancel('Cancelled.');
+			process.exit(0);
 		}
+		return value;
+	}
+
+	async function ask(message, fallback) {
+		if (!isInteractive) return fallback;
+		return orExit(
+			await p.text({ message, placeholder: fallback || undefined, defaultValue: fallback })
+		);
+	}
+
+	async function confirm(message, fallback) {
+		if (!isInteractive) return fallback;
+		return orExit(await p.confirm({ message, initialValue: fallback }));
+	}
+
+	async function askSecret(message) {
+		if (!isInteractive) return '';
+		return orExit(await p.password({ message }));
 	}
 
 	async function askAccentColor() {
 		if (!isInteractive) return DEFAULT_ACCENT;
-		const answer = (await rl.question(`Accent color (hex): (${DEFAULT_ACCENT}) `)).trim();
-		if (!answer) return DEFAULT_ACCENT;
-		const normalized = normalizeHexColor(answer);
-		if (!normalized) {
-			console.log(`  "${answer}" doesn't look like a hex color — keeping the default.`);
-			return DEFAULT_ACCENT;
-		}
-		return normalized;
+		const answer = orExit(
+			await p.text({
+				message: 'Accent color (hex)',
+				placeholder: DEFAULT_ACCENT,
+				defaultValue: DEFAULT_ACCENT,
+				validate: (value) =>
+					!value || normalizeHexColor(value) ? undefined : 'Enter a hex color like #2563eb'
+			})
+		);
+		return normalizeHexColor(answer) ?? DEFAULT_ACCENT;
 	}
 
 	async function askSearchBackend() {
 		if (!isInteractive) return 'pagefind';
-		console.log('\nSearch backend:');
-		SEARCH_BACKEND_IDS.forEach((id, index) => {
-			console.log(`  ${index + 1}) ${SEARCH_BACKENDS[id].label}`);
-		});
-		const answer = (await rl.question(`Choose 1-${SEARCH_BACKEND_IDS.length}: (1) `)).trim();
-		const index = answer ? Number(answer) - 1 : 0;
-		return SEARCH_BACKEND_IDS[index] ?? 'pagefind';
+		return orExit(
+			await p.select({
+				message: 'Search backend',
+				initialValue: 'pagefind',
+				options: SEARCH_BACKEND_IDS.map((id) => {
+					const { name, hint } = splitBackendLabel(SEARCH_BACKENDS[id].label);
+					return { value: id, label: name, hint };
+				})
+			})
+		);
 	}
 
-	const targetDir = resolve(targetArg ?? (await ask('Project directory: (my-docs) ', 'my-docs')));
+	const targetDir = resolve(targetArg ?? (await ask('Project directory', 'my-docs')));
 	const dirName = basename(targetDir);
 
 	if (existsSync(targetDir) && !isDirEmpty(targetDir)) {
@@ -394,8 +404,8 @@ async function main() {
 			false
 		);
 		if (!proceed) {
-			console.log('Aborted.');
-			rl.close();
+			if (isInteractive) p.cancel('Aborted.');
+			else console.log('Aborted.');
 			process.exitCode = 1;
 			return;
 		}
@@ -406,17 +416,25 @@ async function main() {
 	let llmProvider = null;
 	let llmApiKey = '';
 
+	async function fetchAndReportRepo(owner, repo) {
+		const s = p.spinner();
+		s.start(`Fetching ${owner}/${repo}`);
+		const context = await fetchRepoContext(owner, repo);
+		if (context?.error) {
+			s.error(`${describeRepoFetchError(context.error)} — skipping analysis.`);
+			return null;
+		}
+		s.stop(`Fetched ${owner}/${repo}`);
+		return context;
+	}
+
 	if (repoFlag) {
 		const parsed = parseGithubRepo(repoFlag);
 		if (!parsed) {
-			console.warn(`Couldn't parse "--repo=${repoFlag}" as a GitHub repo — skipping analysis.`);
+			p.log.warn(`Couldn't parse "--repo=${repoFlag}" as a GitHub repo — skipping analysis.`);
 		} else {
-			console.log(`\nFetching ${parsed.owner}/${parsed.repo} ...`);
-			const context = await fetchRepoContext(parsed.owner, parsed.repo);
-			if (context?.error) {
-				console.warn(`${describeRepoFetchError(context.error)} — skipping analysis.`);
-			} else {
-				repoContext = context;
+			repoContext = await fetchAndReportRepo(parsed.owner, parsed.repo);
+			if (repoContext) {
 				repoAnalysisMode = repoModeFlag ?? 'heuristic';
 				llmProvider = llmProviderFlag ?? 'anthropic';
 				if (repoAnalysisMode === 'llm') {
@@ -433,36 +451,48 @@ async function main() {
 			false
 		);
 		if (wantsAnalysis) {
-			const repoInput = await ask('GitHub repo (owner/repo or URL): ', '');
+			const repoInput = await ask('GitHub repo (owner/repo or URL)', '');
 			const parsed = parseGithubRepo(repoInput);
 			if (!parsed) {
-				console.log("Couldn't parse that as a GitHub repo — skipping analysis.");
+				p.log.warn("Couldn't parse that as a GitHub repo — skipping analysis.");
 			} else {
-				console.log(`\nFetching ${parsed.owner}/${parsed.repo} ...`);
-				const context = await fetchRepoContext(parsed.owner, parsed.repo);
-				if (context?.error) {
-					console.log(`${describeRepoFetchError(context.error)} — skipping analysis.`);
-				} else {
-					repoContext = context;
-					console.log('\nAnalysis mode:');
-					console.log('  1) Heuristic — reorganizes the README, no AI, no key needed (default)');
-					console.log(
-						'  2) LLM-powered — an AI rewrites the content into docs pages (bring your own key)'
+				repoContext = await fetchAndReportRepo(parsed.owner, parsed.repo);
+				if (repoContext) {
+					repoAnalysisMode = orExit(
+						await p.select({
+							message: 'Analysis mode',
+							initialValue: 'heuristic',
+							options: [
+								{
+									value: 'heuristic',
+									label: 'Heuristic',
+									hint: 'reorganizes the README, no AI, no key needed'
+								},
+								{
+									value: 'llm',
+									label: 'LLM-powered',
+									hint: 'an AI rewrites the content into docs pages (bring your own key)'
+								}
+							]
+						})
 					);
-					const modeAnswer = (await rl.question('Choose 1-2: (1) ')).trim();
-					repoAnalysisMode = modeAnswer === '2' ? 'llm' : 'heuristic';
 
 					if (repoAnalysisMode === 'llm') {
-						console.log('\nLLM provider:');
-						console.log('  1) Anthropic');
-						console.log('  2) OpenAI');
-						const providerAnswer = (await rl.question('Choose 1-2: (1) ')).trim();
-						llmProvider = providerAnswer === '2' ? 'openai' : 'anthropic';
+						llmProvider = orExit(
+							await p.select({
+								message: 'LLM provider',
+								initialValue: 'anthropic',
+								options: [
+									{ value: 'anthropic', label: 'Anthropic' },
+									{ value: 'openai', label: 'OpenAI' }
+								]
+							})
+						);
 						llmApiKey = await askSecret(
-							`${llmProvider === 'openai' ? 'OpenAI' : 'Anthropic'} API key (used once, never saved): `
+							`${llmProvider === 'openai' ? 'OpenAI' : 'Anthropic'} API key (used once, never saved)`
 						);
 						if (!llmApiKey) {
-							console.log('\nNo key entered — using heuristic analysis instead.');
+							p.log.warn('No key entered — using heuristic analysis instead.');
 							repoAnalysisMode = 'heuristic';
 						}
 					}
@@ -472,30 +502,38 @@ async function main() {
 	}
 
 	const suggestedSiteName = repoContext?.name ? toSiteName(repoContext.name) : toSiteName(dirName);
-	const siteName = await ask(`Site name: (${suggestedSiteName}) `, suggestedSiteName);
+	const siteName = await ask('Site name', suggestedSiteName);
 	const packageName = toPackageName(dirName);
 	const accentColor = accentFlag ?? (await askAccentColor());
 	const searchBackend = searchFlag ?? (await askSearchBackend());
 	const shouldInitGit = await confirm('Initialize a git repository?', true);
 
-	rl.close();
-
-	console.log(`\nScaffolding "${siteName}" in ${targetDir} ...`);
+	const scaffoldSpinner = p.spinner();
+	scaffoldSpinner.start(`Scaffolding "${siteName}"`);
 	copyTemplate(TEMPLATE_DIR, targetDir);
 	applySubstitutions(targetDir, siteName, packageName);
 	applyAccentColor(targetDir, accentColor);
 	applySearchBackend(targetDir, searchBackend);
+	scaffoldSpinner.stop(`Scaffolded "${siteName}" in ${targetDir}`);
 
 	if (repoContext && repoAnalysisMode) {
 		let generatedPages = null;
 		if (repoAnalysisMode === 'llm') {
 			if (!llmApiKey) {
-				console.log('\nNo LLM key available — using heuristic analysis instead.');
+				p.log.warn('No LLM key available — using heuristic analysis instead.');
 			} else {
-				console.log(
-					`\nAsking ${llmProvider === 'openai' ? 'OpenAI' : 'Anthropic'} to analyze the repo ...`
-				);
-				generatedPages = await generateLlmPages(repoContext, llmProvider, llmApiKey);
+				const providerName = llmProvider === 'openai' ? 'OpenAI' : 'Anthropic';
+				const s = p.spinner();
+				s.start(`Asking ${providerName} to analyze the repo`);
+				let warning = null;
+				generatedPages = await generateLlmPages(repoContext, llmProvider, llmApiKey, (message) => {
+					warning = message;
+				});
+				if (warning) {
+					s.error(warning);
+				} else {
+					s.stop(`${providerName} analysis complete`);
+				}
 			}
 		}
 		if (!generatedPages) {
@@ -503,9 +541,9 @@ async function main() {
 		}
 		if (generatedPages.length > 0) {
 			writeGeneratedPages(targetDir, generatedPages);
-			console.log(`Generated ${generatedPages.length} docs page(s) from the repo.`);
+			p.log.success(`Generated ${generatedPages.length} docs page(s) from the repo.`);
 		} else {
-			console.log(
+			p.log.warn(
 				"Couldn't generate any content from that repo — leaving the starter content as-is."
 			);
 		}
@@ -516,7 +554,7 @@ async function main() {
 		if (!existsSync(gitDir)) {
 			const result = spawnSync('git', ['init'], { cwd: targetDir, stdio: 'ignore' });
 			if (result.error || result.status !== 0) {
-				console.log('(skipped git init — git not available)');
+				p.log.warn('Skipped git init — git not available.');
 			}
 		}
 	}
@@ -539,24 +577,19 @@ async function main() {
 		deno: 'deno task dev'
 	}[pm];
 
-	console.log('\nDone. Next steps:\n');
-	if (relativeDir !== '.') {
-		console.log(`  cd ${relativeDir}`);
-	}
-	if (installCmd) {
-		console.log(`  ${installCmd}`);
-	}
-	console.log(`  ${devCmd}`);
-	console.log('');
+	const nextSteps = [relativeDir !== '.' ? `cd ${relativeDir}` : null, installCmd, devCmd]
+		.filter(Boolean)
+		.map((step) => pc.cyan(step))
+		.join('\n');
+	p.note(nextSteps, 'Next steps');
 
 	const backendNextSteps = SEARCH_BACKENDS[searchBackend]?.nextSteps;
 	if (backendNextSteps) {
-		console.log(`${SEARCH_BACKENDS[searchBackend].label.split(' —')[0]} setup:\n`);
-		for (const line of backendNextSteps) {
-			console.log(`  ${line}`);
-		}
-		console.log('');
+		const backendName = splitBackendLabel(SEARCH_BACKENDS[searchBackend].label).name;
+		p.note(backendNextSteps.join('\n'), `${backendName} setup`);
 	}
+
+	p.outro(pc.bold('Done.'));
 }
 
 main().catch((error) => {

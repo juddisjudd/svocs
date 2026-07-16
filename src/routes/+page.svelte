@@ -57,11 +57,6 @@
 	<section class="hero">
 		<VelvetBackground />
 
-		<p class="badge anim" style:--i={0}>
-			<span class="badge-dot" aria-hidden="true"></span>
-			Svelte 5 runes &middot; Static-first &middot; Pagefind search
-		</p>
-
 		<h1 class="anim" style:--i={1}>
 			Make beautiful docs<br />
 			with <span class="ember">Svelte</span> &amp; Markdown
@@ -299,7 +294,7 @@
 	<!-- ============ FINAL CTA ============ -->
 	<section class="cta">
 		<div class="cta-glow" aria-hidden="true"></div>
-		<h2>Ship docs your readers will love.</h2>
+		<h2>Ship docs your users will love.</h2>
 		<p>Markdown in, beautiful static site out. Get running in under a minute.</p>
 		<div class="actions">
 			<a class="btn primary" href={resolve('/docs/getting-started')}>
