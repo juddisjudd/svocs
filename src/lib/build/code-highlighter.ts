@@ -1,7 +1,22 @@
 import { code_highlighter } from 'mdsvex';
 
+// Curlies must be escaped in both helpers: this output is compiled as Svelte
+// template markup, where a bare `{` opens an expression.
 function escapeAttribute(value: string): string {
-	return value.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+	return value
+		.replace(/&/g, '&amp;')
+		.replace(/"/g, '&quot;')
+		.replace(/\{/g, '&#123;')
+		.replace(/\}/g, '&#125;');
+}
+
+function escapeText(value: string): string {
+	return value
+		.replace(/&/g, '&amp;')
+		.replace(/</g, '&lt;')
+		.replace(/>/g, '&gt;')
+		.replace(/\{/g, '&#123;')
+		.replace(/\}/g, '&#125;');
 }
 
 /**
@@ -14,9 +29,20 @@ function escapeAttribute(value: string): string {
  *
  * mdsvex already threads the fence's meta string through to a custom
  * `highlight.highlighter`, it just doesn't do anything with it by default.
- * This reuses the stock highlighter output byte-for-byte and only injects a
- * `data-filename` attribute onto the opening `<pre>` tag when present, so
- * Prism highlighting and the `{@html ...}` optimisation wrapper stay intact.
+ * This reuses the stock highlighter output byte-for-byte, injects a
+ * `data-filename` attribute onto the opening `<pre>` tag when present, and
+ * emits the .code-frame / .code-frame-header / .code-frame-body wrapper
+ * around the block, so Prism highlighting and the `{@html ...}` optimisation
+ * wrapper stay intact.
+ *
+ * The frame markup MUST be emitted here at build time, not wrapped around
+ * the `<pre>` client-side: the `<pre>` is part of the mdsvex-compiled Svelte
+ * component's fragment, and re-parenting it at runtime corrupts Svelte's
+ * teardown when the block is the fragment's boundary node (a doc ending in a
+ * code fence) — after which every client-side navigation renders doc bodies
+ * into a detached anchor, i.e. blank pages until a full reload. The
+ * client-side enhanceCodeBlocks() (src/lib/themes/docs/code-blocks.ts) only
+ * appends a copy button inside .code-frame-body, which is safe.
  */
 export async function highlightWithFilename(
 	code: string,
@@ -27,13 +53,16 @@ export async function highlightWithFilename(
 ): Promise<string> {
 	const html = await code_highlighter(code, lang, metastring, filename, optimise);
 
-	const match = metastring?.match(/filename="([^"]+)"/);
-	if (!match) {
-		return html;
-	}
+	const name = metastring?.match(/filename="([^"]+)"/)?.[1];
+	const pre = name
+		? html.replace(
+				'<pre class="language-',
+				`<pre data-filename="${escapeAttribute(name)}" class="language-`
+			)
+		: html;
+	const header = name
+		? `<div class="code-frame-header"><span>${escapeText(name)}</span></div>`
+		: '';
 
-	return html.replace(
-		'<pre class="language-',
-		`<pre data-filename="${escapeAttribute(match[1])}" class="language-`
-	);
+	return `<div class="code-frame">${header}<div class="code-frame-body">${pre}</div></div>`;
 }

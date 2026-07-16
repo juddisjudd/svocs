@@ -56,44 +56,37 @@ function checkIcon(): SVGSVGElement {
 }
 
 /**
- * Progressively enhances prerendered `<pre>` blocks inside `container` with a
- * copy button, and a filename header when the block set one via
- * ```lang filename="name" fences (see src/lib/build/code-highlighter.ts).
+ * Progressively enhances the prerendered code frames inside `container` with
+ * a copy button. The .code-frame / .code-frame-header / .code-frame-body
+ * wrapper (and the filename header) is emitted at build time by
+ * src/lib/build/code-highlighter.ts — this only appends a button into the
+ * existing .code-frame-body.
  *
  * Runs as plain DOM manipulation rather than a Svelte template because the
  * markup comes from mdsvex-compiled static HTML, not this component's own
  * template — there's nothing for Svelte to bind to declaratively.
+ *
+ * IMPORTANT: never move or replace the `<pre>` (or any other node) here.
+ * These nodes belong to the mdsvex-compiled Svelte component's fragment, and
+ * re-parenting a fragment-boundary node (a doc ending in a code fence)
+ * corrupts Svelte's teardown on navigation — every doc page after that
+ * renders with an empty body until a full reload. Appending new children
+ * into an existing element is safe; re-parenting existing ones is not.
  */
 export function enhanceCodeBlocks(container: HTMLElement | null): void {
 	if (!container) {
 		return;
 	}
 
-	const blocks = container.querySelectorAll<HTMLPreElement>('pre:not([data-enhanced])');
+	const blocks = container.querySelectorAll<HTMLPreElement>(
+		'.code-frame-body > pre:not([data-enhanced])'
+	);
 
 	for (const pre of blocks) {
 		pre.dataset.enhanced = 'true';
 
-		const filename = pre.dataset.filename;
+		const body = pre.parentElement as HTMLElement;
 		const code = pre.querySelector('code');
-
-		const frame = document.createElement('div');
-		frame.className = 'code-frame';
-		pre.replaceWith(frame);
-
-		if (filename) {
-			const header = document.createElement('div');
-			header.className = 'code-frame-header';
-			const label = document.createElement('span');
-			label.textContent = filename;
-			header.appendChild(label);
-			frame.appendChild(header);
-		}
-
-		const body = document.createElement('div');
-		body.className = 'code-frame-body';
-		frame.appendChild(body);
-		body.appendChild(pre);
 
 		const button = document.createElement('button');
 		button.type = 'button';

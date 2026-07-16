@@ -385,10 +385,11 @@
 		text-decoration-color: currentColor;
 	}
 
-	/* code-frame / code-frame-header / code-frame-body / code-copy are
-	   injected client-side by enhanceCodeBlocks() around each prerendered
-	   <pre>, so they need :global — Svelte's scoping can't reach markup it
-	   didn't render. */
+	/* code-frame / code-frame-header / code-frame-body come from the
+	   build-time highlighter (src/lib/build/code-highlighter.ts) inside
+	   mdsvex-compiled markup, and code-copy is appended client-side by
+	   enhanceCodeBlocks() — all markup this component didn't render, so
+	   they need :global. */
 	.prose :global(.code-frame) {
 		margin: 1rem 0;
 		border: 1px solid var(--line);
