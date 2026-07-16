@@ -20,8 +20,40 @@ const CONTRIBUTING_CANDIDATES = [
 const MAX_README_BYTES = 300_000;
 const DEFAULT_MODEL = {
 	anthropic: 'claude-haiku-4-5-20251001',
-	openai: 'gpt-4o-mini'
+	openai: 'gpt-4o-mini',
+	openrouter: 'openrouter/auto'
 };
+// Used only when a live fetch of the provider's own model catalog fails —
+// deliberately not an attempt to track each provider's latest releases.
+// Providers ship new models faster than a hardcoded list can be kept
+// current (openai/gpt-5.6-* and anthropic/claude-opus-4-8 both shipped
+// after this file was last hand-updated), so fetchAvailableModels() below
+// asks the provider directly; this is just the safety net for when that
+// ask fails.
+export const FALLBACK_MODELS = {
+	anthropic: [
+		{ id: 'claude-haiku-4-5-20251001', name: 'Claude Haiku 4.5' },
+		{ id: 'claude-sonnet-5', name: 'Claude Sonnet 5' },
+		{ id: 'claude-opus-4-8', name: 'Claude Opus 4.8' }
+	],
+	openai: [
+		{ id: 'gpt-4o-mini', name: 'GPT-4o mini' },
+		{ id: 'gpt-4o', name: 'GPT-4o' }
+	],
+	openrouter: [
+		{ id: 'openrouter/auto', name: 'Auto (OpenRouter picks a model)' },
+		{ id: 'openai/gpt-4o-mini', name: 'GPT-4o mini' },
+		{ id: 'anthropic/claude-haiku-4.5', name: 'Claude Haiku 4.5' }
+	]
+};
+// Allow-list, not a block-list: OpenAI's /v1/models returns every model it
+// has ever shipped in one flat list — embeddings, Whisper, TTS, DALL-E,
+// moderation, ancient completion-only snapshots — mixed in with the chat
+// models this CLI can actually use. An allow-list fails soft (a genuinely
+// new chat model family that doesn't match just falls back to "Custom model
+// ID…") where a block-list would fail hard (a new non-chat family slipping
+// through and erroring only once the user tries to use it).
+const OPENAI_CHAT_MODEL_PATTERN = /^(gpt-|o1|o3|o4|chatgpt)/i;
 // Deep scan's file tree exists to let the model infer *what topics exist*
 // (a `cli/` directory implies a CLI reference page), not to read every file
 // — so it only ever needs paths, capped well below what would meaningfully
@@ -340,27 +372,91 @@ function dedupeSlugs(pages) {
 	});
 }
 
-// A models-list request costs no tokens on either provider and needs the
-// same auth header a real analysis call does, so it doubles as a cheap key
-// check before spending the user's quota on the actual generation request.
+const PROVIDER_KEY_CHECK = {
+	openai: {
+		url: 'https://api.openai.com/v1/models',
+		headers: (key) => ({ authorization: `Bearer ${key}` })
+	},
+	openrouter: {
+		url: 'https://openrouter.ai/api/v1/key',
+		headers: (key) => ({ authorization: `Bearer ${key}` })
+	},
+	anthropic: {
+		url: 'https://api.anthropic.com/v1/models',
+		headers: (key) => ({ 'x-api-key': key, 'anthropic-version': '2023-06-01' })
+	}
+};
+
+// A models-list (or, for OpenRouter, key-info) request costs no tokens on
+// any provider and needs the same auth header a real analysis call does, so
+// it doubles as a cheap key check before spending the user's quota on the
+// actual generation request. OpenRouter's /v1/models is public and would
+// return 200 for literally any key (or none), so it uses /v1/key instead —
+// the one endpoint of the three that's actually gated on the key being real.
 export async function validateApiKey(provider, apiKey) {
+	const check = PROVIDER_KEY_CHECK[provider] ?? PROVIDER_KEY_CHECK.anthropic;
 	try {
-		const res =
-			provider === 'openai'
-				? await fetch('https://api.openai.com/v1/models', {
-						headers: { authorization: `Bearer ${apiKey}` },
-						signal: AbortSignal.timeout(10_000)
-					})
-				: await fetch('https://api.anthropic.com/v1/models', {
-						headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
-						signal: AbortSignal.timeout(10_000)
-					});
+		const res = await fetch(check.url, {
+			headers: check.headers(apiKey),
+			signal: AbortSignal.timeout(10_000)
+		});
 		return res.ok;
 	} catch {
 		return false;
 	}
 }
 
+// Every provider ships new models faster than a hardcoded catalog can track
+// (see FALLBACK_MODELS above) — asking the provider's own API for what it
+// currently has is the only way this stays correct. Returns null on any
+// failure so the caller can fall back to FALLBACK_MODELS; never throws.
+export async function fetchAvailableModels(provider, apiKey) {
+	try {
+		if (provider === 'openai') {
+			const res = await fetch('https://api.openai.com/v1/models', {
+				headers: { authorization: `Bearer ${apiKey}` },
+				signal: AbortSignal.timeout(15_000)
+			});
+			if (!res.ok) return null;
+			const data = await res.json();
+			return (data.data ?? [])
+				.filter((m) => OPENAI_CHAT_MODEL_PATTERN.test(m.id))
+				.sort((a, b) => (b.created ?? 0) - (a.created ?? 0))
+				.map((m) => ({ id: m.id }));
+		}
+
+		if (provider === 'openrouter') {
+			const res = await fetch('https://openrouter.ai/api/v1/models', {
+				headers: apiKey ? { authorization: `Bearer ${apiKey}` } : {},
+				signal: AbortSignal.timeout(15_000)
+			});
+			if (!res.ok) return null;
+			const data = await res.json();
+			return (data.data ?? []).map((m) => ({ id: m.id, name: m.name }));
+		}
+
+		const res = await fetch('https://api.anthropic.com/v1/models', {
+			headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+			signal: AbortSignal.timeout(15_000)
+		});
+		if (!res.ok) return null;
+		const data = await res.json();
+		return (data.data ?? [])
+			.slice()
+			.sort((a, b) => (b.created_at ?? '').localeCompare(a.created_at ?? ''))
+			.map((m) => ({ id: m.id, name: m.display_name }));
+	} catch {
+		return null;
+	}
+}
+
+// No request timeout here, deliberately: Deep Scan can ask for up to 8192
+// output tokens, and pairs with whatever model the user picked (including
+// the slowest one on any given provider) — there's no fixed duration that's
+// "too long" for a real, in-progress generation, only a wrong guess that
+// aborts (and burns the user's quota on) a request that was about to
+// succeed. Ctrl+C during the spinner still cancels immediately, same as any
+// other prompt in this CLI.
 export async function generateLlmPages(repoContext, provider, apiKey, model, scanDepth, onWarning) {
 	if (!apiKey) {
 		return null;
@@ -372,10 +468,13 @@ export async function generateLlmPages(repoContext, provider, apiKey, model, sca
 
 	let rawText;
 	try {
-		rawText =
-			provider === 'openai'
-				? await callOpenAI(apiKey, prompt, resolvedModel, maxTokens)
-				: await callAnthropic(apiKey, prompt, resolvedModel, maxTokens);
+		if (provider === 'openai') {
+			rawText = await callOpenAI(apiKey, prompt, resolvedModel, maxTokens);
+		} else if (provider === 'openrouter') {
+			rawText = await callOpenRouter(apiKey, prompt, resolvedModel, maxTokens);
+		} else {
+			rawText = await callAnthropic(apiKey, prompt, resolvedModel, maxTokens);
+		}
 	} catch (error) {
 		onWarning?.(`${provider} request failed: ${error.message}`);
 		return null;
@@ -400,8 +499,7 @@ async function callAnthropic(apiKey, prompt, model, maxTokens) {
 			model,
 			max_tokens: maxTokens,
 			messages: [{ role: 'user', content: prompt }]
-		}),
-		signal: AbortSignal.timeout(30_000)
+		})
 	});
 
 	if (!res.ok) {
@@ -428,8 +526,7 @@ async function callOpenAI(apiKey, prompt, model, maxTokens) {
 			max_tokens: maxTokens,
 			response_format: { type: 'json_object' },
 			messages: [{ role: 'user', content: prompt }]
-		}),
-		signal: AbortSignal.timeout(30_000)
+		})
 	});
 
 	if (!res.ok) {
@@ -440,6 +537,38 @@ async function callOpenAI(apiKey, prompt, model, maxTokens) {
 	const text = data.choices?.[0]?.message?.content;
 	if (!text) {
 		throw new Error('OpenAI response had no message content');
+	}
+	return text;
+}
+
+// OpenRouter proxies to whatever backend the chosen model actually runs on
+// (Anthropic, Google, open-weight models, etc.), most of which don't support
+// OpenAI's response_format: json_object — so unlike callOpenAI, this relies
+// on the prompt's own JSON instructions, same as callAnthropic.
+async function callOpenRouter(apiKey, prompt, model, maxTokens) {
+	const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+		method: 'POST',
+		headers: {
+			'content-type': 'application/json',
+			authorization: `Bearer ${apiKey}`,
+			'HTTP-Referer': 'https://svocs.dev',
+			'X-Title': 'create-svocs-docs'
+		},
+		body: JSON.stringify({
+			model,
+			max_tokens: maxTokens,
+			messages: [{ role: 'user', content: prompt }]
+		})
+	});
+
+	if (!res.ok) {
+		throw new Error(`OpenRouter API returned ${res.status}`);
+	}
+
+	const data = await res.json();
+	const text = data.choices?.[0]?.message?.content;
+	if (!text) {
+		throw new Error('OpenRouter response had no message content');
 	}
 	return text;
 }

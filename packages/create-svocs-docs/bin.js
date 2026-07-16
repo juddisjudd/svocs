@@ -6,8 +6,10 @@ import { spawnSync } from 'node:child_process';
 import * as p from '@clack/prompts';
 import pc from 'picocolors';
 import {
+	fetchAvailableModels,
 	fetchDeepRepoContext,
 	fetchRepoContext,
+	FALLBACK_MODELS,
 	generateHeuristicPages,
 	generateLlmPages,
 	parseGithubRepo,
@@ -80,23 +82,12 @@ function splitBackendLabel(label) {
 	return { name: label.slice(0, separatorIndex), hint: label.slice(separatorIndex + 2).trim() };
 }
 
-// Deliberately short — every provider ships new models faster than this CLI
-// gets updated. The "Custom model ID…" option (appended where this is used)
-// is the escape hatch, not an afterthought.
-const LLM_MODELS = {
-	anthropic: [
-		{
-			value: 'claude-haiku-4-5-20251001',
-			label: 'Claude Haiku 4.5',
-			hint: 'fastest, cheapest (default)'
-		},
-		{ value: 'claude-sonnet-5', label: 'Claude Sonnet 5', hint: 'balanced' },
-		{ value: 'claude-opus-4-8', label: 'Claude Opus 4.8', hint: 'highest quality, slowest' }
-	],
-	openai: [
-		{ value: 'gpt-4o-mini', label: 'GPT-4o mini', hint: 'fastest, cheapest (default)' },
-		{ value: 'gpt-4o', label: 'GPT-4o', hint: 'higher quality' }
-	]
+const LLM_PROVIDER_IDS = ['anthropic', 'openai', 'openrouter'];
+const LLM_PROVIDER_LABELS = { anthropic: 'Anthropic', openai: 'OpenAI', openrouter: 'OpenRouter' };
+const LLM_PROVIDER_ENV_VAR = {
+	anthropic: 'ANTHROPIC_API_KEY',
+	openai: 'OPENAI_API_KEY',
+	openrouter: 'OPENROUTER_API_KEY'
 };
 const CUSTOM_MODEL_VALUE = '__custom__';
 
@@ -350,9 +341,9 @@ async function main() {
 		process.exitCode = 1;
 		return;
 	}
-	if (llmProviderFlag && !['anthropic', 'openai'].includes(llmProviderFlag)) {
+	if (llmProviderFlag && !LLM_PROVIDER_IDS.includes(llmProviderFlag)) {
 		console.error(
-			`Unknown --llm-provider: "${llmProviderFlag}". Expected "anthropic" or "openai".`
+			`Unknown --llm-provider: "${llmProviderFlag}". Expected one of: ${LLM_PROVIDER_IDS.join(', ')}.`
 		);
 		process.exitCode = 1;
 		return;
@@ -442,12 +433,13 @@ async function main() {
 	}
 
 	function providerLabel(provider) {
-		return provider === 'openai' ? 'OpenAI' : 'Anthropic';
+		return LLM_PROVIDER_LABELS[provider] ?? provider;
 	}
 
-	// A models-list request costs no tokens on either provider, so this runs
-	// before the real (billed) analysis call — cheap, fast feedback instead of
-	// discovering a bad key only after the "asking the AI" spinner fails.
+	// A models-list (or, for OpenRouter, key-info) request costs no tokens on
+	// any provider, so this runs before the real (billed) analysis call —
+	// cheap, fast feedback instead of discovering a bad key only after the
+	// "asking the AI" spinner fails.
 	async function validateAndReportKey(provider, apiKey) {
 		const name = providerLabel(provider);
 		const s = p.spinner();
@@ -461,19 +453,43 @@ async function main() {
 		return isValid;
 	}
 
-	async function askLlmModel(provider) {
+	// Every provider ships new models faster than a hardcoded list can track,
+	// so this asks the provider directly rather than guessing — see
+	// fetchAvailableModels/FALLBACK_MODELS in lib/repo-analysis.mjs for why.
+	async function askLlmModel(provider, apiKey) {
 		if (!isInteractive) return undefined;
+
+		const s = p.spinner();
+		s.start('Fetching available models');
+		const fetched = await fetchAvailableModels(provider, apiKey);
+		if (fetched?.length) {
+			s.stop(`Found ${fetched.length} model${fetched.length === 1 ? '' : 's'}`);
+		} else {
+			s.error("Couldn't fetch the model list — showing a small fallback set");
+		}
+
+		const models = fetched?.length ? fetched : FALLBACK_MODELS[provider];
+		const options = [
+			...models.map((m) => ({
+				value: m.id,
+				label: m.id,
+				hint: m.name && m.name !== m.id ? m.name : undefined
+			})),
+			{ value: CUSTOM_MODEL_VALUE, label: 'Custom model ID…' }
+		];
+
 		const choice = orExit(
-			await p.select({
+			await p.autocomplete({
 				message: 'Model',
-				initialValue: LLM_MODELS[provider][0].value,
-				options: [...LLM_MODELS[provider], { value: CUSTOM_MODEL_VALUE, label: 'Custom model ID…' }]
+				placeholder: 'Type to search…',
+				maxItems: 10,
+				options
 			})
 		);
 		if (choice !== CUSTOM_MODEL_VALUE) {
 			return choice;
 		}
-		return orExit(await p.text({ message: 'Model ID', placeholder: 'e.g. gpt-5' }));
+		return orExit(await p.text({ message: 'Model ID', placeholder: 'e.g. gpt-5.4' }));
 	}
 
 	async function askScanDepth() {
@@ -543,10 +559,7 @@ async function main() {
 				repoAnalysisMode = repoModeFlag ?? 'heuristic';
 				llmProvider = llmProviderFlag ?? 'anthropic';
 				if (repoAnalysisMode === 'llm') {
-					llmApiKey =
-						(llmProvider === 'openai'
-							? process.env.OPENAI_API_KEY
-							: process.env.ANTHROPIC_API_KEY) ?? '';
+					llmApiKey = process.env[LLM_PROVIDER_ENV_VAR[llmProvider]] ?? '';
 					llmModel = llmModelFlag;
 					scanDepth = scanDepthFlag ?? 'standard';
 					if (llmApiKey && !(await validateAndReportKey(llmProvider, llmApiKey))) {
@@ -595,10 +608,10 @@ async function main() {
 							await p.select({
 								message: 'LLM provider',
 								initialValue: 'anthropic',
-								options: [
-									{ value: 'anthropic', label: 'Anthropic' },
-									{ value: 'openai', label: 'OpenAI' }
-								]
+								options: LLM_PROVIDER_IDS.map((id) => ({
+									value: id,
+									label: LLM_PROVIDER_LABELS[id]
+								}))
 							})
 						);
 						llmApiKey = await askSecret(
@@ -612,7 +625,7 @@ async function main() {
 							repoAnalysisMode = 'heuristic';
 							p.log.warn('Falling back to heuristic analysis.');
 						} else {
-							llmModel = await askLlmModel(llmProvider);
+							llmModel = await askLlmModel(llmProvider, llmApiKey);
 							scanDepth = await askScanDepth();
 							await fetchDeepContextIfNeeded(parsed.owner, parsed.repo);
 						}
@@ -645,7 +658,7 @@ async function main() {
 			} else {
 				const providerName = providerLabel(llmProvider);
 				const s = p.spinner();
-				s.start(`Asking ${providerName} to analyze the repo`);
+				s.start(`Asking ${providerName} to analyze the repo (no timeout — press Ctrl+C to cancel)`);
 				let warning = null;
 				generatedPages = await generateLlmPages(
 					repoContext,
