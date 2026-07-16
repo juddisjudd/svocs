@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
+	import { tick } from 'svelte';
 
 	type Theme = 'dark' | 'light';
 
@@ -7,14 +8,51 @@
 		browser && document.documentElement.dataset.theme === 'light' ? 'light' : 'dark'
 	);
 
-	function toggle() {
-		theme = theme === 'dark' ? 'light' : 'dark';
-		document.documentElement.dataset.theme = theme;
+	function applyTheme(next: Theme) {
+		theme = next;
+		document.documentElement.dataset.theme = next;
 		try {
-			localStorage.setItem('docs-theme', theme);
+			localStorage.setItem('docs-theme', next);
 		} catch {
 			// storage unavailable — theme still applies for this page view
 		}
+	}
+
+	function toggle() {
+		const next: Theme = theme === 'dark' ? 'light' : 'dark';
+		// The dissolve effect (see the ::view-transition rules and the
+		// #svocs-dissolve filter in +layout.svelte) only runs when the browser
+		// supports view transitions and the user hasn't asked for reduced
+		// motion; otherwise the switch stays instant.
+		if (
+			!document.startViewTransition ||
+			window.matchMedia('(prefers-reduced-motion: reduce)').matches
+		) {
+			applyTheme(next);
+			return;
+		}
+		const transition = document.startViewTransition(async () => {
+			applyTheme(next);
+			await tick();
+		});
+		// The filter's SMIL animations are parked at begin="indefinite" and can
+		// only start once the snapshot pseudo-elements exist, hence the ready
+		// hook. A fresh turbulence seed keeps repeated toggles from dissolving
+		// in the identical pattern.
+		transition.ready
+			.then(() => {
+				document
+					.querySelector('#svocs-dissolve feTurbulence')
+					?.setAttribute('seed', String(Math.floor(Math.random() * 1000)));
+				for (const anim of document.querySelectorAll<SVGAnimateElement>(
+					'#svocs-dissolve animate'
+				)) {
+					anim.beginElement();
+				}
+			})
+			.catch(() => {
+				// transition was skipped — theme is applied either way
+			});
 	}
 </script>
 

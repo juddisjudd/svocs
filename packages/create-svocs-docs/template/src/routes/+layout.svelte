@@ -50,6 +50,42 @@
 			<a class="footer-link" href={resolve('/docs')}>Docs</a>
 		</div>
 	</footer>
+
+	<!-- Filter behind the theme-switch dissolve; see the ::view-transition rules in the styles. -->
+	<svg class="dissolve-defs" width="0" height="0" aria-hidden="true" focusable="false">
+		<filter
+			id="svocs-dissolve"
+			x="-15%"
+			y="-15%"
+			width="130%"
+			height="130%"
+			color-interpolation-filters="sRGB"
+		>
+			<feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="4" seed="7" result="noise" />
+			<feDisplacementMap
+				in="SourceGraphic"
+				in2="noise"
+				xChannelSelector="R"
+				yChannelSelector="G"
+				scale="0"
+				result="displaced"
+			>
+				<animate attributeName="scale" values="0;90" dur="0.9s" begin="indefinite" fill="freeze" />
+			</feDisplacementMap>
+			<feColorMatrix
+				in="noise"
+				type="matrix"
+				values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  1 0 0 0 0"
+				result="alpha-noise"
+			/>
+			<feComponentTransfer in="alpha-noise" result="threshold">
+				<feFuncA type="linear" slope="16" intercept="1">
+					<animate attributeName="intercept" values="1;-16" dur="0.9s" begin="indefinite" fill="freeze" />
+				</feFuncA>
+			</feComponentTransfer>
+			<feComposite in="displaced" in2="threshold" operator="in" />
+		</filter>
+	</svg>
 </div>
 
 <style>
@@ -114,6 +150,49 @@
 			inset 0 1px 0 rgba(255, 255, 255, 0.6);
 		--shadow-lift: 0 1px 2px rgba(52, 20, 8, 0.06), 0 12px 32px rgba(52, 20, 8, 0.12);
 		--shadow-bar: 0 8px 28px rgba(52, 20, 8, 0.08);
+	}
+
+	/*
+	 * Theme-switch dissolve transition. ThemeToggle wraps the data-theme flip
+	 * in document.startViewTransition() and then restarts the SMIL animations
+	 * inside the #svocs-dissolve SVG filter declared in this layout's markup.
+	 * That filter disintegrates the OLD page snapshot: one feTurbulence
+	 * (Perlin) noise field drives both a growing feDisplacementMap warp and a
+	 * sweeping alpha threshold, so pixels smear and drop out in noise order
+	 * everywhere at once instead of wiping across the screen. The keyframe
+	 * below exists to hold the view transition open for the filter's duration
+	 * (a view transition ends when its pseudo-element animations end) and to
+	 * mop up the last specks with a late fade; if SMIL never fires, the
+	 * effect degrades to that plain fade. Reduced-motion users never enter a
+	 * view transition at all (guarded in ThemeToggle).
+	 */
+	@keyframes -global-svocs-burn-away {
+		0%,
+		70% {
+			opacity: 1;
+		}
+		100% {
+			opacity: 0;
+		}
+	}
+
+	:global(::view-transition-old(root)) {
+		/* Old snapshot must sit on top of (and dissolve to reveal) the new one. */
+		z-index: 1;
+		mix-blend-mode: normal;
+		animation: svocs-burn-away 0.9s ease-in both;
+		filter: url(#svocs-dissolve);
+	}
+
+	:global(::view-transition-new(root)) {
+		mix-blend-mode: normal;
+		animation: none;
+	}
+
+	.dissolve-defs {
+		position: absolute;
+		width: 0;
+		height: 0;
 	}
 
 	:global(body) {
