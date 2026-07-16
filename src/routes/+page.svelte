@@ -4,12 +4,41 @@
 	import DocTypewriter from './DocTypewriter.svelte';
 	import VelvetBackground from './VelvetBackground.svelte';
 	import { SITE_URL } from '$lib/site';
+	import pmBun from '$lib/assets/pm-bun.svg';
+	import pmPnpm from '$lib/assets/pm-pnpm.svg';
+	import pmDeno from '$lib/assets/pm-deno.svg';
+	// Build-time import from the monorepo's own CLI package — the rendered
+	// version is whatever this site build shipped with, no runtime fetch.
+	import cliPkg from '../../packages/create-svocs-docs/package.json';
 
 	let { data }: { data: PageData } = $props();
 
-	const installCommand = 'bunx create-svocs-docs@latest';
+	// Colored "default" icon variants from thesvg.org, rendered via <img>
+	// with no styling applied so each brand mark keeps its own colors.
+	const PACKAGE_MANAGERS = [
+		{ id: 'bun', label: 'Bun', command: 'bunx create-svocs-docs@latest', icon: pmBun },
+		{ id: 'pnpm', label: 'pnpm', command: 'pnpm create svocs-docs', icon: pmPnpm },
+		{ id: 'deno', label: 'Deno', command: 'deno run -A npm:create-svocs-docs', icon: pmDeno }
+	];
+
+	let pm = $state(PACKAGE_MANAGERS[0]);
+	let pickerOpen = $state(false);
+	let pmWrapEl: HTMLSpanElement | undefined = $state();
+	const installCommand = $derived(pm.command);
 	let copied = $state(false);
 	let copyTimer: ReturnType<typeof setTimeout> | undefined;
+
+	function onWindowClick(event: MouseEvent) {
+		if (pickerOpen && pmWrapEl && !pmWrapEl.contains(event.target as Node)) {
+			pickerOpen = false;
+		}
+	}
+
+	function onWindowKeydown(event: KeyboardEvent) {
+		if (event.key === 'Escape') {
+			pickerOpen = false;
+		}
+	}
 
 	async function copyInstall() {
 		try {
@@ -43,6 +72,8 @@
 		'LaTeX math'
 	];
 </script>
+
+<svelte:window onclick={onWindowClick} onkeydown={onWindowKeydown} />
 
 <svelte:head>
 	<title>{pageTitle}</title>
@@ -79,8 +110,36 @@
 		</div>
 
 		<div class="terminal anim" style:--i={4}>
+			<span class="pm-wrap" bind:this={pmWrapEl}>
+				<button
+					class="pm-toggle"
+					aria-expanded={pickerOpen}
+					aria-label="Install with {pm.label} — change package manager"
+					onclick={() => (pickerOpen = !pickerOpen)}
+				>
+					<img src={pm.icon} alt="" />
+				</button>
+				{#if pickerOpen}
+					<div class="pm-picker" role="listbox" aria-label="Package manager">
+						{#each PACKAGE_MANAGERS as option (option.id)}
+							<button
+								role="option"
+								aria-selected={option.id === pm.id}
+								class:active={option.id === pm.id}
+								aria-label={option.label}
+								title={option.label}
+								onclick={() => {
+									pm = option;
+									pickerOpen = false;
+								}}
+							>
+								<img src={option.icon} alt="" />
+							</button>
+						{/each}
+					</div>
+				{/if}
+			</span>
 			<code>
-				<span class="prompt" aria-hidden="true">$</span>
 				{installCommand}
 			</code>
 			<button class="copy" onclick={copyInstall} aria-label="Copy install command">
@@ -118,6 +177,12 @@
 			</button>
 			<span class="sr-only" aria-live="polite">{copied ? 'Copied to clipboard' : ''}</span>
 		</div>
+
+		<p class="pkg-version anim" style:--i={5}>
+			<a href="https://www.npmjs.com/package/create-svocs-docs" target="_blank" rel="noreferrer">
+				v{cliPkg.version} on npm
+			</a>
+		</p>
 	</section>
 
 	<!-- ============ BENTO FEATURES ============ -->
@@ -500,7 +565,7 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 0.35rem;
-		padding: 0.5rem 0.5rem 0.5rem 1rem;
+		padding: 0.5rem;
 		border-radius: 0.75rem;
 		border: 1px solid var(--panel-line-strong);
 		background: var(--panel);
@@ -514,6 +579,83 @@
 		font-family: 'Cascadia Code', 'JetBrains Mono', Consolas, monospace;
 		font-size: 0.88rem;
 		color: var(--panel-text);
+	}
+
+	.pm-wrap {
+		position: relative;
+		display: inline-flex;
+	}
+
+	.pm-toggle {
+		display: grid;
+		place-items: center;
+		width: 1.9rem;
+		height: 1.9rem;
+		padding: 0;
+		border: none;
+		border-radius: 0.4rem;
+		background: transparent;
+		color: var(--panel-accent-soft);
+		cursor: pointer;
+		transition: background 120ms var(--ease-out);
+	}
+
+	.pm-toggle:hover,
+	.pm-toggle[aria-expanded='true'] {
+		background: var(--panel-soft);
+	}
+
+	.pm-toggle img {
+		width: 1.1rem;
+		height: 1.1rem;
+	}
+
+	.pm-picker {
+		position: absolute;
+		bottom: calc(100% + 0.65rem);
+		left: 50%;
+		transform: translateX(-50%);
+		display: flex;
+		gap: 0.25rem;
+		padding: 0.3rem;
+		border-radius: 0.6rem;
+		border: 1px solid var(--panel-line-strong);
+		background: var(--panel);
+		box-shadow:
+			0 1px 2px rgba(0, 0, 0, 0.25),
+			0 8px 24px rgba(0, 0, 0, 0.35);
+		z-index: 6;
+	}
+
+	.pm-picker button {
+		display: grid;
+		place-items: center;
+		width: 2rem;
+		height: 2rem;
+		padding: 0;
+		border: none;
+		border-radius: 0.45rem;
+		background: transparent;
+		color: var(--panel-dim);
+		cursor: pointer;
+		transition:
+			color 120ms var(--ease-out),
+			background 120ms var(--ease-out);
+	}
+
+	.pm-picker button:hover {
+		color: var(--panel-text);
+		background: var(--panel-soft);
+	}
+
+	.pm-picker button.active {
+		color: var(--panel-accent-soft);
+		background: var(--panel-soft);
+	}
+
+	.pm-picker img {
+		width: 1.15rem;
+		height: 1.15rem;
 	}
 
 	.prompt {
@@ -548,6 +690,22 @@
 		.copy:hover {
 			color: var(--panel-accent-soft);
 		}
+	}
+
+	.pkg-version {
+		margin: 0.7rem 0 0;
+		font-size: 0.75rem;
+		letter-spacing: 0.01em;
+	}
+
+	.pkg-version a {
+		color: var(--text-dim);
+		text-decoration: none;
+		transition: color 120ms var(--ease-out);
+	}
+
+	.pkg-version a:hover {
+		color: var(--accent-soft);
 	}
 
 	/* ============ BENTO ============ */
