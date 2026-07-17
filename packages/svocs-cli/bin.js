@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { runDoctor } from './lib/doctor.mjs';
+import { runMigrate } from './lib/migrate.mjs';
 import { runUpdate } from './lib/update.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -16,6 +17,13 @@ Usage:
     --dry-run                  Show what would change without writing anything
     --yes                      Apply without asking for confirmation
     --force                    Re-sync even when the template version matches
+    --from=<dir>               Use a local create-svocs-docs package instead of npm
+  svocs migrate <src> <dest>   Convert a fumadocs site into a new svocs site
+    --site-name=<name>         Site name (default: derived from the source package)
+    --site-url=<origin>        Production URL for the new site
+    --repo-url=<url>           Repository link for the new site's header
+    --accent=<hex>             Accent color
+    --search=<backend>         Search backend (default: pagefind)
     --from=<dir>               Use a local create-svocs-docs package instead of npm
 
 Sites scaffolded with create-svocs-docs >= 0.17 record a .svocs.json manifest;
@@ -32,6 +40,9 @@ async function main() {
 			return;
 		case 'update':
 			process.exitCode = await runUpdate(rest);
+			return;
+		case 'migrate':
+			process.exitCode = await runMigrate(args.filter((arg) => arg !== command));
 			return;
 		default:
 			if (args.includes('--version') || args.includes('-v')) {

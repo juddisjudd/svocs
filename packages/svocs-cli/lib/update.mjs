@@ -75,6 +75,11 @@ export async function runUpdate(args) {
 
 		const plan = { add: [], update: [], skip: [], unchanged: [] };
 		for (const [rel, expectedHash] of Object.entries(expectedHashes)) {
+			// Migrated sites replaced the starter content wholesale; the whole
+			// content/ tree is user-owned there, including template additions.
+			if (manifest.migrated && rel.startsWith('content/')) {
+				continue;
+			}
 			const localPath = join(dir, rel);
 			if (!existsSync(localPath)) {
 				plan.add.push(rel);

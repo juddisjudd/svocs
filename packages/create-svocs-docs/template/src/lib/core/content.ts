@@ -123,7 +123,9 @@ function extractTocFromMarkdown(raw: string): TocItem[] {
 		}
 
 		const depth = match[1].length as 2 | 3;
-		const text = match[2].trim();
+		// Strip markdown link syntax: rehype-slug ids come from the rendered
+		// text, so the slugger must see "Datadog", not "[Datadog](https://…)".
+		const text = match[2].trim().replace(/\[([^\]]*)\]\([^)]*\)/g, '$1');
 		const id = slugger.slug(text);
 
 		if (!id) {

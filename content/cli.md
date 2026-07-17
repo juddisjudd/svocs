@@ -70,6 +70,27 @@ The rules:
 
 Since your content lives in `content/` and is either starter pages you've rewritten or your own files, it's protected by the same hash check as everything else. `update` has no special cases.
 
+## svocs migrate
+
+Converts an existing [fumadocs](https://fumadocs.dev/) site into a new svocs site:
+
+```sh
+npx svocs-cli migrate ../my-fumadocs-site ../my-svocs-site
+```
+
+It scaffolds a fresh site, then converts every page under the source's `content/docs/`:
+
+- Frontmatter (`title`, `description`) carries over; `meta.json` ordering becomes `_meta.json`.
+- `<Tabs>`/`<Tab>`, `<Callout>`, `<Cards>`/`<Card>` map straight to the svocs components — same `items` prop, positional tabs, `error` → `danger`. Fumadocs `[step]` heading markers become `<Steps>` blocks.
+- MDX indentation, JSX comments, and relative links are normalized to what mdsvex and static routes expect. Pages that use components come out as `.svx`, plain ones as `.md`.
+- Site-specific code the converter can't map (custom components, dynamic JSX) is commented out in place with a `svocs migrate TODO` marker, so nothing breaks the build and porting is copy-paste work.
+
+Dead internal links carried over from the source are reported at the end, and the new site is configured to warn on them instead of failing prerender; tighten that back up in `vite.config.ts` once they're fixed.
+
+Flags: `--site-name`, `--site-url`, `--repo-url`, `--accent`, and `--search` mirror the scaffolder's prompts.
+
+Only fumadocs sources are supported right now. If you're migrating from something else, open an issue — the converter is built to grow one source at a time.
+
 ## Sites scaffolded before 0.18
 
 Older scaffolds have no `.svocs.json`, so `update` can't tell your edits from template files and refuses to guess. `doctor` still works. To adopt updates on an older site, compare it against a fresh scaffold once by hand, then keep the fresh scaffold's manifest.
