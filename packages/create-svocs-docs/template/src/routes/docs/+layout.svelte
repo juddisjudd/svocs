@@ -1,10 +1,12 @@
 <script lang="ts">
 	import type { LayoutData } from './$types';
 	import type { Snippet } from 'svelte';
+	import { setContext } from 'svelte';
 	import { browser } from '$app/environment';
 	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
 	import { getBreadcrumbsByPath, type PageMapNode } from '$lib/core/page-map';
+	import { DOCS_PAGE_MAP_CONTEXT } from '$lib/core/page-map-context';
 	import SidebarTree from '$lib/themes/docs/SidebarTree.svelte';
 	import Toc from '$lib/themes/docs/Toc.svelte';
 	import { enhanceCodeBlocks } from '$lib/themes/docs/code-blocks';
@@ -29,6 +31,11 @@
 			// storage unavailable — collapse still applies for this page view
 		}
 	}
+
+	// A getter, not the array itself: reading `data.pageMap` here (component
+	// init, outside any reactive context) would only capture its initial
+	// value. Consumers call this inside their own `$derived` instead.
+	setContext(DOCS_PAGE_MAP_CONTEXT, () => data.pageMap);
 
 	const currentPath = $derived(page.url.pathname.replace(/\/$/, '') || '/docs');
 	const breadcrumbs = $derived(getBreadcrumbsByPath(currentPath, data.pageMap));

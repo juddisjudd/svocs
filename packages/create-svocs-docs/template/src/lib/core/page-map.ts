@@ -7,8 +7,10 @@ type MutablePageNode = {
 	slug: string;
 	path: string;
 	title: string;
+	description?: string;
 	order: number;
 	isDocument: boolean;
+	icon?: string;
 	children: Map<string, MutablePageNode>;
 };
 
@@ -18,8 +20,10 @@ export type PageMapNode =
 			slug: string;
 			path: string;
 			title: string;
+			description?: string;
 			order: number;
 			isDocument: boolean;
+			icon?: string;
 			children: PageMapNode[];
 	  }
 	| {
@@ -27,6 +31,7 @@ export type PageMapNode =
 			kind: 'separator';
 			title: string;
 			order: number;
+			icon?: string;
 	  };
 
 export type Breadcrumb = {
@@ -51,8 +56,10 @@ function finalizeNode(node: MutablePageNode, dirMeta: DirectoryMeta): PageMapNod
 		slug: node.slug,
 		path: node.path,
 		title: node.title,
+		description: node.description,
 		order: node.order,
 		isDocument: node.isDocument,
+		icon: node.icon,
 		children: buildLevel(Array.from(node.children.values()), node.slug, dirMeta)
 	};
 }
@@ -69,7 +76,12 @@ function buildLevel(
 	if (items) {
 		for (const config of Object.values(items)) {
 			if (config.type === 'separator' && config.title && config.order !== undefined) {
-				separators.push({ kind: 'separator', title: config.title, order: config.order });
+				separators.push({
+					kind: 'separator',
+					title: config.title,
+					order: config.order,
+					icon: config.icon
+				});
 			}
 		}
 	}
@@ -109,6 +121,7 @@ export function buildDocsPageMap(
 					title: override?.title ?? titleFromSegment(segment),
 					order: override?.order ?? 999,
 					isDocument: false,
+					icon: override?.icon,
 					children: new Map<string, MutablePageNode>()
 				};
 				current.set(segment, node);
@@ -117,7 +130,11 @@ export function buildDocsPageMap(
 			if (i === segments.length - 1) {
 				node.title = entry.title;
 				node.order = entry.order;
+				node.description = entry.description;
 				node.isDocument = true;
+				// A folder's _meta.json icon (set above, when this node was first
+				// created) wins over its own index page's frontmatter icon.
+				node.icon = node.icon ?? entry.icon;
 			}
 
 			parentDirectory = currentSlug;
@@ -145,6 +162,38 @@ function findNodeBySlug(slug: string, nodes: PageMapNode[]): PageMapNode | null 
 	}
 
 	return null;
+}
+
+/**
+ * Sibling document pages of the page at `path` — same parent, excluding
+ * itself and separators. Backs `<Cards auto>`. Folders with no index page of
+ * their own aren't linkable, so they're excluded rather than resolved.
+ */
+export function getPageTreeSiblings(
+	nodes: PageMapNode[],
+	path: string
+): Extract<PageMapNode, { kind: 'page' }>[] {
+	function siblingsWithin(list: PageMapNode[]): PageMapNode[] | null {
+		if (list.some((node) => node.kind === 'page' && node.path === path)) {
+			return list;
+		}
+		for (const node of list) {
+			if (node.kind !== 'page') {
+				continue;
+			}
+			const found = siblingsWithin(node.children);
+			if (found) {
+				return found;
+			}
+		}
+		return null;
+	}
+
+	const siblings = siblingsWithin(nodes) ?? [];
+	return siblings.filter(
+		(node): node is Extract<PageMapNode, { kind: 'page' }> =>
+			node.kind === 'page' && node.path !== path && node.isDocument
+	);
 }
 
 export function getBreadcrumbsByPath(pathname: string, nodes: PageMapNode[]): Breadcrumb[] {

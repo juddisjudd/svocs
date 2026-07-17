@@ -12,6 +12,7 @@ title: Example Page
 description: Shown in listings and the meta description tag.
 order: 5
 tags: [guide]
+icon: rocket
 ---
 
 Your content starts here.
@@ -23,6 +24,7 @@ Your content starts here.
 - `description`: Optional summary for listings
 - `order`: Sorting number for nav
 - `tags`: Optional list for future filtering
+- `icon`: Name from the curated icon set, shown in the sidebar and next to the page's `<h1>`. See [Components](/docs/components#page-icons) for the full list of names.
 
 Pages also show a "Last updated on" date, taken from the file's most recent git commit at build time — not from filesystem timestamps, which reset on every fresh clone. There's nothing to set: commit the file and the date follows. If your CI does a shallow clone (GitHub Actions and Cloudflare default to one), most files have no reachable history and the date is simply omitted; fetch full history to get it back (`fetch-depth: 0` in the [GitHub Pages workflow](/docs/deployment/github-pages)).
 
@@ -95,6 +97,4 @@ $$
 
 `.svx` files (not `.md`) can import and use Svelte components inline. See the [Components](/docs/components) page for the full built-in set (Callout, Tabs, Steps, Cards, Collapse, Bleed, Banner, FileTree, ImageZoom) and how to import them.
 
-> **Watch out:** avoid writing a literal script-tag as inline code (single backticks). Unlike
-> fenced code blocks, inline spans aren't protected from Svelte's own tag parsing and will break
-> the build. Describe it in prose instead, or put it inside a fenced code block.
+> **Watch out:** don't put inline code containing `<` or `{` in a heading — plain inline code and inline code anywhere else on the page are both fine. See [Troubleshooting](/docs/troubleshooting#a-heading-with-code-containing-a-tag-or-brace-fails-the-build) for why.

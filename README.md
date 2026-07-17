@@ -31,7 +31,8 @@ The scaffolder asks for your site name, production URL, repository link, accent 
 ## Features
 
 - **Markdown-first content** — every file under `content/` becomes a route; `.svx` files mix Svelte components into markdown via [mdsvex](https://mdsvex.pngwn.io/)
-- **Built-in component library** — Callout, Tabs, Steps, Cards, Collapse, Bleed, Banner, FileTree, ImageZoom
+- **Built-in component library** — Callout, Tabs, Steps, Cards (with an auto-populating mode for section landing pages), Collapse, Bleed, Banner, FileTree, ImageZoom
+- **Page icons** — a curated hand-drawn icon set, set per page or per section, shown in the sidebar and page title
 - **Search, five ways** — [Pagefind](https://pagefind.app/) by default (zero config, no server), or [Orama](https://orama.com/), [FlexSearch](https://github.com/nextapps-de/flexsearch), [Typesense](https://typesense.org/), [Chroma](https://www.trychroma.com/), all behind one ⌘K dialog
 - **Social preview cards** — a 1200×630 OG image per page, rendered at build time by [Takumi](https://takumi.kane.tw/) with no headless browser
 - **Math and diagrams** — LaTeX via [KaTeX](https://katex.org/), diagrams via [Mermaid](https://mermaid.js.org/)

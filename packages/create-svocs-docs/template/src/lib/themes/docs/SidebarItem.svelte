@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import type { PageMapNode } from '$lib/core/page-map';
+	import PageIcon from '$lib/icons/PageIcon.svelte';
 	import SidebarTree from './SidebarTree.svelte';
 
 	let {
@@ -27,7 +28,10 @@
 </script>
 
 {#if node.kind === 'separator'}
-	<li class="separator">{node.title}</li>
+	<li class="separator">
+		<PageIcon name={node.icon} class="node-icon" />
+		{node.title}
+	</li>
 {:else if node.kind === 'page'}
 	<li>
 		<div class="row">
@@ -37,6 +41,7 @@
 					onclick={onNavigate}
 					aria-current={isActive ? 'page' : undefined}
 				>
+					<PageIcon name={node.icon} class="node-icon" />
 					{node.title}
 				</a>
 			{:else}
@@ -46,6 +51,7 @@
 					aria-expanded={expanded}
 					onclick={() => (expanded = !expanded)}
 				>
+					<PageIcon name={node.icon} class="node-icon" />
 					{node.title}
 				</button>
 			{/if}
@@ -114,6 +120,15 @@
 		display: flex;
 		align-items: center;
 		gap: 0.15rem;
+	}
+
+	:global(.node-icon) {
+		flex-shrink: 0;
+		width: 0.85rem;
+		height: 0.85rem;
+		margin-right: 0.4rem;
+		vertical-align: -0.1rem;
+		color: var(--text-dim);
 	}
 
 	a,

@@ -17,12 +17,70 @@ import {
 	rewriteLinks,
 	splitFrontmatter,
 	stripImports,
-	walkFiles
+	walkFiles,
+	yamlValue
 } from './pipeline.mjs';
 
 const CALLOUT_TYPE_MAP = { warn: 'warning', error: 'danger' };
 
-function transformLine(text, baseDir) {
+// Fumadocs' icon field is usually a lucide-react component name (resolved via
+// its lucideIconsPlugin); svocs has its own small fixed set, so this is a
+// best-effort translation, not a pass-through. Unmatched names are dropped
+// with a note rather than left as a lucide name svocs can't resolve.
+const LUCIDE_ICON_MAP = {
+	rocket: 'rocket',
+	book: 'book',
+	bookopen: 'book',
+	bookopentext: 'book',
+	settings: 'gear',
+	settings2: 'gear',
+	cog: 'gear',
+	terminal: 'terminal',
+	terminalsquare: 'terminal',
+	squareterminal: 'terminal',
+	code: 'code',
+	code2: 'code',
+	codexml: 'code',
+	folder: 'folder',
+	folderopen: 'folder',
+	folderclosed: 'folder',
+	file: 'file',
+	filetext: 'file',
+	filecode: 'file',
+	package: 'package',
+	packageopen: 'package',
+	packagecheck: 'package',
+	zap: 'zap',
+	zapoff: 'zap',
+	shield: 'shield',
+	shieldcheck: 'shield',
+	shieldalert: 'shield',
+	shieldhalf: 'shield',
+	layers: 'layers',
+	layers2: 'layers',
+	layers3: 'layers',
+	star: 'star',
+	sparkle: 'star',
+	sparkles: 'star',
+	flag: 'flag',
+	flagtriangleright: 'flag',
+	key: 'key',
+	keyround: 'key',
+	keysquare: 'key',
+	lock: 'lock',
+	lockkeyhole: 'lock',
+	lightbulb: 'lightbulb',
+	lightbulboff: 'lightbulb',
+	globe: 'globe',
+	globe2: 'globe',
+	target: 'target'
+};
+
+function mapIconName(name) {
+	return name ? (LUCIDE_ICON_MAP[name.toLowerCase()] ?? null) : null;
+}
+
+function transformLine(text, baseDir, state) {
 	let out = fixInlineHtml(text);
 	// fumadocs-only Tabs props svocs doesn't use
 	out = out.replace(/(<Tabs\b[^>]*?)\s+groupId="[^"]*"/g, '$1');
@@ -36,6 +94,16 @@ function transformLine(text, baseDir) {
 		const mapped = CALLOUT_TYPE_MAP[typeMatch[1]] ?? typeMatch[1];
 		return tag.replace(/type="[a-z]+"/, `type="${mapped}"`);
 	});
+	// Fumadocs apps commonly wire an auto-listing sibling-cards component as
+	// <DocsCategory /> in their own theme (see packages/core's findSiblings
+	// helper) — that's the one name confirmed by Fumadocs' own docs site, so
+	// it's the only one matched; a differently-named equivalent falls through
+	// to the unportable-block TODO path like any other unknown component.
+	const before = out;
+	out = out.replace(/<DocsCategory(\s[^>]*)?\/>/g, '<Cards auto />');
+	if (out !== before) {
+		state.docsCategoryCount += 1;
+	}
 	return out;
 }
 
@@ -74,7 +142,7 @@ function wrapStepMarkers(annotated) {
 	return out;
 }
 
-/** fumadocs meta.json -> ordered _meta items (+ folder title for the parent). */
+/** fumadocs meta.json -> ordered _meta items (+ folder title/icon for the parent). */
 function convertMeta(metaJson, notes, relDir) {
 	const items = {};
 	let order = 1;
@@ -90,7 +158,16 @@ function convertMeta(metaJson, notes, relDir) {
 		}
 		items[entry] = { order: order++ };
 	}
-	return { items, title: metaJson.title };
+	let icon;
+	if (metaJson.icon) {
+		icon = mapIconName(metaJson.icon);
+		if (!icon) {
+			notes.push(
+				`${relDir || '.'}: meta.json icon "${metaJson.icon}" has no svocs equivalent in the curated set; dropped. Pick one by hand in _meta.json if you want an icon there.`
+			);
+		}
+	}
+	return { items, title: metaJson.title, icon };
 }
 
 export default {
@@ -111,20 +188,39 @@ export default {
 		return existsSync(dir) ? dir : null;
 	},
 
-	convertPage(source, { baseDir, todos }) {
-		const { frontmatter, body } = splitFrontmatter(source);
+	prepare() {
+		return { docsCategoryCount: 0 };
+	},
+
+	convertPage(source, { rel, baseDir, todos, notes, state }) {
+		const { frontmatter, fields, body } = splitFrontmatter(source);
 		let annotated = annotateFences(body.split(/\r?\n/));
 
-		const stripped = stripImports(annotated);
+		// DocsCategory is a known, mapped import (see transformLine) so it
+		// doesn't fall into the unportable-block path before conversion runs.
+		const stripped = stripImports(annotated, new Set(['DocsCategory']));
 		annotated = stripped.lines;
 		// Runs before any pass that reshapes lines, so an unportable JSX
 		// expression is still one contiguous block and gets commented whole.
 		annotated = commentUnportableBlocks(annotated, stripped.identifiers, todos);
 		annotated = normalizeComponents(annotated);
-		annotated = mdxCommentPass(annotated, (text) => transformLine(text, baseDir));
+		const before = state.docsCategoryCount;
+		annotated = mdxCommentPass(annotated, (text) => transformLine(text, baseDir, state));
+		if (state.docsCategoryCount > before) {
+			notes.push(
+				`${rel}: <DocsCategory /> converted to <Cards auto /> — verify it lists what you expect.`
+			);
+		}
 		annotated = wrapStepMarkers(annotated);
 
-		return assemblePage(frontmatter, annotated);
+		const icon = fields.icon ? mapIconName(fields.icon) : undefined;
+		if (fields.icon && !icon) {
+			notes.push(
+				`${rel}: frontmatter icon "${fields.icon}" has no svocs equivalent in the curated set; dropped. See /docs/components#page-icons for the list.`
+			);
+		}
+
+		return assemblePage({ ...frontmatter, ...(icon ? { icon: yamlValue(icon) } : {}) }, annotated);
 	},
 
 	collectMeta({ contentDir, notes }) {
@@ -133,14 +229,17 @@ export default {
 		for (const meta of metas) {
 			const relDir = dirname(meta.rel) === '.' ? '' : dirname(meta.rel).replace(/\\/g, '/');
 			const parsed = JSON.parse(readFileSync(meta.full, 'utf8'));
-			const { items, title } = convertMeta(parsed, notes, relDir);
+			const { items, title, icon } = convertMeta(parsed, notes, relDir);
 			for (const [name, config] of Object.entries(items)) {
 				metaItem(metaByDir, relDir, name, config);
 			}
-			// the folder's own title lands on the parent directory's _meta
-			if (title && relDir) {
+			// the folder's own title/icon lands on the parent directory's _meta
+			if ((title || icon) && relDir) {
 				const parent = dirname(relDir) === '.' ? '' : dirname(relDir);
-				metaItem(metaByDir, parent, basename(relDir), { title });
+				metaItem(metaByDir, parent, basename(relDir), {
+					...(title ? { title } : {}),
+					...(icon ? { icon } : {})
+				});
 			}
 		}
 		return metaByDir;

@@ -38,6 +38,25 @@ const MAPPED_IMPORTS = new Set([
 
 const ASIDE_TYPES = { note: 'note', tip: 'tip', caution: 'warning', danger: 'danger' };
 
+// Starlight's icon set (~250-300 names via @astrojs/starlight/components'
+// Icon) and svocs's curated 18 rarely share spelling even where the concept
+// matches ("setting" not "gear", "seti:folder" not "folder"), so this only
+// covers names confirmed against Starlight's own icon list rather than
+// guessing at the rest — everything else is dropped with a note.
+const STARLIGHT_ICON_MAP = {
+	rocket: 'rocket',
+	star: 'star',
+	code: 'code',
+	shield: 'shield',
+	setting: 'gear',
+	'seti:folder': 'folder',
+	'seti:md': 'file'
+};
+
+function mapStarlightIcon(name) {
+	return name ? (STARLIGHT_ICON_MAP[name.toLowerCase()] ?? null) : null;
+}
+
 /** `sidebar:` is a nested frontmatter key, so read it off the raw block. */
 function sidebarFromRaw(raw) {
 	const block = raw.match(/^sidebar:\s*\n((?:[ \t]+\S.*\n?)*)/m)?.[1];
@@ -95,11 +114,19 @@ function convertAsides(annotated) {
 }
 
 /** Starlight-only components and props -> their svocs shapes. */
-function renameComponents(text) {
+function renameComponents(text, iconStats) {
 	let out = text.replace(/<(\/?)CardGrid\b[^>]*>/g, (full, close) =>
 		close ? '</Cards>' : '<Cards>'
 	);
-	out = out.replace(/\s+icon="[^"]*"/g, '');
+	out = out.replace(/\s+icon="([^"]*)"/g, (full, name) => {
+		const mapped = mapStarlightIcon(name);
+		if (mapped) {
+			iconStats.translated += 1;
+			return ` icon="${mapped}"`;
+		}
+		iconStats.dropped += 1;
+		return '';
+	});
 	// LinkCard is self-closing with a description attr; Card takes children
 	out = out.replace(/<LinkCard\b([^>]*?)\/?>(?:<\/LinkCard>)?/g, (full, attrs) => {
 		const title = attrs.match(/title="([^"]*)"/)?.[1] ?? '';
@@ -163,9 +190,15 @@ export default {
 
 		// rename before normalizeComponents so Cards/Card regions get the
 		// blank-line padding and dedenting known components receive
+		const iconStats = { translated: 0, dropped: 0 };
 		annotated = annotated.map((line) =>
-			line.inFence ? line : { ...line, text: renameComponents(line.text) }
+			line.inFence ? line : { ...line, text: renameComponents(line.text, iconStats) }
 		);
+		if (iconStats.dropped > 0) {
+			notes.push(
+				`${rel}: ${iconStats.dropped} Starlight icon name(s) had no svocs equivalent in the curated set; dropped. See /docs/components#page-icons for the list.`
+			);
+		}
 
 		const stripped = stripImports(annotated, MAPPED_IMPORTS);
 		annotated = stripped.lines;

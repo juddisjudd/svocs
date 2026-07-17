@@ -3,6 +3,7 @@
 	import { formatLastUpdated, getDocComponentBySlug } from '$lib/core/content';
 	import { SITE_URL } from '$lib/site';
 	import PageActions from '$lib/themes/docs/PageActions.svelte';
+	import PageIcon from '$lib/icons/PageIcon.svelte';
 
 	let { data }: { data: PageData } = $props();
 	const Content = $derived(getDocComponentBySlug(data.entry.slug.split('/')));
@@ -24,7 +25,7 @@
 
 <article>
 	<header>
-		<h1>{data.entry.title}</h1>
+		<h1><PageIcon name={data.entry.icon} class="title-icon" />{data.entry.title}</h1>
 		{#if data.entry.description}
 			<p>{data.entry.description}</p>
 		{/if}
@@ -52,9 +53,19 @@
 
 	h1 {
 		margin: 0;
+		display: flex;
+		align-items: center;
 		font-size: clamp(1.9rem, 3.4vw, 2.5rem);
 		letter-spacing: -0.02em;
 		line-height: 1.15;
+	}
+
+	h1 :global(.title-icon) {
+		flex-shrink: 0;
+		width: 0.85em;
+		height: 0.85em;
+		margin-right: 0.4rem;
+		color: var(--accent-strong);
 	}
 
 	header p {

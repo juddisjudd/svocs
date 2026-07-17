@@ -17,7 +17,8 @@ Each key under `items` is a file or folder name (no extension) relative to that 
 
 - `title` — overrides the display title, in both the sidebar and on the page itself.
 - `order` — a sort key. Lower sorts first. Items without an explicit order default to `999` and sort after everything that has one.
-- `type: "separator"` — turns this entry into a non-clickable heading (see below) instead of pointing at a real file.
+- `icon` — a name from the curated icon set (see [Components](/docs/components#page-icons)). Set here, it wins over the same page's frontmatter `icon`, so a section can standardize icons without editing every file. On a folder entry, this is also the only way to give a folder an icon when it has no index page of its own.
+- `type: "separator"` — turns this entry into a non-clickable heading (see below) instead of pointing at a real file. Separators can carry an `icon` too.
 
 ## Precedence
 
@@ -28,7 +29,7 @@ A page's title and order can come from four places. From highest priority to low
 3. The page's own frontmatter
 4. Auto-derived from the filename (title-cased) and `order: 999`
 
-Each field resolves independently. A page can take its `order` from `_meta.json` while its `title` still comes from frontmatter, if `_meta.json` doesn't set a title for that key.
+Each field resolves independently. A page can take its `order` from `_meta.json` while its `title` still comes from frontmatter, if `_meta.json` doesn't set a title for that key. `icon` follows the same chain, except there's no auto-derived fallback — a page with no `icon` set anywhere just shows none.
 
 This means `_meta.json` is the right place to reorganize navigation without touching content files: renaming a sidebar label, reordering pages, or moving a page into a different category is a one-line change in `_meta.json`, no matter what the page's own frontmatter says.
 

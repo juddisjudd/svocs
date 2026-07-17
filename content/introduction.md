@@ -4,11 +4,11 @@ SVOCS is a markdown-first documentation site generator built on SvelteKit and Sv
 
 ## Why SVOCS
 
-- **Markdown-first, components when you need them.** `.md` files are plain prose. Switch a file to `.svx` and it can import and render real Svelte components inline.
-- **File-system routing.** `content/` maps directly to `/docs/*`, with no route config to maintain.
-- **Zero-config search.** Every build indexes your docs with Pagefind, and search runs in the browser without a server or API keys.
-- **Static output.** Every page prerenders via `adapter-static`. The Svelte compiler moves work to build time, so readers download very little JavaScript.
-- **Runes-first.** Sidebar state, theme, and search are built on Svelte 5 runes instead of legacy stores.
+- `.md` files are plain prose; switch one to `.svx` and it can import and render real Svelte components inline.
+- `content/` maps directly to `/docs/*` — no route config to maintain.
+- Every build indexes your docs with Pagefind. Search runs in the browser, no server or API keys involved.
+- Every page prerenders via `adapter-static`, and the Svelte compiler moves work to build time, so readers download very little JavaScript.
+- Sidebar state, theme, and search all run on Svelte 5 runes, not legacy stores.
 
 ## How the pieces fit together
 

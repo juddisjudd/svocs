@@ -3,25 +3,28 @@
 		"getting-started-heading": { "type": "separator", "title": "Getting Started", "order": 1 },
 		"introduction": { "order": 2 },
 		"getting-started": { "order": 3 },
-		"cli": { "order": 4 },
+		"repo-analysis": { "order": 4 },
 
 		"guides-heading": { "type": "separator", "title": "Guides", "order": 5 },
 		"writing-content": { "order": 6 },
 		"components": { "order": 7 },
-		"architecture": { "order": 8 },
-		"ai": { "order": 9 },
-		"repo-analysis": { "order": 10 },
+		"navigation": { "order": 8 },
+		"theming": { "order": 9 },
+		"og-images": { "order": 10 },
 
-		"configuration-heading": { "type": "separator", "title": "Configuration", "order": 11 },
-		"theming": { "order": 12 },
-		"navigation": { "order": 13 },
-		"og-images": { "order": 14 },
+		"search-heading": { "type": "separator", "title": "Search", "order": 11 },
+		"search": { "order": 12 },
 
-		"search-heading": { "type": "separator", "title": "Search", "order": 15 },
-		"search": { "order": 16 },
+		"operating-heading": { "type": "separator", "title": "Operating Your Site", "order": 13 },
+		"cli": { "order": 14 },
+		"deployment": { "order": 15 },
+		"troubleshooting": { "order": 16 },
 
-		"more-heading": { "type": "separator", "title": "More", "order": 17 },
-		"deployment": { "order": 18 },
-		"about": { "order": 19 }
+		"reference-heading": { "type": "separator", "title": "Reference", "order": 17 },
+		"architecture": { "order": 18 },
+		"ai": { "order": 19 },
+
+		"more-heading": { "type": "separator", "title": "More", "order": 20 },
+		"about": { "order": 21 }
 	}
 }

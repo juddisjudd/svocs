@@ -12,28 +12,40 @@
 	import FileTree from '$lib/components/FileTree.svelte';
 	import FileTreeFolder from '$lib/components/FileTreeFolder.svelte';
 	import FileTreeFile from '$lib/components/FileTreeFile.svelte';
+	import ImageZoom from '$lib/components/ImageZoom.svelte';
+	import IconShowcase from '$lib/icons/IconShowcase.svelte';
 </script>
 
 <Banner id="components-intro">
-	These components ship with SVOCS. Import them from `$lib/components` in any `.svx` file.
+
+These components ship with SVOCS. Import them from `$lib/components` in any `.svx` file.
+
 </Banner>
 
 ## Callout
 
 <Callout type="info">
-	Use `.svx` instead of `.md` for any page that needs live components.
+
+Use `.svx` instead of `.md` for any page that needs live components.
+
 </Callout>
 
 <Callout type="tip">
-	Frontmatter and sidecar `.meta.json` both work on `.svx` files too.
+
+Frontmatter and sidecar `.meta.json` both work on `.svx` files too.
+
 </Callout>
 
 <Callout type="warning">
-	Component imports only work in `.svx` — plain `.md` files can't have a script block.
+
+Component imports only work in `.svx` — plain `.md` files can't have a script block.
+
 </Callout>
 
 <Callout type="danger">
-	Don't nest a `Callout` inside another `Callout` — styling assumes one level.
+
+Don't nest a `Callout` inside another `Callout` — styling assumes one level.
+
 </Callout>
 
 Import path: `$lib/components/Callout.svelte`, added at the top of the `.svx` file's script block alongside your other imports.
@@ -87,10 +99,32 @@ Run `bun run dev` and visit `/docs/example`.
 ## Cards
 
 <Cards>
-	<Card title="Getting Started" href={resolve('/docs/getting-started')}>Bootstrap your first SVOCS site.</Card>
-	<Card title="Deployment" href={resolve('/docs/deployment')}>Ship to Cloudflare Pages or GitHub Pages.</Card>
-	<Card title="GitHub" href="https://github.com" external>Source and issue tracker.</Card>
+	<Card title="Getting Started" href={resolve('/docs/getting-started')} icon="rocket">Bootstrap your first SVOCS site.</Card>
+	<Card title="Deployment" href={resolve('/docs/deployment')} icon="globe">Ship to Cloudflare Pages or GitHub Pages.</Card>
+	<Card title="GitHub" href="https://github.com" external icon="star">Source and issue tracker.</Card>
 </Cards>
+
+`Card` takes an optional `icon` prop — any name from the [page icon set](#page-icons) below.
+
+### Auto-populated
+
+Pass `auto` instead of children and `Cards` lists the current page's siblings — same parent, in sidebar order — pulling each one's title, description, icon, and link from the page tree. Useful on a section's landing page so its children never need to be listed twice.
+
+<Cards auto />
+
+_(the grid above is live — it's this page's own siblings in the sidebar)_
+
+## Page icons
+
+<Callout type="info">
+
+Set `icon: <name>` in a page's frontmatter, or `icon` on a `_meta.json` item, to show one of these next to that page in the sidebar and its `<h1>`. See [Writing Content](/docs/writing-content#metadata-fields) and [Navigation](/docs/navigation#fields).
+
+</Callout>
+
+<IconShowcase />
+
+Import `PageIcon` from `$lib/icons/PageIcon.svelte` directly if you want one inline in prose; everywhere else (frontmatter, `_meta.json`, the `Card` `icon` prop) just takes the name as a string.
 
 ## Collapse
 
@@ -113,6 +147,14 @@ It compiles Markdown straight to Svelte components, so `.svx` files can mix pros
 	</FileTreeFolder>
 	<FileTreeFile name="svelte.config.js" />
 </FileTree>
+
+## ImageZoom
+
+Click any screenshot to open it full-size in an overlay; click again (or press Escape) to close it:
+
+<ImageZoom src="/og-card-example.png" alt="The social preview card SVOCS generates for a page" width={1200} height={630} />
+
+Import path: `$lib/components/ImageZoom.svelte`. Takes `src`, `alt`, and optional `width`/`height` — set those two to the source image's real dimensions so the layout doesn't shift once it loads.
 
 ## Bleed
 

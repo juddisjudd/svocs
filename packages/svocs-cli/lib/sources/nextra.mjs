@@ -63,7 +63,7 @@ function renameDottedComponents(text) {
 		.replace(/<(\/?)FileTree\.File\b/g, '<$1FileTreeFile');
 }
 
-function transformLine(text, baseDir, prefixAbsolute) {
+function transformLine(text, baseDir, state) {
 	let out = fixInlineHtml(text);
 	// keep only the items prop on <Tabs>; defaultIndex/storageKey are Nextra-only
 	out = out.replace(/<Tabs\s+([^>]*)>/g, (full, attrs) => {
@@ -72,7 +72,13 @@ function transformLine(text, baseDir, prefixAbsolute) {
 	});
 	// Nextra-only Callout/Card props svocs has no use for
 	out = out.replace(/\s+emoji=(?:"[^"]*"|\{[^}]*\})/g, '');
+	// Nextra's Card icon is a JSX element (icon={<Rocket/>}), not a name
+	// string like svocs's — there's no value to translate, only drop.
+	const beforeIcon = out;
 	out = out.replace(/\s+icon=\{[^}]*\}/g, '');
+	if (out !== beforeIcon) {
+		state.iconPropsDropped += 1;
+	}
 	out = out.replace(/(<Card\b[^>]*?)\s+arrow(?=[\s>])/g, '$1');
 	out = out.replace(/(<FileTreeFolder\b[^>]*?)\s+defaultOpen(?=[\s>])/g, '$1 open');
 	out = out.replace(/<Callout(\s[^>]*)?>/g, (tag, attrs = '') => {
@@ -84,7 +90,7 @@ function transformLine(text, baseDir, prefixAbsolute) {
 		return tag.replace(/type="[a-z]+"/, `type="${mapped}"`);
 	});
 	out = rewriteLinks(out, baseDir);
-	if (prefixAbsolute) {
+	if (state.prefixAbsolute) {
 		out = prefixDocsLinks(out);
 	}
 	return out;
@@ -193,10 +199,10 @@ export default {
 	prepare({ sourceDir }) {
 		const root = chosenRoot(sourceDir) ?? '';
 		// docs served from the site root need /docs prefixed onto absolute links
-		return { prefixAbsolute: !root.endsWith('docs') };
+		return { prefixAbsolute: !root.endsWith('docs'), iconPropsDropped: 0 };
 	},
 
-	convertPage(source, { baseDir, todos, state }) {
+	convertPage(source, { rel, baseDir, todos, notes, state }) {
 		const { frontmatter, body } = splitFrontmatter(source);
 		let { title, body: rest } = { title: null, body };
 		if (!frontmatter.title) {
@@ -211,9 +217,13 @@ export default {
 		annotated = stripped.lines;
 		annotated = commentUnportableBlocks(annotated, stripped.identifiers, todos);
 		annotated = normalizeComponents(annotated);
-		annotated = mdxCommentPass(annotated, (text) =>
-			transformLine(text, baseDir, state.prefixAbsolute)
-		);
+		const before = state.iconPropsDropped;
+		annotated = mdxCommentPass(annotated, (text) => transformLine(text, baseDir, state));
+		if (state.iconPropsDropped > before) {
+			notes.push(
+				`${rel}: Card icon={...} dropped — it's a JSX element in Nextra, not a name svocs can resolve. Set a string icon prop by hand from /docs/components#page-icons if you want one.`
+			);
+		}
 
 		return assemblePage(
 			{ ...frontmatter, ...(title ? { title: yamlValue(title) } : {}) },

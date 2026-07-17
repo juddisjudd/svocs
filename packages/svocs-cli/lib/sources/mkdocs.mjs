@@ -16,6 +16,74 @@ import {
 	yamlValue
 } from './pipeline.mjs';
 
+// Material for MkDocs' page icon (`icon: material/<name>`, or a bare name —
+// the theme defaults unprefixed names to the material/ set). MDI's slugs are
+// specific and large (10k+ icons across 4 bundled sets); this covers the
+// direct or close matches for svocs's curated set and leaves everything else
+// for a human, rather than guessing.
+const MATERIAL_ICON_MAP = {
+	rocket: 'rocket',
+	'rocket-launch': 'rocket',
+	book: 'book',
+	'book-open': 'book',
+	'book-open-variant': 'book',
+	'book-open-page-variant': 'book',
+	cog: 'gear',
+	'cog-outline': 'gear',
+	settings: 'gear',
+	console: 'terminal',
+	'console-line': 'terminal',
+	'code-tags': 'code',
+	'code-braces': 'code',
+	xml: 'code',
+	folder: 'folder',
+	'folder-outline': 'folder',
+	'folder-open': 'folder',
+	'file-document': 'file',
+	'file-document-outline': 'file',
+	file: 'file',
+	'file-outline': 'file',
+	'package-variant': 'package',
+	'package-variant-closed': 'package',
+	package: 'package',
+	'lightning-bolt': 'zap',
+	'lightning-bolt-outline': 'zap',
+	flash: 'zap',
+	shield: 'shield',
+	'shield-outline': 'shield',
+	'shield-check': 'shield',
+	'shield-check-outline': 'shield',
+	layers: 'layers',
+	'layers-outline': 'layers',
+	'layers-triple': 'layers',
+	star: 'star',
+	'star-outline': 'star',
+	flag: 'flag',
+	'flag-outline': 'flag',
+	'flag-variant': 'flag',
+	key: 'key',
+	'key-variant': 'key',
+	'key-outline': 'key',
+	lock: 'lock',
+	'lock-outline': 'lock',
+	lightbulb: 'lightbulb',
+	'lightbulb-on': 'lightbulb',
+	'lightbulb-outline': 'lightbulb',
+	earth: 'globe',
+	web: 'globe',
+	target: 'target',
+	'bullseye-arrow': 'target'
+};
+
+/** `material/rocket-launch` or bare `rocket-launch` -> `rocket`, or null. */
+function mapMaterialIcon(value) {
+	const [set, name] = value.includes('/') ? value.split('/') : [null, value];
+	if (set && set !== 'material') {
+		return null;
+	}
+	return MATERIAL_ICON_MAP[name.toLowerCase()] ?? null;
+}
+
 const ADMONITION_TYPES = {
 	note: 'note',
 	seealso: 'note',
@@ -262,8 +330,8 @@ export default {
 			?.trim();
 	},
 
-	convertPage(source, { baseDir, todos }) {
-		const { frontmatter, body } = splitFrontmatter(source);
+	convertPage(source, { rel, baseDir, todos, notes }) {
+		const { frontmatter, fields, body } = splitFrontmatter(source);
 		let { title, body: rest } = { title: null, body };
 		if (!frontmatter.title) {
 			({ title, body: rest } = hoistLeadingH1(body));
@@ -273,8 +341,19 @@ export default {
 		let annotated = annotateFences(converted);
 		annotated = mdxCommentPass(annotated, (text) => rewriteLinks(text, baseDir));
 
+		const icon = fields.icon ? mapMaterialIcon(fields.icon) : undefined;
+		if (fields.icon && !icon) {
+			notes.push(
+				`${rel}: frontmatter icon "${fields.icon}" has no svocs equivalent in the curated set; dropped. See /docs/components#page-icons for the list.`
+			);
+		}
+
 		return assemblePage(
-			{ ...frontmatter, ...(title ? { title: yamlValue(title) } : {}) },
+			{
+				...frontmatter,
+				...(title ? { title: yamlValue(title) } : {}),
+				...(icon ? { icon: yamlValue(icon) } : {})
+			},
 			annotated
 		);
 	},

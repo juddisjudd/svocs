@@ -6,6 +6,7 @@ declare module '*.md' {
 		description?: string;
 		order?: number;
 		tags?: string[];
+		icon?: string;
 		items?: Record<string, { title?: string; order?: number }>;
 	};
 
@@ -21,6 +22,7 @@ declare module '*.svx' {
 		description?: string;
 		order?: number;
 		tags?: string[];
+		icon?: string;
 	};
 
 	const component: Component;

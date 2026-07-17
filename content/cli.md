@@ -82,20 +82,21 @@ First, the honest part: every framework this command reads from is good software
 
 The source framework is auto-detected (override with `--source=fumadocs|nextra|docusaurus|starlight|mkdocs|mdbook`). The converter scaffolds a fresh site, then converts the source's content tree:
 
-| Source     | What maps over                                                                                                                                                                                                        |
-| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Fumadocs   | `content/docs/` MDX; `<Tabs>`/`<Callout>`/`<Cards>` map directly (`error` → `danger`); `[step]` headings become `<Steps>`; `meta.json` → `_meta.json`                                                                 |
-| Nextra     | `content/` or `pages/` MDX; `<Callout>`, `<Steps>`, `<Tabs items={…}>` pass through; `Tabs.Tab`/`Cards.Card`/`FileTree.*` lose the dots; `_meta.json` and (best-effort) `_meta.js/tsx` → `_meta.json`                 |
-| Docusaurus | `docs/` tree; `:::note`-style admonitions become `<Callout>`; `<Tabs>`/`<TabItem>` become the `items` shape; `01-` number prefixes, `sidebar_position`, and `_category_.json` become `_meta.json` ordering            |
-| Starlight  | `src/content/docs/`; asides (both `:::` and `<Aside>`) become `<Callout>`; `CardGrid`/`LinkCard` become `Cards`/`Card`; `sidebar:` frontmatter becomes ordering; root-relative links gain the `/docs` prefix          |
-| MkDocs     | `docs/` markdown; `!!! note` admonitions become `<Callout>`, `??? tip` collapsibles become `<Collapse>`, `=== "Tab"` content tabs become `<Tabs>`; the `mkdocs.yml` `nav:` becomes `_meta.json`                       |
-| mdBook     | `src/` markdown; `SUMMARY.md` becomes ordering (part headings become sidebar separators); `README.md` chapters become index pages; rust hidden lines (`# `) are stripped; `mdbook-admonish` blocks become `<Callout>` |
+| Source     | What maps over                                                                                                                                                                                                                                                                            |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Fumadocs   | `content/docs/` MDX; `<Tabs>`/`<Callout>`/`<Cards>` map directly (`error` → `danger`); `[step]` headings become `<Steps>`; `meta.json` → `_meta.json`; `icon` (frontmatter or meta.json) and `<DocsCategory />` map to svocs [page icons](/docs/components#page-icons) and `<Cards auto>` |
+| Nextra     | `content/` or `pages/` MDX; `<Callout>`, `<Steps>`, `<Tabs items={…}>` pass through; `Tabs.Tab`/`Cards.Card`/`FileTree.*` lose the dots; `_meta.json` and (best-effort) `_meta.js/tsx` → `_meta.json`                                                                                     |
+| Docusaurus | `docs/` tree; `:::note`-style admonitions become `<Callout>`; `<Tabs>`/`<TabItem>` become the `items` shape; `01-` number prefixes, `sidebar_position`, and `_category_.json` become `_meta.json` ordering; `<DocCardList />` becomes `<Cards auto>`                                      |
+| Starlight  | `src/content/docs/`; asides (both `:::` and `<Aside>`) become `<Callout>`; `CardGrid`/`LinkCard` become `Cards`/`Card`; `sidebar:` frontmatter becomes ordering; root-relative links gain the `/docs` prefix; `Card` `icon` names translate where Starlight's vocabulary overlaps svocs's |
+| MkDocs     | `docs/` markdown; `!!! note` admonitions become `<Callout>`, `??? tip` collapsibles become `<Collapse>`, `=== "Tab"` content tabs become `<Tabs>`; the `mkdocs.yml` `nav:` becomes `_meta.json`; Material for MkDocs' frontmatter `icon: material/…` translates to a svocs page icon      |
+| mdBook     | `src/` markdown; `SUMMARY.md` becomes ordering (part headings become sidebar separators); `README.md` chapters become index pages; rust hidden lines (`# `) are stripped; `mdbook-admonish` blocks become `<Callout>`                                                                     |
 
 Everywhere, the same rules apply:
 
 - Frontmatter (`title`, `description`) carries over; pages that open with a lone `# Title` have it hoisted into frontmatter, since the svocs layout renders the title itself.
 - Relative links are rewritten to absolute `/docs/` routes, and pages that use components come out as `.svx`, plain ones as `.md`.
 - Anything the converter can't map honestly — custom components, raw JSX, `{{#include}}` calls — is commented out in place with a `svocs migrate TODO` marker, so nothing breaks the build and porting is copy-paste work. It never guesses.
+- Icon names are translated against svocs's curated set where the source uses a comparable string-based vocabulary (Fumadocs, Material for MkDocs, some of Starlight's). An icon with no equivalent, or one that's a JSX element rather than a name at all (Nextra), is dropped with a note rather than left broken — pick a replacement from `/docs/components#page-icons` by hand if you want one there.
 
 Dead internal links carried over from the source are reported at the end, and the new site is configured to warn on them instead of failing prerender; tighten that back up in `vite.config.ts` once they're fixed.
 

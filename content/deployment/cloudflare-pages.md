@@ -27,13 +27,13 @@ bunx wrangler pages deploy build --project-name my-docs
 
 ## Production tips
 
-- **Preview deployments**: every pull request automatically gets its own preview URL.
-- **Custom domains**: add one under **Custom domains** in the project settings; TLS is provisioned for you.
-- **Redirects/headers**: drop a `_redirects` or `_headers` file into `static/` and it ships with the build:
+- Every pull request gets its own preview URL automatically.
+- Add a custom domain under **Custom domains** in the project settings; TLS is provisioned for you.
+- Drop a `_redirects` or `_headers` file into `static/` and it ships with the build:
 
 ```txt filename="static/_redirects"
 /old-guide  /docs/getting-started  301
 ```
 
-- **Search works out of the box**: the Pagefind index is part of `build/`, so no extra step is required.
-- **"Last updated" dates**: Pages builds use a shallow clone, so the per-page date (which comes from git history) is omitted for most files. The site works fine without it; deploy from your own CI with full history if you want the dates.
+- The Pagefind index is already part of `build/`, so search works with no extra step.
+- Pages builds use a shallow clone, so the per-page "last updated" date (pulled from git history) is omitted for most files. The site works fine without it — deploy from your own CI with full history if you want the dates back.

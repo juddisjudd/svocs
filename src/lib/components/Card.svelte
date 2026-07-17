@@ -1,15 +1,24 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
+	import PageIcon from '$lib/icons/PageIcon.svelte';
 
 	let {
 		title,
 		href,
 		external = false,
+		icon,
 		children
-	}: { title: string; href?: string; external?: boolean; children?: Snippet } = $props();
+	}: {
+		title: string;
+		href?: string;
+		external?: boolean;
+		icon?: string;
+		children?: Snippet;
+	} = $props();
 </script>
 
 {#snippet body()}
+	<PageIcon name={icon} class="card-icon" />
 	<strong>{title}</strong>
 	{#if children}
 		<span>{@render children()}</span>
@@ -54,6 +63,13 @@
 
 	a.card {
 		cursor: pointer;
+	}
+
+	.card :global(.card-icon) {
+		width: 1.3rem;
+		height: 1.3rem;
+		margin-bottom: 0.1rem;
+		color: var(--accent-strong);
 	}
 
 	.card strong {

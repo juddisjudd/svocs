@@ -10,12 +10,17 @@ type ContentModule = {
 		description?: string;
 		order?: number;
 		tags?: string[];
+		/** Name from the curated icon set ($lib/icons/icon-set.ts). */
+		icon?: string;
 	};
 };
 
 export type MetaItemConfig = {
 	title?: string;
 	order?: number;
+	/** Name from the curated icon set ($lib/icons/icon-set.ts). Wins over a
+	 *  page's own frontmatter icon; see applyMetaFallback. */
+	icon?: string;
 	/** Separators are virtual sidebar headings with no backing file, so
 	 *  `title` and `order` are required. */
 	type?: 'separator';
@@ -30,6 +35,7 @@ type PageMetaModule = {
 	description?: string;
 	order?: number;
 	tags?: string[];
+	icon?: string;
 };
 
 export type ContentSummary = {
@@ -43,6 +49,8 @@ export type ContentSummary = {
 	readingTimeMinutes: number;
 	/** Last git commit date for the source file (YYYY-MM-DD), when known. */
 	lastModified?: string;
+	/** Name from the curated icon set ($lib/icons/icon-set.ts). */
+	icon?: string;
 };
 
 export type TocItem = {
@@ -241,7 +249,8 @@ function applyMetaFallback(
 		// _meta.json wins over the page's own frontmatter/sidecar so nav can
 		// always be reordered centrally.
 		title: itemMeta?.title || entry.title || titleFromSlug(entry.slug),
-		order: itemMeta?.order ?? entry.order ?? 999
+		order: itemMeta?.order ?? entry.order ?? 999,
+		icon: itemMeta?.icon || entry.icon
 	};
 }
 
@@ -268,6 +277,7 @@ export function getAllContentSummaries(): ContentSummary[] {
 				description: sidecarMeta?.description ?? mod.metadata?.description,
 				order: sidecarMeta?.order ?? mod.metadata?.order,
 				tags: sidecarMeta?.tags ?? mod.metadata?.tags ?? [],
+				icon: sidecarMeta?.icon ?? mod.metadata?.icon,
 				wordCount,
 				readingTimeMinutes,
 				lastModified: contentDates[filePath.slice(1)]

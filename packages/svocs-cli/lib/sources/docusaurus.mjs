@@ -25,7 +25,7 @@ import {
 	yamlValue
 } from './pipeline.mjs';
 
-const MAPPED_IMPORTS = new Set(['Tabs', 'TabItem']);
+const MAPPED_IMPORTS = new Set(['Tabs', 'TabItem', 'DocCardList']);
 
 const ADMONITION_TYPES = {
 	note: 'note',
@@ -114,12 +114,22 @@ export default {
 		annotated = convertDirectives(annotated, ADMONITION_TYPES);
 
 		let customIds = 0;
+		let docCardLists = 0;
 		annotated = mdxCommentPass(annotated, (text) => {
 			let out = text;
 			const heading = out.match(/^(#{1,6}\s.*?)\s*\{#[\w-]+\}\s*$/);
 			if (heading) {
 				customIds += 1;
 				out = heading[1];
+			}
+			// <DocCardList /> auto-lists the current sidebar category's items —
+			// the same shape as <Cards auto />, which reads siblings instead of
+			// a category (equivalent unless the category link itself is nested
+			// oddly), so it's a direct swap rather than a TODO.
+			const beforeCardList = out;
+			out = out.replace(/<DocCardList(\s[^>]*)?\/>/g, '<Cards auto />');
+			if (out !== beforeCardList) {
+				docCardLists += 1;
 			}
 			out = fixInlineHtml(out);
 			out = rewriteLinks(out, baseDir, stripNumberPrefix);
@@ -128,6 +138,11 @@ export default {
 		if (customIds > 0) {
 			notes.push(
 				`${rel}: ${customIds} custom heading id(s) ({#…}) removed — svocs generates ids from heading text, so #anchors may differ.`
+			);
+		}
+		if (docCardLists > 0) {
+			notes.push(
+				`${rel}: <DocCardList /> converted to <Cards auto /> — verify it lists what you expect.`
 			);
 		}
 

@@ -1,10 +1,12 @@
 <script lang="ts">
 	import type { LayoutData } from './$types';
 	import type { Snippet } from 'svelte';
+	import { setContext } from 'svelte';
 	import { browser } from '$app/environment';
 	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
 	import { getBreadcrumbsByPath, type PageMapNode } from '$lib/core/page-map';
+	import { DOCS_PAGE_MAP_CONTEXT } from '$lib/core/page-map-context';
 	import SidebarTree from '$lib/themes/docs/SidebarTree.svelte';
 	import Toc from '$lib/themes/docs/Toc.svelte';
 	import { enhanceCodeBlocks } from '$lib/themes/docs/code-blocks';
@@ -13,7 +15,7 @@
 
 	let { data, children }: { data: LayoutData; children: Snippet } = $props();
 	let sidebarOpen = $state(false);
-	let navCollapsed = $state(browser && localStorage.getItem('svocs-nav') === 'collapsed');
+	let navCollapsed = $state(browser && localStorage.getItem('docs-nav') === 'collapsed');
 	let proseEl: HTMLDivElement | undefined = $state();
 	let activeHeadingId: string | undefined = $state();
 
@@ -24,11 +26,16 @@
 	function toggleNav() {
 		navCollapsed = !navCollapsed;
 		try {
-			localStorage.setItem('svocs-nav', navCollapsed ? 'collapsed' : 'open');
+			localStorage.setItem('docs-nav', navCollapsed ? 'collapsed' : 'open');
 		} catch {
 			// storage unavailable — collapse still applies for this page view
 		}
 	}
+
+	// A getter, not the array itself: reading `data.pageMap` here (component
+	// init, outside any reactive context) would only capture its initial
+	// value. Consumers call this inside their own `$derived` instead.
+	setContext(DOCS_PAGE_MAP_CONTEXT, () => data.pageMap);
 
 	const currentPath = $derived(page.url.pathname.replace(/\/$/, '') || '/docs');
 	const breadcrumbs = $derived(getBreadcrumbsByPath(currentPath, data.pageMap));
@@ -69,8 +76,8 @@
 	}
 
 	const flatDocs = $derived(flattenDocs(data.pageMap));
-	// /docs renders the getting-started document, so page through as that entry
-	const pagerPath = $derived(currentPath === '/docs' ? '/docs/getting-started' : currentPath);
+	// /docs renders the introduction document, so page through as that entry
+	const pagerPath = $derived(currentPath === '/docs' ? '/docs/introduction' : currentPath);
 	const pagerIndex = $derived(flatDocs.findIndex((node) => node.path === pagerPath));
 	const prevDoc = $derived(pagerIndex > 0 ? flatDocs[pagerIndex - 1] : null);
 	const nextDoc = $derived(
@@ -99,41 +106,24 @@
 			aria-label={navCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
 			onclick={toggleNav}
 		>
-			{#if navCollapsed}
-				<!-- layout-sidebar-left-expand (Tabler) -->
-				<svg
-					viewBox="0 0 24 24"
+			<svg viewBox="0 0 16 16" aria-hidden="true" class:flipped={navCollapsed}>
+				<path
+					d="m9 4-4 4 4 4"
 					fill="none"
 					stroke="currentColor"
-					stroke-width="2"
+					stroke-width="1.5"
 					stroke-linecap="round"
 					stroke-linejoin="round"
-					aria-hidden="true"
-				>
-					<path
-						d="M4 6a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2l0 -12"
-					/>
-					<path d="M9 4v16" />
-					<path d="M14 10l2 2l-2 2" />
-				</svg>
-			{:else}
-				<!-- layout-sidebar-left-collapse (Tabler) -->
-				<svg
-					viewBox="0 0 24 24"
+				/>
+				<path
+					d="m13 4-4 4 4 4"
 					fill="none"
 					stroke="currentColor"
-					stroke-width="2"
+					stroke-width="1.5"
 					stroke-linecap="round"
 					stroke-linejoin="round"
-					aria-hidden="true"
-				>
-					<path
-						d="M4 6a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2l0 -12"
-					/>
-					<path d="M9 4v16" />
-					<path d="M15 10l-2 2l2 2" />
-				</svg>
-			{/if}
+				/>
+			</svg>
 		</button>
 	</aside>
 
@@ -289,8 +279,13 @@
 	}
 
 	.rail-toggle svg {
-		width: 1.1rem;
-		height: 1.1rem;
+		width: 0.95rem;
+		height: 0.95rem;
+		transition: transform 200ms ease;
+	}
+
+	.rail-toggle svg.flipped {
+		transform: rotate(180deg);
 	}
 
 	/* ---- content column ---- */
@@ -360,8 +355,6 @@
 		border-radius: 0.3em;
 		background: var(--bg-soft);
 		border: 1px solid var(--line);
-		/* Long unbroken tokens otherwise force horizontal scroll at narrow widths. */
-		overflow-wrap: break-word;
 	}
 
 	.prose :global(.heading-anchor) {
