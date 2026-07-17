@@ -46,6 +46,23 @@ function contentDatesPlugin(): Plugin {
 			} catch {
 				// not a git repo, or git unavailable
 			}
+			// Build-log diagnostic: a shallow clone (CI default) truncates
+			// history, so most pages resolve no date. Look for this line in
+			// your deploy logs when dates are missing in production.
+			let shallow = false;
+			try {
+				shallow =
+					execFileSync('git', ['rev-parse', '--is-shallow-repository'], {
+						encoding: 'utf8',
+						stdio: ['ignore', 'pipe', 'ignore']
+					}).trim() === 'true';
+			} catch {
+				// same failure modes as above
+			}
+			console.log(
+				`svocs: "last updated" dates resolved for ${Object.keys(dates).length} content file(s)` +
+					(shallow ? ' — shallow git clone detected, history is truncated' : '')
+			);
 			return `export default ${JSON.stringify(dates)};`;
 		}
 	};

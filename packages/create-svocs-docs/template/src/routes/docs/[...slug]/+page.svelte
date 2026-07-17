@@ -20,10 +20,7 @@
 		{#if data.entry.description}
 			<p>{data.entry.description}</p>
 		{/if}
-		<p class="meta">
-			{data.entry.readingTimeMinutes} min read · {data.entry.wordCount} words{#if data.entry.lastModified}
-				· Last updated on {formatLastUpdated(data.entry.lastModified)}{/if}
-		</p>
+		<p class="meta">{data.entry.readingTimeMinutes} min read · {data.entry.wordCount} words</p>
 		<PageActions slug={data.entry.slug} />
 	</header>
 
@@ -31,6 +28,12 @@
 		<Content />
 	{:else}
 		<p>Unable to render this document component.</p>
+	{/if}
+
+	{#if data.entry.lastModified}
+		<footer class="doc-colophon">
+			Last updated on {formatLastUpdated(data.entry.lastModified)}
+		</footer>
 	{/if}
 </article>
 
@@ -55,5 +58,14 @@
 	.meta {
 		font-size: 0.82rem;
 		color: var(--text-dim);
+	}
+
+	.doc-colophon {
+		margin-top: 3rem;
+		padding-top: 1rem;
+		border-top: 1px solid var(--line);
+		font-size: 0.8rem;
+		color: var(--text-dim);
+		text-align: right;
 	}
 </style>
