@@ -1,7 +1,7 @@
 {
 	"name": "svocs-cli",
-	"version": "0.2.2",
-	"description": "Companion CLI for SVOCS docs sites: check your setup, pull template updates, migrate from fumadocs.",
+	"version": "0.3.0",
+	"description": "Companion CLI for SVOCS docs sites: check your setup, pull template updates, migrate from Fumadocs, Nextra, Docusaurus, Starlight, MkDocs, or mdBook.",
 	"type": "module",
 	"license": "MIT",
 	"homepage": "https://svocs.dev",

@@ -18,8 +18,10 @@ Usage:
     --yes                      Apply without asking for confirmation
     --force                    Re-sync even when the template version matches
     --from=<dir>               Use a local create-svocs-docs package instead of npm
-  svocs migrate <src> <dest>   Convert a fumadocs site into a new svocs site
-    --site-name=<name>         Site name (default: derived from the source package)
+  svocs migrate <src> <dest>   Convert an existing docs site into a new svocs site
+                               (Fumadocs, Nextra, Docusaurus, Starlight, MkDocs, mdBook)
+    --source=<framework>       Force the source framework instead of auto-detecting
+    --site-name=<name>         Site name (default: derived from the source config)
     --site-url=<origin>        Production URL for the new site
     --repo-url=<url>           Repository link for the new site's header
     --accent=<hex>             Accent color

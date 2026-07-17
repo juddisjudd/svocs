@@ -1,6 +1,6 @@
 ## What it is
 
-`svocs` is the companion CLI for sites scaffolded with `create-svocs-docs`. The scaffolder gets you a working site; `svocs` keeps it working after day one. It has three commands: `doctor` checks a site's configuration, `update` pulls template fixes into it, and `migrate` converts a fumadocs site into a new svocs one.
+`svocs` is the companion CLI for sites scaffolded with `create-svocs-docs`. The scaffolder gets you a working site; `svocs` keeps it working after day one. It has three commands: `doctor` checks a site's configuration, `update` pulls template fixes into it, and `migrate` converts an existing docs site — Fumadocs, Nextra, Docusaurus, Starlight, MkDocs, or mdBook — into a new svocs one.
 
 It needs no install step. Run it from your site's directory:
 
@@ -62,34 +62,46 @@ The rules:
 
 `package.json` follows the same rules, which in practice means it's skipped once you've added a dependency. When that happens `update` says so; compare its dependencies against the new template if a build breaks after updating.
 
-| Flag | Effect |
-| --- | --- |
-| `--dry-run` | Print the plan without writing anything |
-| `--yes` | Apply without the confirmation prompt (required in CI / non-TTY) |
-| `--force` | Re-sync even when the template version already matches |
+| Flag        | Effect                                                           |
+| ----------- | ---------------------------------------------------------------- |
+| `--dry-run` | Print the plan without writing anything                          |
+| `--yes`     | Apply without the confirmation prompt (required in CI / non-TTY) |
+| `--force`   | Re-sync even when the template version already matches           |
 
 Since your content lives in `content/` and is either starter pages you've rewritten or your own files, it's protected by the same hash check as everything else. `update` has no special cases.
 
 ## svocs migrate
 
-Converts an existing [fumadocs](https://fumadocs.dev/) site into a new svocs site:
+Converts an existing docs site into a new svocs site:
 
 ```sh
-npx svocs-cli migrate ../my-fumadocs-site ../my-svocs-site
+npx svocs-cli migrate ../my-docs-site ../my-svocs-site
 ```
 
-It scaffolds a fresh site, then converts every page under the source's `content/docs/`:
+First, the honest part: every framework this command reads from is good software. [Fumadocs](https://fumadocs.dev/) and [Nextra](https://nextra.site/) in particular are projects we love — much of svocs's authoring model is a tribute to theirs — and [Docusaurus](https://docusaurus.io/), [Starlight](https://starlight.astro.build/), [MkDocs](https://www.mkdocs.org/), and [mdBook](https://rust-lang.github.io/mdBook/) have each earned their place. `migrate` isn't here to argue you out of any of them. It exists because people who write docs deserve options, and "I'd try the Svelte one if moving weren't a weekend of regex" shouldn't be the reason you can't. Your source site is never modified, so trying svocs costs an afternoon and reversing the experiment costs nothing.
 
-- Frontmatter (`title`, `description`) carries over; `meta.json` ordering becomes `_meta.json`.
-- `<Tabs>`/`<Tab>`, `<Callout>`, `<Cards>`/`<Card>` map straight to the svocs components — same `items` prop, positional tabs, `error` → `danger`. Fumadocs `[step]` heading markers become `<Steps>` blocks.
-- MDX indentation, JSX comments, and relative links are normalized to what mdsvex and static routes expect. Pages that use components come out as `.svx`, plain ones as `.md`.
-- Site-specific code the converter can't map (custom components, dynamic JSX) is commented out in place with a `svocs migrate TODO` marker, so nothing breaks the build and porting is copy-paste work.
+The source framework is auto-detected (override with `--source=fumadocs|nextra|docusaurus|starlight|mkdocs|mdbook`). The converter scaffolds a fresh site, then converts the source's content tree:
+
+| Source     | What maps over                                                                                                                                                                                                        |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Fumadocs   | `content/docs/` MDX; `<Tabs>`/`<Callout>`/`<Cards>` map directly (`error` → `danger`); `[step]` headings become `<Steps>`; `meta.json` → `_meta.json`                                                                 |
+| Nextra     | `content/` or `pages/` MDX; `<Callout>`, `<Steps>`, `<Tabs items={…}>` pass through; `Tabs.Tab`/`Cards.Card`/`FileTree.*` lose the dots; `_meta.json` and (best-effort) `_meta.js/tsx` → `_meta.json`                 |
+| Docusaurus | `docs/` tree; `:::note`-style admonitions become `<Callout>`; `<Tabs>`/`<TabItem>` become the `items` shape; `01-` number prefixes, `sidebar_position`, and `_category_.json` become `_meta.json` ordering            |
+| Starlight  | `src/content/docs/`; asides (both `:::` and `<Aside>`) become `<Callout>`; `CardGrid`/`LinkCard` become `Cards`/`Card`; `sidebar:` frontmatter becomes ordering; root-relative links gain the `/docs` prefix          |
+| MkDocs     | `docs/` markdown; `!!! note` admonitions become `<Callout>`, `??? tip` collapsibles become `<Collapse>`, `=== "Tab"` content tabs become `<Tabs>`; the `mkdocs.yml` `nav:` becomes `_meta.json`                       |
+| mdBook     | `src/` markdown; `SUMMARY.md` becomes ordering (part headings become sidebar separators); `README.md` chapters become index pages; rust hidden lines (`# `) are stripped; `mdbook-admonish` blocks become `<Callout>` |
+
+Everywhere, the same rules apply:
+
+- Frontmatter (`title`, `description`) carries over; pages that open with a lone `# Title` have it hoisted into frontmatter, since the svocs layout renders the title itself.
+- Relative links are rewritten to absolute `/docs/` routes, and pages that use components come out as `.svx`, plain ones as `.md`.
+- Anything the converter can't map honestly — custom components, raw JSX, `{{#include}}` calls — is commented out in place with a `svocs migrate TODO` marker, so nothing breaks the build and porting is copy-paste work. It never guesses.
 
 Dead internal links carried over from the source are reported at the end, and the new site is configured to warn on them instead of failing prerender; tighten that back up in `vite.config.ts` once they're fixed.
 
 Flags: `--site-name`, `--site-url`, `--repo-url`, `--accent`, and `--search` mirror the scaffolder's prompts.
 
-Only fumadocs sources are supported right now. If you're migrating from something else, open an issue — the converter is built to grow one source at a time.
+Migrating from something not listed? Open an issue — the converter is built to grow one source at a time. And if you try svocs and go back, that's a fine outcome too; the point was that you got to choose.
 
 ## Sites scaffolded before 0.18
 

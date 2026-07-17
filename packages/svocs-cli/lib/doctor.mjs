@@ -109,7 +109,7 @@ export async function runDoctor(args) {
 	}
 
 	if (!existsSync(join(dir, 'node_modules'))) {
-		warn('No node_modules — run your package manager\'s install first.');
+		warn("No node_modules — run your package manager's install first.");
 	}
 
 	// Best-effort update check; network problems are not the user's problem.

@@ -30,25 +30,30 @@ Applies template fixes to a scaffolded site without touching your work. Sites sc
 - files the template added are **added**
 - files the template dropped are reported but **never deleted**
 
-| Flag | Effect |
-| --- | --- |
-| `--dry-run` | Show the plan without writing anything |
-| `--yes` | Apply without the confirmation prompt (required when not a TTY) |
-| `--force` | Re-sync even when the version already matches |
-| `--from=<dir>` | Use a local `create-svocs-docs` package instead of npm |
+| Flag           | Effect                                                          |
+| -------------- | --------------------------------------------------------------- |
+| `--dry-run`    | Show the plan without writing anything                          |
+| `--yes`        | Apply without the confirmation prompt (required when not a TTY) |
+| `--force`      | Re-sync even when the version already matches                   |
+| `--from=<dir>` | Use a local `create-svocs-docs` package instead of npm          |
 
 `package.json` follows the same rule: if you've added dependencies (you probably have), it's skipped and called out, since merging dependency changes is a decision, not a diff.
 
 ## `svocs migrate <source> <target>`
 
-Converts a [fumadocs](https://fumadocs.dev/) site into a new svocs site: scaffolds fresh, converts every page under `content/docs/`, and reports what needs a human.
+Converts an existing docs site into a new svocs site. Supported sources: [Fumadocs](https://fumadocs.dev/), [Nextra](https://nextra.site/), [Docusaurus](https://docusaurus.io/), [Starlight](https://starlight.astro.build/), [MkDocs](https://www.mkdocs.org/), and [mdBook](https://rust-lang.github.io/mdBook/).
 
-- Frontmatter and `meta.json` ordering carry over; `[step]` headings become `<Steps>`; `<Tabs>`, `<Callout>`, and `<Cards>` map to the svocs components directly.
+All of these are tools we respect — Fumadocs and Nextra especially are projects we love. This command isn't a pitch to leave them; it's here so that trying a Svelte-based docs site is an afternoon's experiment instead of a rewrite. Your source site is never touched.
+
+The framework is auto-detected (or forced with `--source=<framework>`). It scaffolds fresh, converts the content tree, and reports what needs a human:
+
+- Frontmatter, sidebar ordering, and titles carry over (`meta.json`, `_meta.js`, `sidebar_position`/`_category_.json`, `sidebar:` frontmatter, `nav:`, or `SUMMARY.md`, depending on the source) as `_meta.json`.
+- Components map to their svocs equivalents: callouts/admonitions/asides become `<Callout>`, tab constructs become `<Tabs items={…}>`/`<Tab>`, MkDocs `???` collapsibles become `<Collapse>`, card grids become `<Cards>`/`<Card>`.
 - MDX indentation, JSX comments, and relative links are rewritten to what mdsvex and static routes expect.
-- Custom components and dynamic JSX are commented out in place with `svocs migrate TODO` markers instead of breaking the build.
+- Anything unmappable (custom components, raw JSX, `{{#include}}`) is commented out in place with `svocs migrate TODO` markers instead of breaking the build.
 - Dead links inherited from the source are listed, and the new site warns on them during prerender rather than failing.
 
-Flags: `--site-name`, `--site-url`, `--repo-url`, `--accent`, `--search`, `--from=<dir>`.
+Flags: `--source=<framework>`, `--site-name`, `--site-url`, `--repo-url`, `--accent`, `--search`, `--from=<dir>`.
 
 ## License
 

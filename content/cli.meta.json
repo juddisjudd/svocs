@@ -1,6 +1,6 @@
 {
 	"title": "CLI",
-	"description": "The svocs companion CLI: check a site's configuration with doctor, pull template fixes with update, convert a fumadocs site with migrate.",
+	"description": "The svocs companion CLI: check a site's configuration with doctor, pull template fixes with update, convert a Fumadocs, Nextra, Docusaurus, Starlight, MkDocs, or mdBook site with migrate.",
 	"order": 4,
 	"tags": ["guide"]
 }

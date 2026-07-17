@@ -1,4 +1,12 @@
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+	copyFileSync,
+	existsSync,
+	mkdirSync,
+	mkdtempSync,
+	readFileSync,
+	rmSync,
+	writeFileSync
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -51,7 +59,9 @@ export async function runUpdate(args) {
 
 		if (!force && !isNewerVersion(version, manifest.templateVersion)) {
 			const detail =
-				version === manifest.templateVersion ? '' : ` (this site is on ${manifest.templateVersion})`;
+				version === manifest.templateVersion
+					? ''
+					: ` (this site is on ${manifest.templateVersion})`;
 			p.outro(pc.green(`Already up to date: template ${version}${detail}.`));
 			return 0;
 		}
@@ -112,7 +122,8 @@ export async function runUpdate(args) {
 		for (const rel of plan.add) p.log.info(`${pc.green('add')}     ${rel}`);
 		for (const rel of plan.update) p.log.info(`${pc.cyan('update')}  ${rel}`);
 		for (const rel of plan.skip) p.log.warn(`${pc.yellow('skip')}    ${rel} (you modified it)`);
-		for (const rel of orphans) p.log.warn(`${pc.yellow('orphan')}  ${rel} (no longer in the template; left in place)`);
+		for (const rel of orphans)
+			p.log.warn(`${pc.yellow('orphan')}  ${rel} (no longer in the template; left in place)`);
 
 		if (dryRun) {
 			p.outro(
@@ -152,7 +163,7 @@ export async function runUpdate(args) {
 		p.outro(pc.green(`Template ${manifest.templateVersion} → ${version}: ${parts.join(', ')}.`));
 		console.log('Updates apply to source files — rebuild (or restart dev) to see them.');
 		if (plan.update.some((rel) => rel === 'package.json') || plan.add.length > 0) {
-			console.log('Dependencies may have changed — rerun your package manager\'s install.');
+			console.log("Dependencies may have changed — rerun your package manager's install.");
 		} else if (plan.skip.includes('package.json')) {
 			console.log(
 				'package.json was skipped (you modified it) — compare its dependencies against the new template if a build breaks.'

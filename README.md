@@ -38,15 +38,15 @@ The scaffolder asks for your site name, production URL, repository link, accent 
 - **AI-ready output** — `llms.txt` and `llms-full.txt` endpoints, plus a sitemap
 - **Theming** — one accent color drives the whole palette (dark and light), with a View Transitions dissolve on theme switch
 - **Site maintenance** — `npx svocs-cli doctor` checks configuration; `npx svocs-cli update` applies template fixes to files you haven't modified
-- **Migration** — `npx svocs-cli migrate` converts an existing [fumadocs](https://fumadocs.dev/) site, mapping components and flagging what needs a human
+- **Migration** — `npx svocs-cli migrate` converts an existing [Fumadocs](https://fumadocs.dev/), [Nextra](https://nextra.site/), [Docusaurus](https://docusaurus.io/), [Starlight](https://starlight.astro.build/), [MkDocs](https://www.mkdocs.org/), or [mdBook](https://rust-lang.github.io/mdBook/) site, mapping components and flagging what needs a human — these are all tools we respect, svocs is just one more option
 - **Static output** — deploys to Cloudflare Pages, GitHub Pages, or any static host; `BASE_PATH` support for sub-path hosting
 
 ## Packages
 
-| Package | Description |
-| --- | --- |
-| [`create-svocs-docs`](packages/create-svocs-docs) | Scaffold a new SVOCS site (`bun create svocs-docs`) |
-| [`svocs-cli`](packages/svocs-cli) | Companion CLI: `doctor`, `update`, and `migrate` for scaffolded sites |
+| Package                                           | Description                                                           |
+| ------------------------------------------------- | --------------------------------------------------------------------- |
+| [`create-svocs-docs`](packages/create-svocs-docs) | Scaffold a new SVOCS site (`bun create svocs-docs`)                   |
+| [`svocs-cli`](packages/svocs-cli)                 | Companion CLI: `doctor`, `update`, and `migrate` for scaffolded sites |
 
 This repository is also the source of [svocs.dev](https://svocs.dev) itself — `content/`, `src/`, and `scripts/` at the root are the documentation site.
 
