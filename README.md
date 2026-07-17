@@ -19,8 +19,10 @@ SVOCS is a markdown-first documentation site generator built on SvelteKit and Sv
 ## Quick start
 
 ```sh
-bun create svocs-docs my-docs
+bunx create-svocs-docs@latest my-docs
+# or: pnpm create svocs-docs my-docs
 # or: npm create svocs-docs@latest my-docs
+# or: deno run -A npm:create-svocs-docs my-docs
 cd my-docs && bun install && bun run dev
 ```
 

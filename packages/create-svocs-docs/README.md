@@ -3,7 +3,7 @@
 Scaffold a new [SVOCS](https://github.com/juddisjudd/svocs) documentation site.
 
 ```sh
-bunx create-svocs-docs my-docs
+bunx create-svocs-docs@latest my-docs
 ```
 
 ```sh
