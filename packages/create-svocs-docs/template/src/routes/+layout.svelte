@@ -11,8 +11,10 @@
 
 	// Every prerendered route gets a matching social card from
 	// scripts/og/generate.mjs (build/og/<route>.png), so the URL derives
-	// straight from the path. Set SITE_URL to make these absolute — most
-	// scrapers require absolute og:image URLs.
+	// straight from the path. The tags only render once SITE_URL is set:
+	// scrapers require absolute og:image URLs, and a relative one would send
+	// SvelteKit's prerender crawler after /og/*.png files that don't exist
+	// until after the build.
 	const currentPath = $derived(page.url.pathname.replace(/\/$/, '') || '/');
 	const ogImage = $derived(`${SITE_URL}/og${currentPath === '/' ? '/index' : currentPath}.png`);
 
@@ -30,11 +32,13 @@
 
 <svelte:head>
 	<meta property="og:site_name" content={SITE_NAME} />
-	<meta property="og:image" content={ogImage} />
-	<meta property="og:image:width" content="1200" />
-	<meta property="og:image:height" content="630" />
-	<meta name="twitter:card" content="summary_large_image" />
-	<meta name="twitter:image" content={ogImage} />
+	{#if SITE_URL}
+		<meta property="og:image" content={ogImage} />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:image" content={ogImage} />
+	{/if}
 </svelte:head>
 
 <a class="skip" href="#main-content">Skip to content</a>

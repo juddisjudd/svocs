@@ -14,6 +14,9 @@
 
 	// Every prerendered route gets a matching card from scripts/og/generate.mjs
 	// (build/og/<route>.png), so the URL is derivable straight from the path.
+	// The tags only render once SITE_URL is set: scrapers require absolute
+	// og:image URLs, and a relative one would send SvelteKit's prerender
+	// crawler after /og/*.png files that don't exist until after the build.
 	const ogImage = $derived(`${SITE_URL}/og${currentPath === '/' ? '/index' : currentPath}.png`);
 
 	let searchDialog: ReturnType<typeof SearchDialog> | undefined = $state();
@@ -39,12 +42,14 @@
 	     image URL is derived from the route here in one place (SvelteKit
 	     appends nested svelte:head content, it doesn't replace it). -->
 	<meta property="og:site_name" content={SITE_NAME} />
-	<meta property="og:image" content={ogImage} />
-	<meta property="og:image:width" content="1200" />
-	<meta property="og:image:height" content="630" />
-	<meta property="og:image:alt" content="{SITE_NAME} — Svelte-powered documentation framework" />
-	<meta name="twitter:card" content="summary_large_image" />
-	<meta name="twitter:image" content={ogImage} />
+	{#if SITE_URL}
+		<meta property="og:image" content={ogImage} />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
+		<meta property="og:image:alt" content="{SITE_NAME} — Svelte-powered documentation framework" />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:image" content={ogImage} />
+	{/if}
 </svelte:head>
 
 <a class="skip" href="#main-content">Skip to content</a>

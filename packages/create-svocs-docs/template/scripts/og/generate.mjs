@@ -1,10 +1,8 @@
 // Renders a 1200x630 Open Graph card per prerendered page into build/og/,
-// after `vite build`. satori + resvg, not a headless-browser screenshot, so
+// after `vite build`. Takumi renders the node tree straight to PNG, so
 // builds never need Chromium. Titles/descriptions come from the built HTML's
 // own meta tags. Set SVOCS_OG=0 to skip.
-import satori from 'satori';
-import { Resvg } from '@resvg/resvg-js';
-import wawoff2 from 'wawoff2';
+import { Renderer } from '@takumi-rs/core';
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 
@@ -39,7 +37,7 @@ const siteName = siteSource.match(/SITE_NAME\s*=\s*'([^']*)'/)?.[1] || 'Docs';
 const siteUrl = siteSource.match(/SITE_URL\s*=\s*'([^']*)'/)?.[1] || '';
 const siteHost = siteUrl.replace(/^https?:\/\//, '');
 
-// satori has no color-mix(), so the accent ramp is mixed here instead.
+// The card styles can't use CSS color-mix(), so the accent ramp is mixed here.
 function hexChannels(hex) {
 	const value = hex.replace('#', '');
 	const size = value.length < 6 ? 1 : 2;
@@ -101,11 +99,16 @@ function extractMeta(html) {
 }
 
 // ---- the card itself; edit this tree to restyle your social cards.
-// satori element helper: every container must declare display: flex.
+// Takumi node helper: every element maps to a Takumi container (the tag name
+// is only kept so the tree reads like HTML); bare strings become text nodes,
+// which inherit color/font styles from their parent container.
 
-const h = (type, style, ...children) => ({
-	type,
-	props: { style, children: children.length <= 1 ? children[0] : children }
+const h = (_type, style, ...children) => ({
+	type: 'container',
+	style,
+	children: children
+		.filter((child) => child != null)
+		.map((child) => (typeof child === 'string' ? { type: 'text', text: child } : child))
 });
 
 // The last crumb uses the page's real title so acronyms survive.
@@ -168,6 +171,7 @@ function card({ title, description, routePath }) {
 				{
 					display: 'block',
 					lineClamp: 3,
+					textOverflow: 'ellipsis',
 					fontSize: '72px',
 					fontWeight: 900,
 					lineHeight: 1.08,
@@ -181,6 +185,7 @@ function card({ title, description, routePath }) {
 						{
 							display: 'block',
 							lineClamp: 2,
+							textOverflow: 'ellipsis',
 							marginTop: '26px',
 							fontSize: '30px',
 							fontWeight: 500,
@@ -217,21 +222,12 @@ function card({ title, description, routePath }) {
 
 // ---- render
 
-// Decompress one at a time — wawoff2's WASM corrupts output on overlapping
-// calls — and .slice() the view, which aliases the WASM heap.
-const fonts = [];
-for (const { file, weight } of [
-	{ file: 'static/fonts/satoshi-500.woff2', weight: 500 },
-	{ file: 'static/fonts/satoshi-900.woff2', weight: 900 }
-]) {
-	fonts.push({
-		name: 'Satoshi',
-		weight,
-		style: 'normal',
-		data: (await wawoff2.decompress(readFileSync(file))).slice().buffer
-	});
-}
+// Takumi reads WOFF2 directly; family and weight come from the font tables.
+const fonts = ['static/fonts/satoshi-500.woff2', 'static/fonts/satoshi-900.woff2'].map((file) =>
+	readFileSync(file)
+);
 
+const renderer = new Renderer();
 const files = collectHtmlFiles(BUILD_DIR);
 
 for (const file of files) {
@@ -243,14 +239,14 @@ for (const file of files) {
 	const outFile = join(OUT_DIR, routePath === '/' ? 'index.png' : `${routePath.slice(1)}.png`);
 
 	const { title, description } = extractMeta(readFileSync(file, 'utf8'));
-	const svg = await satori(card({ title, description, routePath }), {
+	const png = await renderer.render(card({ title, description, routePath }), {
 		width: 1200,
 		height: 630,
 		fonts
 	});
 
 	mkdirSync(dirname(outFile), { recursive: true });
-	writeFileSync(outFile, new Resvg(svg).render().asPng());
+	writeFileSync(outFile, png);
 }
 
 console.log(`og: generated ${files.length} card(s) into ${OUT_DIR}/.`);

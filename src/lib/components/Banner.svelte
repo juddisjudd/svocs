@@ -3,14 +3,16 @@
 
 	let { id, children }: { id: string; children: Snippet } = $props();
 
-	// `id` is a stable identity for this banner instance, not something that
-	// should re-trigger dismissal state if it ever changed — read once.
-	let dismissed = $state(
+	// Split into a persisted check (keyed on `id`, so it tracks the banner's
+	// identity) and a session flag for the click itself.
+	let dismissedNow = $state(false);
+	const dismissedBefore = $derived(
 		typeof localStorage !== 'undefined' && localStorage.getItem(`svocs-banner-${id}`) === '1'
 	);
+	const dismissed = $derived(dismissedNow || dismissedBefore);
 
 	function dismiss() {
-		dismissed = true;
+		dismissedNow = true;
 		try {
 			localStorage.setItem(`svocs-banner-${id}`, '1');
 		} catch {
