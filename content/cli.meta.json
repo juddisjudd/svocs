@@ -1,0 +1,6 @@
+{
+	"title": "CLI",
+	"description": "The svocs companion CLI: check a site's configuration with doctor, pull template fixes with update.",
+	"order": 4,
+	"tags": ["guide"]
+}

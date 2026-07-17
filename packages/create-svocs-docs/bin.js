@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { existsSync, readdirSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join, dirname, resolve, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
@@ -16,59 +16,20 @@ import {
 	validateApiKey,
 	writeGeneratedPages
 } from './lib/repo-analysis.mjs';
+import {
+	DEFAULT_ACCENT,
+	normalizeHexColor,
+	normalizeSiteUrl,
+	scaffold,
+	SEARCH_BACKEND_IDS,
+	SEARCH_BACKENDS,
+	writeManifest
+} from './lib/scaffold.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const TEMPLATE_DIR = join(__dirname, 'template');
 const SEARCH_RECIPES_DIR = join(__dirname, 'recipes', 'search');
-
-const RENAMES = {
-	_gitignore: '.gitignore',
-	_npmrc: '.npmrc',
-	_nojekyll: '.nojekyll'
-};
-
-// Order here is display order in the prompt.
-const SEARCH_BACKEND_IDS = ['pagefind', 'orama', 'flexsearch', 'typesense', 'chroma'];
-
-const SEARCH_BACKENDS = {
-	pagefind: {
-		label: 'Pagefind — zero-config, no server (default)'
-	},
-	orama: {
-		label: 'Orama — static JSON index, no server',
-		dependencies: { '@orama/orama': '^3.1.18' }
-	},
-	flexsearch: {
-		label: 'FlexSearch — static JSON index, no server',
-		dependencies: { flexsearch: '^0.8.212' }
-	},
-	typesense: {
-		label: 'Typesense — needs a running Typesense server',
-		dependencies: { typesense: '^3.0.6' },
-		scripts: { 'search:sync:typesense': 'bun run scripts/search/sync-typesense.ts' },
-		nextSteps: [
-			'Typesense needs a running server (self-hosted or Typesense Cloud) plus env vars:',
-			'  sync-only:   TYPESENSE_HOST, TYPESENSE_ADMIN_API_KEY',
-			'  client-safe: PUBLIC_TYPESENSE_HOST, PUBLIC_TYPESENSE_COLLECTION_NAME, PUBLIC_TYPESENSE_SEARCH_API_KEY',
-			'`bun run build` will fail until those are set. Dev/preview still work; search just errors.',
-			'The sync script always runs via `bun`, even if you scaffolded with another package manager.',
-			'Full setup: https://svocs.dev/docs/search/typesense'
-		]
-	},
-	chroma: {
-		label: 'Chroma — semantic search, needs a running Chroma server',
-		dependencies: { chromadb: '^3.5.0', '@chroma-core/default-embed': '^0.1.9' },
-		scripts: { 'search:sync:chroma': 'bun run scripts/search/sync-chroma.ts' },
-		nextSteps: [
-			'Chroma needs a running server plus env vars:',
-			'  sync-only:   CHROMA_HOST, CHROMA_ADMIN_TOKEN',
-			'  client-safe: PUBLIC_CHROMA_HOST, PUBLIC_CHROMA_COLLECTION_NAME, PUBLIC_CHROMA_TOKEN',
-			'`bun run build` will fail until those are set. Dev/preview still work; search just errors.',
-			'The sync script always runs via `bun`, even if you scaffolded with another package manager.',
-			'Read the security section before deploying: https://svocs.dev/docs/search/chroma'
-		]
-	}
-};
+const CLI_VERSION = JSON.parse(readFileSync(join(__dirname, 'package.json'), 'utf8')).version;
 
 function splitBackendLabel(label) {
 	const separatorIndex = label.indexOf(' —');
@@ -106,36 +67,6 @@ const SCAN_DEPTHS = [
 	}
 ];
 
-const DEFAULT_ACCENT = '#ff3c00';
-
-function normalizeHexColor(input) {
-	const match = input.trim().match(/^#?([0-9a-fA-F]{6}|[0-9a-fA-F]{3})$/);
-	if (!match) return null;
-	const hex = match[1];
-	const expanded =
-		hex.length === 3
-			? hex
-					.split('')
-					.map((c) => c + c)
-					.join('')
-			: hex;
-	return `#${expanded.toLowerCase()}`;
-}
-
-// --accent is the one literal color in the theme block; the rest derive
-// from it via color-mix().
-function applyAccentColor(targetDir, hex) {
-	if (!hex || hex === DEFAULT_ACCENT) {
-		return;
-	}
-	const layoutPath = join(targetDir, 'src/routes/+layout.svelte');
-	const content = readFileSync(layoutPath, 'utf8');
-	writeFileSync(
-		layoutPath,
-		content.replaceAll(`--accent: ${DEFAULT_ACCENT};`, `--accent: ${hex};`)
-	);
-}
-
 function describeRepoFetchError(error) {
 	switch (error) {
 		case 'rate-limited':
@@ -146,101 +77,6 @@ function describeRepoFetchError(error) {
 			return 'Repo not found (or private)';
 	}
 }
-
-function sortObjectKeys(obj) {
-	return Object.fromEntries(Object.entries(obj).sort(([a], [b]) => a.localeCompare(b)));
-}
-
-function buildResolverSource(backendId) {
-	const activeCase =
-		backendId === 'pagefind'
-			? ''
-			: `\t\tcase '${backendId}':\n\t\t\tcached = (await import('./providers/${backendId}-client')).createClient();\n\t\t\tbreak;\n`;
-
-	return `import { PUBLIC_SVOCS_SEARCH_PROVIDER } from '$env/static/public';
-import type { SearchClient } from './types';
-
-let cached: SearchClient | undefined;
-
-/**
- * Resolves the active search backend behind one function call, so the
- * search UI never needs backend-specific knowledge. See
- * https://svocs.dev/docs/search for how to add another backend: install
- * the one package it needs, drop in its provider file, and add a case here.
- */
-export async function getSearchClient(): Promise<SearchClient> {
-	if (cached) {
-		return cached;
-	}
-
-	switch (PUBLIC_SVOCS_SEARCH_PROVIDER) {
-${activeCase}\t\tdefault:
-			cached = (await import('./providers/pagefind-client')).createClient();
-	}
-
-	return cached;
-}
-`;
-}
-
-function applySearchBackend(targetDir, backendId) {
-	if (backendId === 'pagefind') {
-		return;
-	}
-
-	const backend = SEARCH_BACKENDS[backendId];
-	copyTemplate(join(SEARCH_RECIPES_DIR, backendId), targetDir);
-
-	writeFileSync(join(targetDir, 'src/lib/search/resolver.ts'), buildResolverSource(backendId));
-
-	const viteConfigPath = join(targetDir, 'vite.config.ts');
-	writeFileSync(
-		viteConfigPath,
-		readFileSync(viteConfigPath, 'utf8').replace(
-			"process.env.PUBLIC_SVOCS_SEARCH_PROVIDER ??= 'pagefind';",
-			`process.env.PUBLIC_SVOCS_SEARCH_PROVIDER ??= '${backendId}';`
-		)
-	);
-
-	const postbuildPath = join(targetDir, 'scripts/search/postbuild.mjs');
-	writeFileSync(
-		postbuildPath,
-		readFileSync(postbuildPath, 'utf8').replace(
-			"process.env.PUBLIC_SVOCS_SEARCH_PROVIDER || 'pagefind'",
-			`process.env.PUBLIC_SVOCS_SEARCH_PROVIDER || '${backendId}'`
-		)
-	);
-
-	for (const [fileName, tasksKey] of [
-		['package.json', 'scripts'],
-		['deno.json', 'tasks']
-	]) {
-		const filePath = join(targetDir, fileName);
-		const data = JSON.parse(readFileSync(filePath, 'utf8'));
-
-		if (backend.dependencies && fileName === 'package.json') {
-			data.dependencies = sortObjectKeys({ ...data.dependencies, ...backend.dependencies });
-		}
-		if (backend.scripts) {
-			data[tasksKey] = { ...data[tasksKey], ...backend.scripts };
-		}
-
-		writeFileSync(filePath, `${JSON.stringify(data, null, '\t')}\n`);
-	}
-}
-
-// Files that get __SITE_NAME__ / __PACKAGE_NAME__ substitution.
-const TEXT_EXTENSIONS = new Set([
-	'.md',
-	'.svx',
-	'.json',
-	'.js',
-	'.ts',
-	'.svelte',
-	'.html',
-	'.txt',
-	''
-]);
 
 function detectPackageManager() {
 	if (typeof globalThis.Deno !== 'undefined') return 'deno';
@@ -270,48 +106,6 @@ function toSiteName(dirName) {
 
 function isDirEmpty(dir) {
 	return !existsSync(dir) || readdirSync(dir).length === 0;
-}
-
-function copyTemplate(srcDir, destDir) {
-	mkdirSync(destDir, { recursive: true });
-	for (const entry of readdirSync(srcDir, { withFileTypes: true })) {
-		const srcPath = join(srcDir, entry.name);
-		const destName = RENAMES[entry.name] ?? entry.name;
-		const destPath = join(destDir, destName);
-
-		if (entry.isDirectory()) {
-			copyTemplate(srcPath, destPath);
-			continue;
-		}
-
-		const contents = readFileSync(srcPath);
-		writeFileSync(destPath, contents);
-	}
-}
-
-function applySubstitutions(dir, siteName, packageName) {
-	for (const entry of readdirSync(dir, { withFileTypes: true })) {
-		const entryPath = join(dir, entry.name);
-
-		if (entry.isDirectory()) {
-			applySubstitutions(entryPath, siteName, packageName);
-			continue;
-		}
-
-		const ext = entry.name.includes('.') ? entry.name.slice(entry.name.lastIndexOf('.')) : '';
-		if (!TEXT_EXTENSIONS.has(ext)) {
-			continue;
-		}
-
-		const original = readFileSync(entryPath, 'utf8');
-		const replaced = original
-			.replaceAll('__SITE_NAME__', siteName)
-			.replaceAll('__PACKAGE_NAME__', packageName);
-
-		if (replaced !== original) {
-			writeFileSync(entryPath, replaced);
-		}
-	}
 }
 
 async function main() {
@@ -361,6 +155,17 @@ async function main() {
 	const accentFlag = accentFlagRaw ? normalizeHexColor(accentFlagRaw) : undefined;
 	if (accentFlagRaw && !accentFlag) {
 		console.error(`Invalid --accent value: "${accentFlagRaw}". Expected a hex color like #2563eb.`);
+		process.exitCode = 1;
+		return;
+	}
+	const siteUrlFlagRaw = args
+		.find((arg) => arg.startsWith('--site-url='))
+		?.slice('--site-url='.length);
+	const siteUrlFlag = siteUrlFlagRaw ? normalizeSiteUrl(siteUrlFlagRaw) : undefined;
+	if (siteUrlFlagRaw && !siteUrlFlag) {
+		console.error(
+			`Invalid --site-url value: "${siteUrlFlagRaw}". Expected an http(s) origin like https://docs.example.com.`
+		);
 		process.exitCode = 1;
 		return;
 	}
@@ -485,6 +290,63 @@ async function main() {
 		);
 	}
 
+	async function askSiteUrl() {
+		if (!isInteractive) return '';
+		const answer = orExit(
+			await p.text({
+				message: 'Production URL (enables social cards, sitemap & AI links; skip if unknown)',
+				placeholder: 'https://docs.example.com',
+				defaultValue: '',
+				validate: (value) =>
+					!value || normalizeSiteUrl(value) !== null
+						? undefined
+						: 'Enter an http(s) origin like https://docs.example.com, or leave empty'
+			})
+		);
+		return answer ? (normalizeSiteUrl(answer) ?? '') : '';
+	}
+
+	async function askRepoLink(defaultUrl) {
+		if (!isInteractive) return defaultUrl;
+		const answer = orExit(
+			await p.text({
+				message: 'Repository URL (adds a GitHub button to the header; optional)',
+				placeholder: defaultUrl || 'owner/repo or full URL',
+				defaultValue: defaultUrl,
+				validate: (value) => {
+					if (!value) return undefined;
+					if (parseGithubRepo(value) || /^https?:\/\//.test(value.trim())) return undefined;
+					return 'Enter owner/repo, a full URL, or leave empty';
+				}
+			})
+		);
+		if (!answer) return '';
+		const parsed = parseGithubRepo(answer);
+		return parsed ? `https://github.com/${parsed.owner}/${parsed.repo}` : answer.trim();
+	}
+
+	async function askDeployTarget() {
+		if (!isInteractive) return 'static';
+		return orExit(
+			await p.select({
+				message: 'Where will this deploy?',
+				initialValue: 'static',
+				options: [
+					{
+						value: 'static',
+						label: 'Static host',
+						hint: 'Cloudflare, Netlify, Vercel, your own server (default)'
+					},
+					{
+						value: 'gh-pages',
+						label: 'GitHub Pages',
+						hint: 'project sites are served under /<repo> and need a base path'
+					}
+				]
+			})
+		);
+	}
+
 	const targetDir = resolve(targetArg ?? (await ask('Project directory', 'my-docs')));
 	const dirName = basename(targetDir);
 
@@ -502,6 +364,7 @@ async function main() {
 	}
 
 	let repoContext = null;
+	let repoSlug = null;
 	let repoAnalysisMode = null;
 	let llmProvider = null;
 	let llmApiKey = '';
@@ -539,6 +402,7 @@ async function main() {
 		if (!parsed) {
 			p.log.warn(`Couldn't parse "--repo=${repoFlag}" as a GitHub repo; skipping analysis.`);
 		} else {
+			repoSlug = parsed;
 			repoContext = await fetchAndReportRepo(parsed.owner, parsed.repo);
 			if (repoContext) {
 				repoAnalysisMode = repoModeFlag ?? 'heuristic';
@@ -567,6 +431,7 @@ async function main() {
 			if (!parsed) {
 				p.log.warn("Couldn't parse that as a GitHub repo; skipping analysis.");
 			} else {
+				repoSlug = parsed;
 				repoContext = await fetchAndReportRepo(parsed.owner, parsed.repo);
 				if (repoContext) {
 					repoAnalysisMode = orExit(
@@ -623,16 +488,24 @@ async function main() {
 	const suggestedSiteName = repoContext?.name ? toSiteName(repoContext.name) : toSiteName(dirName);
 	const siteName = await ask('Site name', suggestedSiteName);
 	const packageName = toPackageName(dirName);
+	const siteUrl = siteUrlFlag ?? (await askSiteUrl());
+	const suggestedRepoUrl = repoSlug ? `https://github.com/${repoSlug.owner}/${repoSlug.repo}` : '';
+	const repoUrl = await askRepoLink(suggestedRepoUrl);
 	const accentColor = accentFlag ?? (await askAccentColor());
 	const searchBackend = searchFlag ?? (await askSearchBackend());
+	const deployTarget = await askDeployTarget();
 	const shouldInitGit = await confirm('Initialize a git repository?', true);
 
+	const scaffoldOptions = { siteName, packageName, accentColor, searchBackend, siteUrl, repoUrl };
 	const scaffoldSpinner = p.spinner();
 	scaffoldSpinner.start(`Scaffolding "${siteName}"`);
-	copyTemplate(TEMPLATE_DIR, targetDir);
-	applySubstitutions(targetDir, siteName, packageName);
-	applyAccentColor(targetDir, accentColor);
-	applySearchBackend(targetDir, searchBackend);
+	scaffold(targetDir, scaffoldOptions, {
+		templateDir: TEMPLATE_DIR,
+		recipesDir: SEARCH_RECIPES_DIR
+	});
+	// Recorded before repo-analysis content lands, so generated pages count
+	// as user content and `svocs update` never touches them.
+	writeManifest(targetDir, CLI_VERSION, scaffoldOptions);
 	scaffoldSpinner.stop(`Scaffolded "${siteName}" in ${targetDir}`);
 
 	if (repoContext && repoAnalysisMode) {
@@ -717,6 +590,29 @@ async function main() {
 	if (backendNextSteps) {
 		const backendName = splitBackendLabel(SEARCH_BACKENDS[searchBackend].label).name;
 		p.note(backendNextSteps.join('\n'), `${backendName} setup`);
+	}
+
+	if (deployTarget === 'gh-pages') {
+		const suggestedBase = `/${repoSlug?.repo ?? packageName}`;
+		p.note(
+			[
+				`Project sites are served under a sub-path, so build with ${pc.cyan(`BASE_PATH=${suggestedBase}`)}.`,
+				'Deploying to a custom domain or <user>.github.io root? Skip BASE_PATH.',
+				'Guide: https://svocs.dev/docs/deployment/github-pages'
+			].join('\n'),
+			'GitHub Pages'
+		);
+	}
+
+	if (!siteUrl) {
+		p.note(
+			[
+				`Set ${pc.cyan('SITE_URL')} in src/lib/site.ts once you know your domain.`,
+				'Until then social-card tags are off, sitemap.xml is empty, and',
+				'llms.txt links stay relative. https://svocs.dev/docs/og-images'
+			].join('\n'),
+			'Before you deploy'
+		);
 	}
 
 	p.outro(pc.bold('Done.'));

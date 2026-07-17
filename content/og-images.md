@@ -17,7 +17,7 @@ Rendering uses [Takumi](https://takumi.kane.tw/), a Rust renderer with native No
 
 ## Set your site URL
 
-Scrapers require absolute `og:image` URLs. Set `SITE_URL` in `src/lib/site.ts` to your production origin:
+Scrapers require absolute `og:image` URLs. The scaffolder's production-URL prompt sets this up for you; if you skipped it, set `SITE_URL` in `src/lib/site.ts` to your production origin:
 
 ```ts filename="src/lib/site.ts"
 export const SITE_URL = 'https://docs.example.com';

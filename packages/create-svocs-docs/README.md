@@ -18,7 +18,7 @@ pnpm create svocs-docs my-docs
 deno run -A npm:create-svocs-docs my-docs
 ```
 
-Answer the prompts (site name, accent color, whether to analyze an existing GitHub repo, search backend, whether to `git init`), then:
+Answer the prompts (site name, production URL, repository link, accent color, search backend, deploy target, whether to analyze an existing GitHub repo, whether to `git init`), then:
 
 ```sh
 cd my-docs
@@ -26,7 +26,11 @@ bun install
 bun run dev
 ```
 
-Pass `--search=<backend>` to skip the search-backend prompt (`pagefind` (default), `orama`, `flexsearch`, `typesense`, or `chroma`), or `--accent=<hex>` to skip the accent-color prompt (e.g. `--accent=#2563eb`). Useful for scripted/non-interactive setups.
+The **production URL** prompt is worth answering if you know your domain: it sets `SITE_URL` in `src/lib/site.ts`, which turns on social-preview (`og:image`) tags, the sitemap, and absolute `llms.txt` links, and writes the `Sitemap:` line into `robots.txt`. Skipping it is fine — those features stay off until you set `SITE_URL` yourself. The **repository URL** prompt adds a GitHub button to the site header (it defaults to the repo you pointed the analysis at, if any), and picking **GitHub Pages** as the deploy target prints the `BASE_PATH` setup a project site needs.
+
+Flags for scripted/non-interactive setups: `--search=<backend>` (`pagefind` (default), `orama`, `flexsearch`, `typesense`, or `chroma`), `--accent=<hex>` (e.g. `--accent=#2563eb`), and `--site-url=<origin>` (e.g. `--site-url=https://docs.example.com`).
+
+The scaffold also writes a `.svocs.json` manifest recording the template version, your choices, and a hash of every generated file. The [`svocs`](https://github.com/juddisjudd/svocs/tree/main/packages/svocs-cli) companion CLI uses it: `npx svocs doctor` checks a site for common configuration problems, and `npx svocs update` applies newer-template fixes to files you haven't modified.
 
 ### Optional: generate content from an existing repo
 

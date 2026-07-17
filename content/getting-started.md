@@ -28,7 +28,18 @@ bun run dev
 
 Your new site is live at `http://localhost:5173`.
 
-The prompts also let you pick an accent color, a search backend, and, optionally, generate baseline content from an existing GitHub repo instead of the generic starter pages. See [Theming](/docs/theming) and [Repo Analysis](/docs/repo-analysis).
+The prompts also let you set your production URL (which turns on [social preview cards](/docs/og-images), the sitemap, and absolute `llms.txt` links), add a GitHub button to the header, pick an accent color and a search backend, and, optionally, generate baseline content from an existing GitHub repo instead of the generic starter pages. See [Theming](/docs/theming) and [Repo Analysis](/docs/repo-analysis).
+
+## Keep your site current
+
+Scaffolds record a `.svocs.json` manifest, and the `svocs` companion CLI uses it to maintain your site after day one:
+
+```sh
+npx svocs doctor   # checks SITE_URL, fonts, search config, template version
+npx svocs update   # applies template fixes to files you haven't modified
+```
+
+`update` never touches a file you've edited — it lists those for manual review instead. Both commands are covered on the [CLI](/docs/cli) page.
 
 ## Add a page
 

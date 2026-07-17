@@ -8,3 +8,9 @@ export const SITE_DESCRIPTION = 'Documentation built with SVOCS.';
  * fresh scaffold doesn't know its own domain yet.
  */
 export const SITE_URL = '';
+
+/**
+ * Link to this project's repository. When set, the header shows a GitHub
+ * button pointing here. Leave empty to hide the button.
+ */
+export const REPO_URL = '';

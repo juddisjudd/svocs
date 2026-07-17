@@ -3,24 +3,25 @@
 		"getting-started-heading": { "type": "separator", "title": "Getting Started", "order": 1 },
 		"introduction": { "order": 2 },
 		"getting-started": { "order": 3 },
+		"cli": { "order": 4 },
 
-		"guides-heading": { "type": "separator", "title": "Guides", "order": 4 },
-		"writing-content": { "order": 5 },
-		"components": { "order": 6 },
-		"architecture": { "order": 7 },
-		"ai": { "order": 8 },
-		"repo-analysis": { "order": 9 },
+		"guides-heading": { "type": "separator", "title": "Guides", "order": 5 },
+		"writing-content": { "order": 6 },
+		"components": { "order": 7 },
+		"architecture": { "order": 8 },
+		"ai": { "order": 9 },
+		"repo-analysis": { "order": 10 },
 
-		"configuration-heading": { "type": "separator", "title": "Configuration", "order": 10 },
-		"theming": { "order": 11 },
-		"navigation": { "order": 12 },
-		"og-images": { "order": 13 },
+		"configuration-heading": { "type": "separator", "title": "Configuration", "order": 11 },
+		"theming": { "order": 12 },
+		"navigation": { "order": 13 },
+		"og-images": { "order": 14 },
 
-		"search-heading": { "type": "separator", "title": "Search", "order": 14 },
-		"search": { "order": 15 },
+		"search-heading": { "type": "separator", "title": "Search", "order": 15 },
+		"search": { "order": 16 },
 
-		"more-heading": { "type": "separator", "title": "More", "order": 16 },
-		"deployment": { "order": 17 },
-		"about": { "order": 18 }
+		"more-heading": { "type": "separator", "title": "More", "order": 17 },
+		"deployment": { "order": 18 },
+		"about": { "order": 19 }
 	}
 }
