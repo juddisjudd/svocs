@@ -174,13 +174,13 @@
 <style>
 	.docs-layout {
 		display: grid;
-		grid-template-columns: 16rem minmax(0, 1fr) 13rem;
+		grid-template-columns: 17.5rem minmax(0, 1fr) 15.5rem;
 		padding: 0 1rem;
 		transition: grid-template-columns 220ms cubic-bezier(0.23, 1, 0.32, 1);
 	}
 
 	.docs-layout.nav-collapsed {
-		grid-template-columns: 2.6rem minmax(0, 1fr) 13rem;
+		grid-template-columns: 2.6rem minmax(0, 1fr) 15.5rem;
 	}
 
 	.mobile-toggle {
@@ -202,7 +202,44 @@
 	aside nav {
 		flex: 1;
 		overflow-y: auto;
+		overflow-x: hidden;
+		/* wheel/trackpad momentum at the nav's edge stays in the nav instead
+		   of spilling into the page scroll */
+		overscroll-behavior: contain;
 		padding: 1.5rem 0.75rem 1rem 0;
+	}
+
+	/* Minimal auto-hiding scrollbars for the two rails: invisible until the
+	   pointer is over (or focus is inside) the rail. */
+	aside nav,
+	.toc-rail {
+		scrollbar-width: thin;
+		scrollbar-color: transparent transparent;
+	}
+
+	aside nav:hover,
+	aside nav:focus-within,
+	.toc-rail:hover,
+	.toc-rail:focus-within {
+		scrollbar-color: color-mix(in srgb, var(--line-strong) 85%, transparent) transparent;
+	}
+
+	/* Safari has no scrollbar-width/color; browsers that support them ignore
+	   these ::-webkit-scrollbar rules. */
+	aside nav::-webkit-scrollbar,
+	.toc-rail::-webkit-scrollbar {
+		width: 6px;
+	}
+
+	aside nav::-webkit-scrollbar-thumb,
+	.toc-rail::-webkit-scrollbar-thumb {
+		background: transparent;
+		border-radius: 3px;
+	}
+
+	aside nav:hover::-webkit-scrollbar-thumb,
+	.toc-rail:hover::-webkit-scrollbar-thumb {
+		background: color-mix(in srgb, var(--line-strong) 85%, transparent);
 	}
 
 	.nav-collapsed aside nav {
@@ -572,6 +609,9 @@
 		top: 3.6rem;
 		height: calc(100vh - 3.6rem);
 		overflow-y: auto;
+		/* long TOC titles wrap (see Toc.svelte); never a horizontal bar */
+		overflow-x: hidden;
+		overscroll-behavior: contain;
 		padding: 1.75rem 0 2.5rem 1.25rem;
 		font-size: 0.8rem;
 	}
@@ -580,7 +620,7 @@
 
 	@media (max-width: 1100px) {
 		.docs-layout {
-			grid-template-columns: 16rem minmax(0, 1fr);
+			grid-template-columns: 17.5rem minmax(0, 1fr);
 		}
 
 		.docs-layout.nav-collapsed {

@@ -162,6 +162,8 @@
 		text-decoration: none;
 		color: var(--text-dim);
 		line-height: 1.4;
+		/* long or unbroken heading text wraps instead of widening the rail */
+		overflow-wrap: anywhere;
 		transition: color 120ms ease;
 	}
 

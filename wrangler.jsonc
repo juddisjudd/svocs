@@ -1,0 +1,11 @@
+// Cloudflare Workers static-assets config. Used when this repo is connected
+// through Workers Builds (or deployed with `npx wrangler deploy`); classic
+// Cloudflare Pages ignores it. See content/deployment/cloudflare-pages.md.
+{
+	"name": "svocs",
+	"compatibility_date": "2026-07-01",
+	"assets": {
+		"directory": "./build",
+		"not_found_handling": "404-page"
+	}
+}

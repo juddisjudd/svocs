@@ -86,7 +86,7 @@ export function normalizeSiteUrl(input) {
 }
 
 // Files that get __SITE_NAME__ / __PACKAGE_NAME__ substitution.
-const TEXT_EXTENSIONS = new Set(['.md', '.svx', '.json', '.js', '.ts', '.svelte', '.html', '.txt', '']);
+const TEXT_EXTENSIONS = new Set(['.md', '.svx', '.json', '.jsonc', '.js', '.ts', '.svelte', '.html', '.txt', '']);
 
 function sortObjectKeys(obj) {
 	return Object.fromEntries(Object.entries(obj).sort(([a], [b]) => a.localeCompare(b)));

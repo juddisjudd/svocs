@@ -481,8 +481,8 @@ export async function runMigrate(args) {
 		writeFileSync(
 			viteConfigPath,
 			readFileSync(viteConfigPath, 'utf8').replace(
-				/^(\s*)adapter: adapter\(\),$/m,
-				`$1adapter: adapter(),\n$1// Set by svocs migrate: the source site may contain dead internal\n$1// links and stale #anchors, which would otherwise fail prerendering.\n$1// Remove once the links reported by the migration are fixed.\n$1prerender: { handleHttpError: 'warn', handleMissingId: 'warn' },`
+				/^(\s*)(adapter: adapter\([^)]*\),)$/m,
+				`$1$2\n$1// Set by svocs migrate: the source site may contain dead internal\n$1// links and stale #anchors, which would otherwise fail prerendering.\n$1// Remove once the links reported by the migration are fixed.\n$1prerender: { handleHttpError: 'warn', handleMissingId: 'warn' },`
 			)
 		);
 

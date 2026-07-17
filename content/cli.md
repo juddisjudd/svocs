@@ -1,6 +1,6 @@
 ## What it is
 
-`svocs` is the companion CLI for sites scaffolded with `create-svocs-docs`. The scaffolder gets you a working site; `svocs` keeps it working after day one. It has two commands: `doctor` checks a site's configuration, `update` pulls template fixes into it.
+`svocs` is the companion CLI for sites scaffolded with `create-svocs-docs`. The scaffolder gets you a working site; `svocs` keeps it working after day one. It has three commands: `doctor` checks a site's configuration, `update` pulls template fixes into it, and `migrate` converts a fumadocs site into a new svocs one.
 
 It needs no install step. Run it from your site's directory:
 

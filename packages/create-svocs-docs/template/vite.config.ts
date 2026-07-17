@@ -57,7 +57,9 @@ export default defineConfig({
 				runes: ({ filename }) =>
 					filename.split(/[/\\]/).includes('node_modules') ? undefined : true
 			},
-			adapter: adapter(),
+			// fallback renders build/404.html, which GitHub Pages and
+			// Cloudflare serve for unknown routes
+			adapter: adapter({ fallback: '404.html' }),
 			// Set BASE_PATH when deploying under a sub-path, e.g. GitHub Pages
 			// project sites: BASE_PATH=/my-repo
 			paths: {
