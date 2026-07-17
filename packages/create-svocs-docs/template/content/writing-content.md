@@ -24,6 +24,8 @@ Your content starts here.
 - `order`: Sorting number for nav
 - `tags`: Optional list for future filtering
 
+Pages also show a "Last updated on" date, taken from the file's most recent git commit at build time — not from filesystem timestamps, which reset on every fresh clone. There's nothing to set: commit the file and the date follows. If your CI does a shallow clone (GitHub Actions and Cloudflare default to one), most files have no reachable history and the date is simply omitted; fetch full history to get it back (for GitHub Actions, `fetch-depth: 0` on the checkout step).
+
 ## Sidecar overrides
 
 A `name.meta.json` file next to `name.md` takes priority over frontmatter for any field it sets. That's useful when you want to tweak nav ordering without touching the prose file, or for content synced in from elsewhere:

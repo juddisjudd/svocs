@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { PageData } from './$types';
-	import { getDocComponentBySlug } from '$lib/core/content';
+	import { formatLastUpdated, getDocComponentBySlug } from '$lib/core/content';
 	import PageActions from '$lib/themes/docs/PageActions.svelte';
 
 	let { data }: { data: PageData } = $props();
@@ -20,7 +20,10 @@
 		{#if data.entry.description}
 			<p>{data.entry.description}</p>
 		{/if}
-		<p class="meta">{data.entry.readingTimeMinutes} min read · {data.entry.wordCount} words</p>
+		<p class="meta">
+			{data.entry.readingTimeMinutes} min read · {data.entry.wordCount} words{#if data.entry.lastModified}
+				· Last updated on {formatLastUpdated(data.entry.lastModified)}{/if}
+		</p>
 		<PageActions slug={data.entry.slug} />
 	</header>
 

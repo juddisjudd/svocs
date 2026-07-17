@@ -1,33 +1,6 @@
-Cloudflare has two ways to host a static site from Git: the newer **Workers Builds** (the default when you create from **Workers & Pages** today) and classic **Pages**. Both work; they need slightly different settings. Every scaffold ships a `wrangler.jsonc` preconfigured for the Workers path.
+## Connect your repository
 
-## Workers Builds (recommended)
-
-1. In the Cloudflare dashboard, go to **Workers & Pages → Create → Import a repository**.
-2. Select your repository and use these settings:
-
-| Setting        | Value                          |
-| -------------- | ------------------------------ |
-| Build command  | `bun install && bun run build` |
-| Deploy command | `npx wrangler deploy`          |
-
-The `wrangler.jsonc` at the project root tells Wrangler what to deploy — the static `build/` directory, with `404.html` served for unknown routes:
-
-```jsonc filename="wrangler.jsonc"
-{
-	"name": "my-docs",
-	"compatibility_date": "2026-07-01",
-	"assets": {
-		"directory": "./build",
-		"not_found_handling": "404-page"
-	}
-}
-```
-
-> **The install step is not optional.** Workers Builds detects Bun from your lockfile but runs only the command you give it — a build command of just `npm run build` or `bun run build` fails with `vite: not found` because dependencies were never installed.
-
-## Classic Pages
-
-1. Go to **Workers & Pages → Create → Pages → Connect to Git**.
+1. In the Cloudflare dashboard, go to **Workers & Pages → Create → Pages → Connect to Git**.
 2. Select your repository and the production branch.
 3. Use these build settings:
 
@@ -37,18 +10,19 @@ The `wrangler.jsonc` at the project root tells Wrangler what to deploy — the s
 | Build command          | `bun install && bun run build` |
 | Build output directory | `build`                        |
 
-Pages usually installs dependencies automatically, but the explicit install makes the command portable between the two systems.
+Sites deploy at the root of a `*.pages.dev` domain, so no `BASE_PATH` is needed.
 
-Either way, sites deploy at the root of a `*.workers.dev` or `*.pages.dev` domain, so no `BASE_PATH` is needed.
+> **Keep the install in the build command.** Pages usually installs dependencies automatically, but not every build path does — a build command without the install fails with `vite: not found`. The explicit `bun install &&` costs seconds and works everywhere. Cloudflare's build image detects `bun.lock` and provisions Bun for you.
+
+> Make sure you create the project through **Pages → Connect to Git**, not "Import a repository" at the Workers & Pages root — the latter creates a Worker with a different build pipeline that needs its own configuration.
 
 ## Deploy from the CLI instead
 
-If you'd rather push builds directly (or from your own CI):
+If you'd rather push builds directly (or from your own CI), use Wrangler:
 
 ```sh
 bun run build
-npx wrangler deploy                                    # Workers, uses wrangler.jsonc
-bunx wrangler pages deploy build --project-name my-docs  # classic Pages
+bunx wrangler pages deploy build --project-name my-docs
 ```
 
 ## Production tips
@@ -62,3 +36,4 @@ bunx wrangler pages deploy build --project-name my-docs  # classic Pages
 ```
 
 - **Search works out of the box**: the Pagefind index is part of `build/`, so no extra step is required.
+- **"Last updated" dates**: Pages builds use a shallow clone, so the per-page date (which comes from git history) is omitted for most files. The site works fine without it; deploy from your own CI with full history if you want the dates.

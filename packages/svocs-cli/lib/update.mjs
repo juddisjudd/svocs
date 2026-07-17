@@ -150,6 +150,7 @@ export async function runUpdate(args) {
 			plan.skip.length && `${plan.skip.length} skipped (modified by you)`
 		].filter(Boolean);
 		p.outro(pc.green(`Template ${manifest.templateVersion} → ${version}: ${parts.join(', ')}.`));
+		console.log('Updates apply to source files — rebuild (or restart dev) to see them.');
 		if (plan.update.some((rel) => rel === 'package.json') || plan.add.length > 0) {
 			console.log('Dependencies may have changed — rerun your package manager\'s install.');
 		} else if (plan.skip.includes('package.json')) {

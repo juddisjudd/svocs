@@ -2,13 +2,11 @@
 
 `bun run build` prerenders every page with `adapter-static` and writes plain HTML, CSS, and JS to `build/`. The output needs no Node server, serverless functions, or environment variables at runtime. That output can be deployed to any static host.
 
-## Cloudflare
+## Cloudflare Pages
 
-This project ships a `wrangler.jsonc` preconfigured for Cloudflare's Workers Builds: connect the repository under **Workers & Pages → Import a repository**, set the build command to `bun install && bun run build`, and the deploy command to `npx wrangler deploy`.
+Create the project through **Workers & Pages → Create → Pages → Connect to Git**, set the build command to `bun install && bun run build`, and the output directory to `build`.
 
-The install step matters — Workers Builds runs exactly the command you give it, so a build command without an install fails with `vite: not found`.
-
-On classic Cloudflare Pages, use the same build command with `build` as the output directory; the `wrangler.jsonc` is ignored there.
+Keep the install in the build command — a build command without it can fail with `vite: not found`, since not every build path installs dependencies automatically.
 
 ## GitHub Pages
 

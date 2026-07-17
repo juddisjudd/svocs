@@ -1,5 +1,6 @@
 import type { Component } from 'svelte';
 import GithubSlugger from 'github-slugger';
+import contentDates from 'virtual:svocs-content-dates';
 import type { SearchDocument } from '$lib/search/types';
 
 type ContentModule = {
@@ -40,6 +41,8 @@ export type ContentSummary = {
 	tags: string[];
 	wordCount: number;
 	readingTimeMinutes: number;
+	/** Last git commit date for the source file (YYYY-MM-DD), when known. */
+	lastModified?: string;
 };
 
 export type TocItem = {
@@ -81,6 +84,27 @@ const EXTENSION_RE = /\.(md|svx)$/;
 function toSlug(filePath: string): string {
 	const relativePath = filePath.slice(CONTENT_PREFIX.length).replace(EXTENSION_RE, '');
 	return relativePath === 'index' ? '' : relativePath.replace(/\/index$/, '');
+}
+
+const MONTHS = [
+	'January',
+	'February',
+	'March',
+	'April',
+	'May',
+	'June',
+	'July',
+	'August',
+	'September',
+	'October',
+	'November',
+	'December'
+];
+
+/** '2026-07-17' -> 'July 17, 2026'. Date-only, so no timezone drift. */
+export function formatLastUpdated(isoDate: string): string {
+	const [year, month, day] = isoDate.split('-').map(Number);
+	return `${MONTHS[month - 1]} ${day}, ${year}`;
 }
 
 function titleFromSlug(slug: string): string {
@@ -245,7 +269,8 @@ export function getAllContentSummaries(): ContentSummary[] {
 				order: sidecarMeta?.order ?? mod.metadata?.order,
 				tags: sidecarMeta?.tags ?? mod.metadata?.tags ?? [],
 				wordCount,
-				readingTimeMinutes
+				readingTimeMinutes,
+				lastModified: contentDates[filePath.slice(1)]
 			},
 			metaByDirectory
 		);
