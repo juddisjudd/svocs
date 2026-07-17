@@ -5,10 +5,10 @@
 It needs no install step. Run it from your site's directory:
 
 ```sh
-npx svocs doctor
+npx svocs-cli doctor
 ```
 
-`bunx svocs` and `pnpm dlx svocs` work the same way. Both commands also accept a path (`svocs doctor ../my-docs`) if you'd rather not `cd`.
+`bunx svocs-cli` and `pnpm dlx svocs-cli` work the same way, and installing the package globally gives you the shorter `svocs` command. Both commands also accept a path (`svocs doctor ../my-docs`) if you'd rather not `cd`.
 
 ## svocs doctor
 
@@ -32,7 +32,7 @@ Checks for the problems that actually reach our issue tracker:
 └  All checks passed.
 ```
 
-The exit code is non-zero when an error-level problem is found, so `npx svocs doctor` works as a CI step.
+The exit code is non-zero when an error-level problem is found, so `npx svocs-cli doctor` works as a CI step.
 
 ## svocs update
 

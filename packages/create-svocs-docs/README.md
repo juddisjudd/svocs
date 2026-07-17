@@ -30,7 +30,7 @@ The **production URL** prompt is worth answering if you know your domain: it set
 
 Flags for scripted/non-interactive setups: `--search=<backend>` (`pagefind` (default), `orama`, `flexsearch`, `typesense`, or `chroma`), `--accent=<hex>` (e.g. `--accent=#2563eb`), and `--site-url=<origin>` (e.g. `--site-url=https://docs.example.com`).
 
-The scaffold also writes a `.svocs.json` manifest recording the template version, your choices, and a hash of every generated file. The [`svocs`](https://github.com/juddisjudd/svocs/tree/main/packages/svocs-cli) companion CLI uses it: `npx svocs doctor` checks a site for common configuration problems, and `npx svocs update` applies newer-template fixes to files you haven't modified.
+The scaffold also writes a `.svocs.json` manifest recording the template version, your choices, and a hash of every generated file. The [`svocs-cli`](https://github.com/juddisjudd/svocs/tree/main/packages/svocs-cli) companion CLI uses it: `npx svocs-cli doctor` checks a site for common configuration problems, and `npx svocs-cli update` applies newer-template fixes to files you haven't modified.
 
 ### Optional: generate content from an existing repo
 

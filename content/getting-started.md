@@ -35,8 +35,8 @@ The prompts also let you set your production URL (which turns on [social preview
 Scaffolds record a `.svocs.json` manifest, and the `svocs` companion CLI uses it to maintain your site after day one:
 
 ```sh
-npx svocs doctor   # checks SITE_URL, fonts, search config, template version
-npx svocs update   # applies template fixes to files you haven't modified
+npx svocs-cli doctor   # checks SITE_URL, fonts, search config, template version
+npx svocs-cli update   # applies template fixes to files you haven't modified
 ```
 
 `update` never touches a file you've edited — it lists those for manual review instead. Both commands are covered on the [CLI](/docs/cli) page.

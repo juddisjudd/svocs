@@ -118,7 +118,7 @@ export async function runDoctor(args) {
 			const { version: latest } = await fetchLatestVersion();
 			if (isNewerVersion(latest, manifest.templateVersion)) {
 				p.log.info(
-					`Template update available: ${manifest.templateVersion} → ${latest}. Run ${pc.cyan('svocs update')}.`
+					`Template update available: ${manifest.templateVersion} → ${latest}. Run ${pc.cyan('npx svocs-cli update')}.`
 				);
 			} else {
 				ok('Template is up to date.');

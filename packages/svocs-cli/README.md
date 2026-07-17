@@ -1,13 +1,13 @@
-# svocs
+# svocs-cli
 
 Companion CLI for [SVOCS](https://svocs.dev) docs sites scaffolded with `create-svocs-docs`.
 
 ```sh
-npx svocs doctor
-npx svocs update
+npx svocs-cli doctor
+npx svocs-cli update
 ```
 
-(or `bunx svocs`, `pnpm dlx svocs`)
+(or `bunx svocs-cli`, `pnpm dlx svocs-cli`; a global install provides the `svocs` command)
 
 ## `svocs doctor [dir]`
 

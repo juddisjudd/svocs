@@ -1,5 +1,5 @@
 {
-	"name": "svocs",
+	"name": "svocs-cli",
 	"version": "0.1.0",
 	"description": "Companion CLI for SVOCS docs sites: check your setup, pull template updates.",
 	"type": "module",
