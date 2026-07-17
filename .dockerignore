@@ -1,8 +1,9 @@
 node_modules
 .svelte-kit
 build
-.git
 .github
+# .git stays IN the context: the build derives per-page "Last updated on"
+# dates from git history (see contentDatesPlugin in vite.config.ts).
 
 # Not needed to build the main site, except the CLI package.json,
 # which +page.svelte imports at build time for the version badge
