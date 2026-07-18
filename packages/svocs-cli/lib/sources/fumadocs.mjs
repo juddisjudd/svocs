@@ -102,7 +102,44 @@ function transformLine(text, baseDir, state) {
 	const before = out;
 	out = out.replace(/<DocsCategory(\s[^>]*)?\/>/g, '<Cards auto />');
 	if (out !== before) {
-		state.docsCategoryCount += 1;
+		state.autoCardCount += 1;
+	}
+	return out;
+}
+
+/**
+ * The other common auto-card shape, straight from Fumadocs' own docs
+ * (no shorthand tag for it): a bare `<Cards>` wrapping a
+ * `getPageTreePeers(source.getPageTree(), "…").map(peer => <Card …>)`
+ * expression that lists the current section's siblings. Collapse the whole
+ * block to `<Cards auto />` before `stripImports` runs, so the getPageTreePeers
+ * and source identifiers it leaves behind are gone by the time the
+ * unportable-block pass looks for them.
+ */
+function collapseAutoCardPeers(annotated, state) {
+	const out = [];
+	for (let i = 0; i < annotated.length; i += 1) {
+		const line = annotated[i];
+		if (!line.inFence && /^\s*<Cards>\s*$/.test(line.text)) {
+			let j = i + 1;
+			let sawPeers = false;
+			while (j < annotated.length && !/^\s*<\/Cards>\s*$/.test(annotated[j].text)) {
+				if (annotated[j].inFence) {
+					break;
+				}
+				if (annotated[j].text.includes('getPageTreePeers(')) {
+					sawPeers = true;
+				}
+				j += 1;
+			}
+			if (sawPeers && j < annotated.length) {
+				out.push({ text: '<Cards auto />', inFence: false });
+				i = j;
+				state.autoCardCount += 1;
+				continue;
+			}
+		}
+		out.push(line);
 	}
 	return out;
 }
@@ -151,9 +188,15 @@ function convertMeta(metaJson, notes, relDir) {
 			continue;
 		}
 		if (entry.startsWith('!')) {
+			const name = entry.slice(1);
 			notes.push(
-				`${relDir || '.'}: "${entry}" hid "${entry.slice(1)}" from the fumadocs sidebar; svocs has no hidden pages, so it stays visible.`
+				`${relDir || '.'}: "${entry}" hid "${name}" from the fumadocs sidebar; svocs has no hidden pages, so it stays visible, in the position "${entry}" was listed.`
 			);
+			// Fumadocs hides it entirely, so it carries no "real" order — but
+			// its listed position is still the best signal svocs has for
+			// where the author meant it to sit relative to its neighbors, so
+			// it gets one instead of falling back to alphabetical.
+			items[name] = { order: order++ };
 			continue;
 		}
 		items[entry] = { order: order++ };
@@ -189,12 +232,21 @@ export default {
 	},
 
 	prepare() {
-		return { docsCategoryCount: 0 };
+		return { autoCardCount: 0 };
 	},
 
 	convertPage(source, { rel, baseDir, todos, notes, state }) {
 		const { frontmatter, fields, body } = splitFrontmatter(source);
 		let annotated = annotateFences(body.split(/\r?\n/));
+
+		// Runs first: collapses the raw getPageTreePeers() idiom to <Cards auto />
+		// while its `source`/`getPageTreePeers` identifiers are still attached to
+		// the block being removed, so stripImports never sees them used elsewhere.
+		const beforePeers = state.autoCardCount;
+		annotated = collapseAutoCardPeers(annotated, state);
+		if (state.autoCardCount > beforePeers) {
+			notes.push(`${rel}: getPageTreePeers() Cards block converted to <Cards auto /> — verify it lists what you expect.`);
+		}
 
 		// DocsCategory is a known, mapped import (see transformLine) so it
 		// doesn't fall into the unportable-block path before conversion runs.
@@ -204,9 +256,9 @@ export default {
 		// expression is still one contiguous block and gets commented whole.
 		annotated = commentUnportableBlocks(annotated, stripped.identifiers, todos);
 		annotated = normalizeComponents(annotated);
-		const before = state.docsCategoryCount;
+		const before = state.autoCardCount;
 		annotated = mdxCommentPass(annotated, (text) => transformLine(text, baseDir, state));
-		if (state.docsCategoryCount > before) {
+		if (state.autoCardCount > before) {
 			notes.push(
 				`${rel}: <DocsCategory /> converted to <Cards auto /> — verify it lists what you expect.`
 			);

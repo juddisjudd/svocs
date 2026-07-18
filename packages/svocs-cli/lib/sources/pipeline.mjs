@@ -148,7 +148,10 @@ export function stripImports(annotated, mapped = new Set()) {
  */
 export function normalizeComponents(annotated) {
 	const names = [...KNOWN_COMPONENTS].join('|');
-	const openRe = new RegExp(`^(\\s*)<(${names})(\\s[^>]*)?>\\s*$`);
+	// (?<!/) excludes self-closing tags (<Cards auto />) — without it they're
+	// read as an opening tag with no matching close, and every line for the
+	// rest of the file gets dedented looking for one.
+	const openRe = new RegExp(`^(\\s*)<(${names})(\\s[^>]*)?(?<!/)>\\s*$`);
 	const closeRe = new RegExp(`^(\\s*)</(${names})>\\s*$`);
 	const out = [];
 	const dedents = [];

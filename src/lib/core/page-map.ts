@@ -165,14 +165,44 @@ function findNodeBySlug(slug: string, nodes: PageMapNode[]): PageMapNode | null 
 }
 
 /**
- * Sibling document pages of the page at `path` — same parent, excluding
- * itself and separators. Backs `<Cards auto>`. Folders with no index page of
- * their own aren't linkable, so they're excluded rather than resolved.
+ * Cards for a `<Cards auto>` block at `path`: when that page is itself a
+ * section index (a folder's own page, with document children), its own
+ * children — so the index lists what it's the index of. Otherwise its
+ * siblings — same parent, excluding itself and separators. Folders with no
+ * index page of their own aren't linkable, so they're excluded rather than
+ * resolved.
  */
 export function getPageTreeSiblings(
 	nodes: PageMapNode[],
 	path: string
 ): Extract<PageMapNode, { kind: 'page' }>[] {
+	const isDocumentPage = (node: PageMapNode): node is Extract<PageMapNode, { kind: 'page' }> =>
+		node.kind === 'page' && node.isDocument;
+
+	function findByPath(list: PageMapNode[]): PageMapNode | null {
+		for (const node of list) {
+			if (node.kind !== 'page') {
+				continue;
+			}
+			if (node.path === path) {
+				return node;
+			}
+			const nested = findByPath(node.children);
+			if (nested) {
+				return nested;
+			}
+		}
+		return null;
+	}
+
+	const self = findByPath(nodes);
+	if (self?.kind === 'page') {
+		const children = self.children.filter(isDocumentPage);
+		if (children.length > 0) {
+			return children;
+		}
+	}
+
 	function siblingsWithin(list: PageMapNode[]): PageMapNode[] | null {
 		if (list.some((node) => node.kind === 'page' && node.path === path)) {
 			return list;
