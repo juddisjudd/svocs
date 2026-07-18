@@ -45,6 +45,10 @@ pnpm dev
 deno task dev
 ```
 
+```sh filename="nub"
+nub run dev
+```
+
 ## Build for production
 
 ```sh

@@ -18,6 +18,10 @@ pnpm create svocs-docs my-docs
 deno run -A npm:create-svocs-docs my-docs
 ```
 
+```sh filename="nub"
+nubx create-svocs-docs@latest my-docs
+```
+
 Answer the prompts, then start the dev server:
 
 ```sh

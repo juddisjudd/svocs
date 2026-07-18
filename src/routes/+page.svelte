@@ -7,6 +7,7 @@
 	import pmBun from '$lib/assets/pm-bun.svg';
 	import pmPnpm from '$lib/assets/pm-pnpm.svg';
 	import pmDeno from '$lib/assets/pm-deno.svg';
+	import pmNub from '$lib/assets/pm-nub.svg';
 	// Build-time import from the monorepo's own CLI package — the rendered
 	// version is whatever this site build shipped with, no runtime fetch.
 	import cliPkg from '../../packages/create-svocs-docs/package.json';
@@ -18,7 +19,8 @@
 	const PACKAGE_MANAGERS = [
 		{ id: 'bun', label: 'Bun', command: 'bunx create-svocs-docs@latest', icon: pmBun },
 		{ id: 'pnpm', label: 'pnpm', command: 'pnpm create svocs-docs', icon: pmPnpm },
-		{ id: 'deno', label: 'Deno', command: 'deno run -A npm:create-svocs-docs', icon: pmDeno }
+		{ id: 'deno', label: 'Deno', command: 'deno run -A npm:create-svocs-docs', icon: pmDeno },
+		{ id: 'nub', label: 'Nub', command: 'nubx create-svocs-docs@latest', icon: pmNub }
 	];
 
 	let pm = $state(PACKAGE_MANAGERS[0]);
@@ -314,12 +316,13 @@
 				<span class="rt"><i class="prompt">$</i> bun run dev</span>
 				<span class="rt dim"><i class="prompt">$</i> pnpm dev</span>
 				<span class="rt dim"><i class="prompt">$</i> deno task dev</span>
+				<span class="rt dim"><i class="prompt">$</i> nub run dev</span>
 				<span class="rt ok">➜ ready in 312ms</span>
 			</div>
 			<h2>Bring your own runtime</h2>
 			<p>
-				The same project and scripts run under Bun, pnpm, or Deno. Pick whichever toolchain you
-				already use.
+				The same project and scripts run under Bun, pnpm, Deno, or Nub. Pick whichever toolchain
+				you already use.
 			</p>
 		</article>
 

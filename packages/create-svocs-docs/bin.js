@@ -84,6 +84,7 @@ function detectPackageManager() {
 	if (ua.startsWith('bun')) return 'bun';
 	if (ua.startsWith('pnpm')) return 'pnpm';
 	if (ua.startsWith('yarn')) return 'yarn';
+	if (ua.startsWith('nub')) return 'nub';
 	return 'npm';
 }
 
@@ -570,6 +571,7 @@ async function main() {
 		pnpm: 'pnpm install',
 		yarn: 'yarn',
 		npm: 'npm install',
+		nub: 'nub install',
 		deno: null
 	}[pm];
 	const devCmd = {
@@ -577,12 +579,39 @@ async function main() {
 		pnpm: 'pnpm dev',
 		yarn: 'yarn dev',
 		npm: 'npm run dev',
+		nub: 'nub run dev',
 		deno: 'deno task dev'
 	}[pm];
+	const buildCmd = {
+		bun: 'bun run build',
+		pnpm: 'pnpm build',
+		yarn: 'yarn build',
+		npm: 'npm run build',
+		nub: 'nub run build',
+		deno: 'deno task build'
+	}[pm];
+	const previewCmd = {
+		bun: 'bun run preview',
+		pnpm: 'pnpm preview',
+		yarn: 'yarn preview',
+		npm: 'npm run preview',
+		nub: 'nub run preview',
+		deno: 'deno task preview'
+	}[pm];
 
-	const nextSteps = [relativeDir !== '.' ? `cd ${relativeDir}` : null, installCmd, devCmd]
-		.filter(Boolean)
-		.map((step) => pc.cyan(step))
+	const steps = [
+		relativeDir !== '.' ? { cmd: `cd ${relativeDir}` } : null,
+		installCmd ? { cmd: installCmd } : null,
+		{ cmd: devCmd, note: 'starts the dev server, with hot reload' },
+		{ cmd: buildCmd },
+		{ cmd: previewCmd, note: 'serves the production build locally' }
+	].filter(Boolean);
+
+	const commandColumnWidth = Math.max(...steps.map((step) => step.cmd.length));
+	const nextSteps = steps
+		.map(({ cmd, note }) =>
+			note ? `${pc.cyan(cmd.padEnd(commandColumnWidth))}  ${pc.dim(note)}` : pc.cyan(cmd)
+		)
 		.join('\n');
 	p.note(nextSteps, 'Next steps');
 
