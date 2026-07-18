@@ -20,7 +20,7 @@
 		{ id: 'bun', label: 'Bun', command: 'bunx create-svocs-docs@latest', icon: pmBun },
 		{ id: 'pnpm', label: 'pnpm', command: 'pnpm create svocs-docs', icon: pmPnpm },
 		{ id: 'deno', label: 'Deno', command: 'deno run -A npm:create-svocs-docs', icon: pmDeno },
-		{ id: 'nub', label: 'Nub', command: 'nubx create-svocs-docs@latest', icon: pmNub }
+		{ id: 'nub', label: 'Nub', command: 'nub x create-svocs-docs@latest', icon: pmNub }
 	];
 
 	let pm = $state(PACKAGE_MANAGERS[0]);
