@@ -676,7 +676,12 @@
 		.nav-collapsed aside nav {
 			display: block;
 			padding: 0.85rem 0 1.25rem;
-			overflow-y: visible;
+			/* Full shorthand, not just overflow-y: pairing a "visible" y-axis
+			   with the desktop rule's overflow-x: hidden makes the UA force
+			   y back to auto (spec: visible must match the other axis or it
+			   resolves to auto), silently re-trapping mobile scroll inside
+			   this nav instead of the page. */
+			overflow: visible;
 		}
 
 		.rail-toggle {
