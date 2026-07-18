@@ -100,7 +100,7 @@ Everywhere, the same rules apply:
 
 Dead internal links carried over from the source are reported at the end, and the new site is configured to warn on them instead of failing prerender; tighten that back up in `vite.config.ts` once they're fixed.
 
-Flags: `--site-name`, `--site-url`, `--repo-url`, `--accent`, and `--search` mirror the scaffolder's prompts.
+Flags: `--site-name`, `--site-url`, `--repo-url`, `--repo-branch` (default `main`; feeds "Edit on GitHub" links, not the header button), `--accent`, and `--search` mirror the scaffolder's prompts.
 
 Migrating from something not listed? Open an issue — the converter is built to grow one source at a time. And if you try svocs and go back, that's a fine outcome too; the point was that you got to choose.
 

@@ -145,7 +145,7 @@ function applyAccentColor(targetDir, hex) {
 	writeFileSync(layoutPath, content.replaceAll(`--accent: ${DEFAULT_ACCENT};`, `--accent: ${hex};`));
 }
 
-function applySiteConfig(targetDir, siteUrl, repoUrl) {
+function applySiteConfig(targetDir, siteUrl, repoUrl, repoBranch) {
 	const sitePath = join(targetDir, 'src/lib/site.ts');
 	let site = readFileSync(sitePath, 'utf8');
 	if (siteUrl) {
@@ -153,6 +153,12 @@ function applySiteConfig(targetDir, siteUrl, repoUrl) {
 	}
 	if (repoUrl) {
 		site = site.replace("export const REPO_URL = '';", `export const REPO_URL = '${repoUrl}';`);
+	}
+	if (repoBranch) {
+		site = site.replace(
+			"export const REPO_BRANCH = 'main';",
+			`export const REPO_BRANCH = '${repoBranch}';`
+		);
 	}
 	writeFileSync(sitePath, site);
 
@@ -253,11 +259,12 @@ function applySearchBackend(targetDir, backendId, recipesDir) {
  * user edits apart from template changes.
  */
 export function scaffold(targetDir, options, { templateDir, recipesDir }) {
-	const { siteName, packageName, accentColor, searchBackend, siteUrl, repoUrl } = options;
+	const { siteName, packageName, accentColor, searchBackend, siteUrl, repoUrl, repoBranch } =
+		options;
 	copyTemplate(templateDir, targetDir);
 	applySubstitutions(targetDir, siteName, packageName);
 	applyAccentColor(targetDir, accentColor);
-	applySiteConfig(targetDir, siteUrl ?? '', repoUrl ?? '');
+	applySiteConfig(targetDir, siteUrl ?? '', repoUrl ?? '', repoBranch ?? '');
 	applySearchBackend(targetDir, searchBackend, recipesDir);
 }
 

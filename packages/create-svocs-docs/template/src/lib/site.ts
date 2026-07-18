@@ -11,6 +11,15 @@ export const SITE_URL = '';
 
 /**
  * Link to this project's repository. When set, the header shows a GitHub
- * button pointing here. Leave empty to hide the button.
+ * button pointing here, and doc pages get an "Edit on GitHub" link. Leave
+ * empty to hide both.
  */
 export const REPO_URL = '';
+
+/** Branch "Edit on GitHub" links point at. */
+export const REPO_BRANCH = 'main';
+
+/** GitHub blob URL for a content file's `content/…` path, or undefined without a REPO_URL. */
+export function getEditUrl(sourcePath: string): string | undefined {
+	return REPO_URL ? `${REPO_URL}/blob/${REPO_BRANCH}/${sourcePath}` : undefined;
+}

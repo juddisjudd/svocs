@@ -8,4 +8,4 @@ Every SVOCS site exposes its content two extra ways, generated at build time alo
 
 This follows the [llms.txt convention](https://llmstxt.org), which lets AI tools read your docs without scraping rendered HTML.
 
-Set `SITE_URL` in `src/lib/site.ts` once you know your production domain, so the links in `llms.txt` are absolute rather than relative.
+Set `SITE_URL` in `src/lib/site.ts` once you know your production domain, so the links in `llms.txt` are absolute rather than relative. Set `REPO_URL` there too (and `REPO_BRANCH` if your default branch isn't `main`) once you have a repo, and every page also gets an **Edit on GitHub** button — hidden until then, rather than linking somewhere broken.

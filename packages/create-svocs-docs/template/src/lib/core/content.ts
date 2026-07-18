@@ -51,6 +51,8 @@ export type ContentSummary = {
 	lastModified?: string;
 	/** Name from the curated icon set ($lib/icons/icon-set.ts). */
 	icon?: string;
+	/** Repo-relative source path, e.g. `content/guides/index.md` — backs "Edit on GitHub". */
+	sourcePath: string;
 };
 
 export type TocItem = {
@@ -280,7 +282,8 @@ export function getAllContentSummaries(): ContentSummary[] {
 				icon: sidecarMeta?.icon ?? mod.metadata?.icon,
 				wordCount,
 				readingTimeMinutes,
-				lastModified: contentDates[filePath.slice(1)]
+				lastModified: contentDates[filePath.slice(1)],
+				sourcePath: filePath.slice(1)
 			},
 			metaByDirectory
 		);

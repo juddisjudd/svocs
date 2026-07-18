@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	import { formatLastUpdated, getDocComponentBySlug } from '$lib/core/content';
+	import { getEditUrl } from '$lib/site';
 	import PageActions from '$lib/themes/docs/PageActions.svelte';
 	import PageIcon from '$lib/icons/PageIcon.svelte';
 
@@ -22,7 +23,7 @@
 			<p>{data.entry.description}</p>
 		{/if}
 		<p class="meta">{data.entry.readingTimeMinutes} min read · {data.entry.wordCount} words</p>
-		<PageActions slug={data.entry.slug} />
+		<PageActions slug={data.entry.slug} editHref={getEditUrl(data.entry.sourcePath)} />
 	</header>
 
 	{#if Content}

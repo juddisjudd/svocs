@@ -26,9 +26,9 @@ bun install
 bun run dev
 ```
 
-The **production URL** prompt is worth answering if you know your domain: it sets `SITE_URL` in `src/lib/site.ts`, which turns on social-preview (`og:image`) tags, the sitemap, and absolute `llms.txt` links, and writes the `Sitemap:` line into `robots.txt`. Skipping it is fine — those features stay off until you set `SITE_URL` yourself. The **repository URL** prompt adds a GitHub button to the site header (it defaults to the repo you pointed the analysis at, if any), and picking **GitHub Pages** as the deploy target prints the `BASE_PATH` setup a project site needs.
+The **production URL** prompt is worth answering if you know your domain: it sets `SITE_URL` in `src/lib/site.ts`, which turns on social-preview (`og:image`) tags, the sitemap, and absolute `llms.txt` links, and writes the `Sitemap:` line into `robots.txt`. Skipping it is fine — those features stay off until you set `SITE_URL` yourself. The **repository URL** prompt adds a GitHub button to the site header and an "Edit on GitHub" link on every doc page (it defaults to the repo you pointed the analysis at, if any), and picking **GitHub Pages** as the deploy target prints the `BASE_PATH` setup a project site needs.
 
-Flags for scripted/non-interactive setups: `--search=<backend>` (`pagefind` (default), `orama`, `flexsearch`, `typesense`, or `chroma`), `--accent=<hex>` (e.g. `--accent=#2563eb`), and `--site-url=<origin>` (e.g. `--site-url=https://docs.example.com`).
+Flags for scripted/non-interactive setups: `--search=<backend>` (`pagefind` (default), `orama`, `flexsearch`, `typesense`, or `chroma`), `--accent=<hex>` (e.g. `--accent=#2563eb`), `--site-url=<origin>` (e.g. `--site-url=https://docs.example.com`), `--repo-url=<owner/repo or URL>` (e.g. `--repo-url=juddisjudd/svocs`), and `--repo-branch=<name>` (defaults to `main`; only matters if your default branch is something else — it feeds the "Edit on GitHub" links, not the repo button).
 
 The scaffold also writes a `.svocs.json` manifest recording the template version, your choices, and a hash of every generated file. The [`svocs-cli`](https://github.com/juddisjudd/svocs/tree/main/packages/svocs-cli) companion CLI uses it: `npx svocs-cli doctor` checks a site for common configuration problems, and `npx svocs-cli update` applies newer-template fixes to files you haven't modified.
 

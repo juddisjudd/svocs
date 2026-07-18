@@ -128,7 +128,8 @@ export async function runMigrate(args) {
 			accentColor: flag('accent') ?? '#ff3c00',
 			searchBackend: flag('search') ?? 'pagefind',
 			siteUrl: flag('site-url') ?? '',
-			repoUrl: flag('repo-url') ?? ''
+			repoUrl: flag('repo-url') ?? '',
+			repoBranch: flag('repo-branch') ?? ''
 		};
 		const s = p.spinner();
 		s.start(`Scaffolding "${siteName}"`);

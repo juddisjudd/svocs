@@ -97,6 +97,16 @@ function toPackageName(name) {
 	return slug || 'svocs-docs';
 }
 
+/** owner/repo shorthand or a bare https(s) URL -> a full https://github.com/... URL, or null. */
+function normalizeRepoUrl(value) {
+	const trimmed = value.trim();
+	const parsed = parseGithubRepo(trimmed);
+	if (parsed) {
+		return `https://github.com/${parsed.owner}/${parsed.repo}`;
+	}
+	return /^https?:\/\//.test(trimmed) ? trimmed : null;
+}
+
 function toSiteName(dirName) {
 	return dirName
 		.split(/[-_]+/)
@@ -170,6 +180,20 @@ async function main() {
 		process.exitCode = 1;
 		return;
 	}
+	const repoUrlFlagRaw = args
+		.find((arg) => arg.startsWith('--repo-url='))
+		?.slice('--repo-url='.length);
+	const repoUrlFlag = repoUrlFlagRaw ? normalizeRepoUrl(repoUrlFlagRaw) : undefined;
+	if (repoUrlFlagRaw && !repoUrlFlag) {
+		console.error(
+			`Invalid --repo-url value: "${repoUrlFlagRaw}". Expected owner/repo or a full URL like https://github.com/owner/repo.`
+		);
+		process.exitCode = 1;
+		return;
+	}
+	const repoBranchFlag = args
+		.find((arg) => arg.startsWith('--repo-branch='))
+		?.slice('--repo-branch='.length);
 
 	const isInteractive = Boolean(process.stdin.isTTY);
 
@@ -311,19 +335,16 @@ async function main() {
 		if (!isInteractive) return defaultUrl;
 		const answer = orExit(
 			await p.text({
-				message: 'Repository URL (adds a GitHub button to the header; optional)',
+				message: 'Repository URL (adds a GitHub button to the header and "Edit on GitHub"; optional)',
 				placeholder: defaultUrl || 'owner/repo or full URL',
 				defaultValue: defaultUrl,
-				validate: (value) => {
-					if (!value) return undefined;
-					if (parseGithubRepo(value) || /^https?:\/\//.test(value.trim())) return undefined;
-					return 'Enter owner/repo, a full URL, or leave empty';
-				}
+				validate: (value) =>
+					!value || normalizeRepoUrl(value) !== null
+						? undefined
+						: 'Enter owner/repo, a full URL, or leave empty'
 			})
 		);
-		if (!answer) return '';
-		const parsed = parseGithubRepo(answer);
-		return parsed ? `https://github.com/${parsed.owner}/${parsed.repo}` : answer.trim();
+		return answer ? (normalizeRepoUrl(answer) ?? '') : '';
 	}
 
 	async function askDeployTarget() {
@@ -491,13 +512,22 @@ async function main() {
 	const packageName = toPackageName(dirName);
 	const siteUrl = siteUrlFlag ?? (await askSiteUrl());
 	const suggestedRepoUrl = repoSlug ? `https://github.com/${repoSlug.owner}/${repoSlug.repo}` : '';
-	const repoUrl = await askRepoLink(suggestedRepoUrl);
+	const repoUrl = repoUrlFlag ?? (await askRepoLink(suggestedRepoUrl));
+	const repoBranch = repoBranchFlag ?? '';
 	const accentColor = accentFlag ?? (await askAccentColor());
 	const searchBackend = searchFlag ?? (await askSearchBackend());
 	const deployTarget = await askDeployTarget();
 	const shouldInitGit = await confirm('Initialize a git repository?', true);
 
-	const scaffoldOptions = { siteName, packageName, accentColor, searchBackend, siteUrl, repoUrl };
+	const scaffoldOptions = {
+		siteName,
+		packageName,
+		accentColor,
+		searchBackend,
+		siteUrl,
+		repoUrl,
+		repoBranch
+	};
 	const scaffoldSpinner = p.spinner();
 	scaffoldSpinner.start(`Scaffolding "${siteName}"`);
 	scaffold(targetDir, scaffoldOptions, {
@@ -641,6 +671,17 @@ async function main() {
 				'llms.txt links stay relative. https://svocs.dev/docs/og-images'
 			].join('\n'),
 			'Before you deploy'
+		);
+	}
+
+	if (!repoUrl) {
+		p.note(
+			[
+				`No repo yet? Set ${pc.cyan('REPO_URL')} in src/lib/site.ts once you have one.`,
+				'It turns on the header GitHub button and an "Edit on GitHub" button on',
+				'every page — both stay hidden until then. https://svocs.dev/docs/ai'
+			].join('\n'),
+			'Optional: link a repo'
 		);
 	}
 

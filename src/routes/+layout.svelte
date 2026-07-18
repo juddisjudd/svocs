@@ -6,10 +6,10 @@
 	import SearchBox from '$lib/themes/docs/SearchBox.svelte';
 	import SearchDialog from '$lib/themes/docs/search/SearchDialog.svelte';
 	import ThemeToggle from '$lib/themes/docs/ThemeToggle.svelte';
-	import { SITE_URL, SITE_NAME } from '$lib/site';
+	import { SITE_URL, SITE_NAME, REPO_URL } from '$lib/site';
 
 	let { children }: { children: Snippet } = $props();
-	const repoUrl = 'https://github.com/juddisjudd/svocs';
+	const repoUrl = REPO_URL;
 	const currentPath = $derived(page.url.pathname.replace(/\/$/, '') || '/');
 
 	// Every prerendered route gets a matching card from scripts/og/generate.mjs

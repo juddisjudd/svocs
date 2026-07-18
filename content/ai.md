@@ -26,6 +26,15 @@ Every page's full markdown source, concatenated and separated by `---`. A single
 
 Every doc page is also available with a `.md` suffix: `/docs/introduction` renders the HTML page, while `/docs/introduction.md` returns the same content as plain markdown, headings and code fences intact, with `Content-Type: text/markdown`. The **Copy Markdown** and **View as Markdown** buttons under each page title are wired to this.
 
+A third button, **Edit on GitHub**, links straight to the page's source file — useful for readers as much as AI tools. It only appears once `REPO_URL` is set in `src/lib/site.ts`:
+
+```ts filename="src/lib/site.ts"
+export const REPO_URL = 'https://github.com/owner/repo';
+export const REPO_BRANCH = 'main'; // only if your default branch isn't main
+```
+
+The scaffolder's repository-URL prompt (or `--repo-url=<owner/repo>` non-interactively) sets `REPO_URL` for you — skip it if you don't have a repo yet and set it by hand once you do. Without it, the button is hidden rather than linking somewhere broken.
+
 ## How it's built
 
 All three reuse one function, `getAllLlmsDocuments()` in `src/lib/core/content.ts`, which returns the _unstripped_ markdown source per page. It's deliberately kept separate from the search system's `getAllSearchDocuments()`, which strips markup for tokenization; an AI consumer wants the real source, not stripped plain text. `llms.txt`'s category grouping walks the same page-map tree the sidebar renders from, so it never drifts out of sync with your actual navigation.

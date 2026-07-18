@@ -23,7 +23,8 @@ Usage:
     --source=<framework>       Force the source framework instead of auto-detecting
     --site-name=<name>         Site name (default: derived from the source config)
     --site-url=<origin>        Production URL for the new site
-    --repo-url=<url>           Repository link for the new site's header
+    --repo-url=<url>           Repository link for the new site's header and "Edit on GitHub"
+    --repo-branch=<name>       Branch "Edit on GitHub" links point at (default: main)
     --accent=<hex>             Accent color
     --search=<backend>         Search backend (default: pagefind)
     --from=<dir>               Use a local create-svocs-docs package instead of npm

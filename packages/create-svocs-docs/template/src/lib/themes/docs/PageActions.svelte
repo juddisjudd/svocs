@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 
-	let { slug }: { slug: string } = $props();
+	let { slug, editHref }: { slug: string; editHref?: string } = $props();
 
 	const markdownHref = $derived(resolve('/docs/[...slug].md', { slug }));
 
@@ -71,6 +71,21 @@
 		</svg>
 		View as Markdown
 	</a>
+	{#if editHref}
+		<a href={editHref} target="_blank" rel="noreferrer">
+			<svg viewBox="0 0 16 16" aria-hidden="true">
+				<path
+					d="M9.5 3.5 12.5 6.5 5.5 13.5 2.5 13.5 2.5 10.5Z"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="1.3"
+					stroke-linejoin="round"
+					stroke-linecap="round"
+				/>
+			</svg>
+			Edit on GitHub
+		</a>
+	{/if}
 </div>
 
 <style>
