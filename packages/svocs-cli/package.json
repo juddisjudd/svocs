@@ -16,7 +16,8 @@
 	},
 	"files": [
 		"bin.js",
-		"lib"
+		"lib",
+		"!lib/**/*.test.mjs"
 	],
 	"engines": {
 		"node": ">=18"
