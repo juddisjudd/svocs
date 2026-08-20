@@ -29,15 +29,25 @@ jobs:
   scaffold:
     name: Scaffold smoke test
     runs-on: ubuntu-latest
+    env:
+      CREATE: ${{ github.workspace }}/packages/create-svocs-docs
+      CLI: ${{ github.workspace }}/packages/svocs-cli
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
+      # The packages aren't workspaces of the root; each carries its own lockfile.
+      - run: bun install --frozen-lockfile
+        working-directory: ${{ env.CREATE }}
+      - run: bun install --frozen-lockfile
+        working-directory: ${{ env.CLI }}
       # stdin is not a TTY here, so the scaffolder takes every default.
-      - run: node packages/create-svocs-docs/bin.js smoke-site
+      - run: node "$CREATE/bin.js" smoke-site
         working-directory: ${{ runner.temp }}
       - run: bun install
         working-directory: ${{ runner.temp }}/smoke-site
       - run: bun run check && bun run lint && bun run build
         working-directory: ${{ runner.temp }}/smoke-site
-      - run: npx --yes --package=${{ github.workspace }}/packages/svocs-cli svocs doctor
+      - run: node "$CLI/bin.js" doctor
+        working-directory: ${{ runner.temp }}/smoke-site
+      - run: node "$CLI/bin.js" update --from="$CREATE" --dry-run --force
         working-directory: ${{ runner.temp }}/smoke-site
