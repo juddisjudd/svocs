@@ -1,0 +1,46 @@
+# Weekly housekeeping for a SVOCS site, opened as a pull request so nothing
+# lands unreviewed:
+#   - svocs doctor: configuration checks
+#   - svocs sync:   refresh pages that mirror another file (`source:`), and
+#                   re-run repo analysis for generated pages you haven't edited
+#   - svocs update: apply template fixes to files you haven't modified
+# Uses Bun; swap the install/build steps if you scaffolded with another
+# package manager. Delete this file if you'd rather run these by hand.
+name: SVOCS maintenance
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  maintain:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: npx --yes svocs-cli doctor
+      - run: npx --yes svocs-cli sync --yes
+        env:
+          # Only needed when repo analysis was LLM-powered at scaffold time.
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      - run: npx --yes svocs-cli update --yes
+      - run: bun install
+      - run: bun run build
+      - uses: peter-evans/create-pull-request@v7
+        with:
+          branch: svocs/maintenance
+          title: 'chore: SVOCS maintenance'
+          commit-message: 'chore: svocs sync + update'
+          body: |
+            Automated run of `svocs sync` and `svocs update`. Files you've
+            edited by hand were skipped; see the workflow log for the list.

@@ -10,6 +10,7 @@ import { playwright } from '@vitest/browser-playwright';
 import adapter from '@sveltejs/adapter-static';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { highlightWithFilename } from './src/lib/build/code-highlighter';
+import { obsidian } from './src/lib/build/obsidian';
 
 const execFileAsync = promisify(execFile);
 
@@ -33,12 +34,25 @@ async function resolveContentDates(): Promise<Record<string, string>> {
 	try {
 		// content/ is walked relative to the repo root (not cwd) so this still
 		// works if Vite is ever invoked from a subdirectory.
-		const { stdout: root } = await execFileAsync('git', ['rev-parse', '--show-toplevel'], {
-			encoding: 'utf8'
-		});
+		const { stdout: root } = await execFileAsync(
+			'git',
+			['-c', 'safe.directory=*', 'rev-parse', '--show-toplevel'],
+			{
+				encoding: 'utf8'
+			}
+		);
 		const { stdout: log } = await execFileAsync(
 			'git',
-			['log', '--format=%x00%cI', '--name-only', '--relative', '--', 'content'],
+			[
+				'-c',
+				'safe.directory=*',
+				'log',
+				'--format=%x00%cI',
+				'--name-only',
+				'--relative',
+				'--',
+				'content'
+			],
 			{ cwd: root.trim(), encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }
 		);
 		let commitDate = '';
@@ -58,9 +72,13 @@ async function resolveContentDates(): Promise<Record<string, string>> {
 	// when dates are missing in production.
 	let shallow = false;
 	try {
-		const { stdout } = await execFileAsync('git', ['rev-parse', '--is-shallow-repository'], {
-			encoding: 'utf8'
-		});
+		const { stdout } = await execFileAsync(
+			'git',
+			['-c', 'safe.directory=*', 'rev-parse', '--is-shallow-repository'],
+			{
+				encoding: 'utf8'
+			}
+		);
 		shallow = stdout.trim() === 'true';
 	} catch {
 		// same failure modes as above
@@ -154,7 +172,7 @@ export default defineConfig({
 			paths: {
 				base: process.env.BASE_PATH?.startsWith('/') ? (process.env.BASE_PATH as `/${string}`) : ''
 			},
-			preprocess: [mdsvex(mdsvexOptions)],
+			preprocess: [obsidian(), mdsvex(mdsvexOptions)],
 			extensions: ['.svelte', '.svx', '.md'],
 			prerender: {
 				handleHttpError: ({ path, message }) => {
@@ -190,6 +208,14 @@ export default defineConfig({
 					environment: 'node',
 					include: ['src/**/*.{test,spec}.{js,ts}'],
 					exclude: ['src/**/*.svelte.{test,spec}.{js,ts}']
+				}
+			},
+
+			{
+				test: {
+					name: 'packages',
+					environment: 'node',
+					include: ['packages/*/lib/**/*.test.mjs']
 				}
 			}
 		]

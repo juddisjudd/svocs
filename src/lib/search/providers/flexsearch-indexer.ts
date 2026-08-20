@@ -1,4 +1,4 @@
-import { getAllSearchDocuments } from '$lib/core/content';
+import { getAllSearchDocuments } from '$lib/server/content';
 import { createDocumentIndex } from './flexsearch-config';
 
 /** Build-time only — FlexSearch's export() is callback-based and multi-chunk

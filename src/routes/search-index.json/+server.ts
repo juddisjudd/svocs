@@ -1,5 +1,5 @@
 import { json } from '@sveltejs/kit';
-import { getAllSearchDocuments } from '$lib/core/content';
+import { getAllSearchDocuments } from '$lib/server/content';
 import type { RequestHandler } from './$types';
 
 export const prerender = true;

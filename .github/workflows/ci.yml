@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  site:
+    name: Lint, test, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun run check
+      - run: bun run lint
+      - run: bunx playwright install --with-deps chromium
+      - run: bun run test:unit -- --run
+      - run: node scripts/sync-template.mjs --check
+      - run: bun run build
+
+  scaffold:
+    name: Scaffold smoke test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      # stdin is not a TTY here, so the scaffolder takes every default.
+      - run: node packages/create-svocs-docs/bin.js smoke-site
+        working-directory: ${{ runner.temp }}
+      - run: bun install
+        working-directory: ${{ runner.temp }}/smoke-site
+      - run: bun run check && bun run lint && bun run build
+        working-directory: ${{ runner.temp }}/smoke-site
+      - run: npx --yes --package=${{ github.workspace }}/packages/svocs-cli svocs doctor
+        working-directory: ${{ runner.temp }}/smoke-site

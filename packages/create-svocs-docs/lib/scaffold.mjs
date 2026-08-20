@@ -11,7 +11,8 @@ export const MANIFEST_FILE = '.svocs.json';
 const RENAMES = {
 	_gitignore: '.gitignore',
 	_npmrc: '.npmrc',
-	_nojekyll: '.nojekyll'
+	_nojekyll: '.nojekyll',
+	_github: '.github'
 };
 
 // Order here is display order in the prompt.
@@ -86,21 +87,35 @@ export function normalizeSiteUrl(input) {
 }
 
 // Files that get __SITE_NAME__ / __PACKAGE_NAME__ substitution.
-const TEXT_EXTENSIONS = new Set(['.md', '.svx', '.json', '.jsonc', '.js', '.ts', '.svelte', '.html', '.txt', '']);
+const TEXT_EXTENSIONS = new Set([
+	'.md',
+	'.svx',
+	'.json',
+	'.jsonc',
+	'.js',
+	'.ts',
+	'.svelte',
+	'.html',
+	'.txt',
+	''
+]);
 
 function sortObjectKeys(obj) {
 	return Object.fromEntries(Object.entries(obj).sort(([a], [b]) => a.localeCompare(b)));
 }
 
-function copyTemplate(srcDir, destDir) {
+function copyTemplate(srcDir, destDir, isRoot = true) {
 	mkdirSync(destDir, { recursive: true });
 	for (const entry of readdirSync(srcDir, { withFileTypes: true })) {
+		if (isRoot && COPY_EXCLUDE.has(entry.name)) {
+			continue;
+		}
 		const srcPath = join(srcDir, entry.name);
 		const destName = RENAMES[entry.name] ?? entry.name;
 		const destPath = join(destDir, destName);
 
 		if (entry.isDirectory()) {
-			copyTemplate(srcPath, destPath);
+			copyTemplate(srcPath, destPath, false);
 			continue;
 		}
 
@@ -142,7 +157,10 @@ function applyAccentColor(targetDir, hex) {
 	}
 	const layoutPath = join(targetDir, 'src/routes/+layout.svelte');
 	const content = readFileSync(layoutPath, 'utf8');
-	writeFileSync(layoutPath, content.replaceAll(`--accent: ${DEFAULT_ACCENT};`, `--accent: ${hex};`));
+	writeFileSync(
+		layoutPath,
+		content.replaceAll(`--accent: ${DEFAULT_ACCENT};`, `--accent: ${hex};`)
+	);
 }
 
 function applySiteConfig(targetDir, siteUrl, repoUrl, repoBranch) {
@@ -268,12 +286,15 @@ export function scaffold(targetDir, options, { templateDir, recipesDir }) {
 	applySearchBackend(targetDir, searchBackend, recipesDir);
 }
 
-const HASH_EXCLUDE = new Set(['.git', 'node_modules', MANIFEST_FILE]);
+// Local build state can sit next to the template in a dev checkout; it is
+// never part of a scaffold. Root level only: src/lib/build is real source.
+const COPY_EXCLUDE = new Set(['.git', 'node_modules', '.svelte-kit', 'build', '.DS_Store']);
+const HASH_EXCLUDE = new Set([...COPY_EXCLUDE, MANIFEST_FILE]);
 
 export function hashScaffold(dir, prefix = '') {
 	const hashes = {};
 	for (const entry of readdirSync(dir, { withFileTypes: true })) {
-		if (HASH_EXCLUDE.has(entry.name)) {
+		if (!prefix && HASH_EXCLUDE.has(entry.name)) {
 			continue;
 		}
 		const rel = prefix ? `${prefix}/${entry.name}` : entry.name;
@@ -307,4 +328,31 @@ export function readManifest(targetDir) {
 		return null;
 	}
 	return JSON.parse(readFileSync(path, 'utf8'));
+}
+
+/**
+ * After repo analysis replaces the starter content, content/ is the user's
+ * (like a migrated site): `svocs update` must not re-add the starter pages,
+ * and `svocs sync` needs the recorded analysis options plus a hash of every
+ * generated file to tell later edits apart from generated output.
+ */
+export function recordGeneratedContent(targetDir, repoAnalysis) {
+	const manifest = readManifest(targetDir);
+	if (!manifest) {
+		return;
+	}
+	const generated = {};
+	for (const [rel, hash] of Object.entries(hashScaffold(targetDir))) {
+		if (rel.startsWith('content/')) {
+			generated[rel] = hash;
+		}
+	}
+	manifest.ownsContent = true;
+	manifest.repoAnalysis = { ...repoAnalysis, files: sortObjectKeys(generated) };
+	manifest.files = sortObjectKeys(
+		Object.fromEntries(
+			Object.entries(manifest.files).filter(([rel]) => !rel.startsWith('content/'))
+		)
+	);
+	writeFileSync(join(targetDir, MANIFEST_FILE), `${JSON.stringify(manifest, null, '\t')}\n`);
 }

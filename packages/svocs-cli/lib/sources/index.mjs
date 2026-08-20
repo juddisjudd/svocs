@@ -19,9 +19,10 @@ import fumadocs from './fumadocs.mjs';
 import mdbook from './mdbook.mjs';
 import mkdocs from './mkdocs.mjs';
 import nextra from './nextra.mjs';
+import obsidian from './obsidian.mjs';
 import starlight from './starlight.mjs';
 
-export const SOURCES = [fumadocs, nextra, docusaurus, starlight, mkdocs, mdbook];
+export const SOURCES = [fumadocs, nextra, docusaurus, starlight, mkdocs, mdbook, obsidian];
 
 export function detectSource(sourceDir) {
 	return SOURCES.find((source) => source.detect(sourceDir)) ?? null;

@@ -1,5 +1,5 @@
 import { text } from '@sveltejs/kit';
-import { getAllLlmsDocuments, getDocsEntries, loadMetaByDirectory } from '$lib/core/content';
+import { getAllLlmsDocuments, getDocsEntries, loadMetaByDirectory } from '$lib/server/content';
 import { buildDocsPageMap, type PageMapNode } from '$lib/core/page-map';
 import { SITE_NAME, SITE_URL } from '$lib/site';
 import type { RequestHandler } from './$types';

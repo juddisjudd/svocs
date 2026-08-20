@@ -1,5 +1,5 @@
 import type { PageServerLoad } from './$types';
-import { getDocsEntries } from '$lib/core/content';
+import { getDocsEntries } from '$lib/server/content';
 
 export const prerender = true;
 

@@ -7,14 +7,14 @@
 	// identity) and a session flag for the click itself.
 	let dismissedNow = $state(false);
 	const dismissedBefore = $derived(
-		typeof localStorage !== 'undefined' && localStorage.getItem(`docs-banner-${id}`) === '1'
+		typeof localStorage !== 'undefined' && localStorage.getItem(`svocs-banner-${id}`) === '1'
 	);
 	const dismissed = $derived(dismissedNow || dismissedBefore);
 
 	function dismiss() {
 		dismissedNow = true;
 		try {
-			localStorage.setItem(`docs-banner-${id}`, '1');
+			localStorage.setItem(`svocs-banner-${id}`, '1');
 		} catch {
 			// storage unavailable — banner still dismisses for this page view
 		}

@@ -93,6 +93,10 @@ t = \max\left(1, \left\lceil \frac{w}{200} \right\rceil\right)
 $$
 ```
 
+## Obsidian syntax
+
+Wikilinks (`[[Page]]`), image embeds (`![[diagram.png]]`), `> [!tip]` callouts, `==highlights==`, and `%% comments %%` all work in `.md` and `.svx` files, and `publish: false` or `draft: true` in frontmatter keeps a page out of the build. That means `content/` can be opened directly as an Obsidian vault; see [Obsidian](/docs/obsidian).
+
 ## Components
 
 `.svx` files (not `.md`) can import and use Svelte components inline. See the [Components](/docs/components) page for the full built-in set (Callout, Tabs, Steps, Cards, Collapse, Bleed, Banner, FileTree, ImageZoom) and how to import them.

@@ -72,6 +72,7 @@
 		View as Markdown
 	</a>
 	{#if editHref}
+		<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- external URL -->
 		<a href={editHref} target="_blank" rel="noreferrer">
 			<svg viewBox="0 0 16 16" aria-hidden="true">
 				<path

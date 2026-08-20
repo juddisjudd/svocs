@@ -1,5 +1,5 @@
 import { text } from '@sveltejs/kit';
-import { getAllLlmsDocuments } from '$lib/core/content';
+import { getAllLlmsDocuments } from '$lib/server/content';
 import { SITE_URL } from '$lib/site';
 import type { RequestHandler } from './$types';
 

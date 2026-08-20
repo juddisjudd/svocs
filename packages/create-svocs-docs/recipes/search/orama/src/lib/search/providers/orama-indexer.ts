@@ -1,4 +1,4 @@
-import { getAllSearchDocuments } from '$lib/core/content';
+import { getAllSearchDocuments } from '$lib/server/content';
 
 export type OramaDoc = { id: string; url: string; title: string; content: string };
 

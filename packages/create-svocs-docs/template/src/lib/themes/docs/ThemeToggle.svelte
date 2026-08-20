@@ -12,7 +12,7 @@
 		theme = next;
 		document.documentElement.dataset.theme = next;
 		try {
-			localStorage.setItem('docs-theme', next);
+			localStorage.setItem('svocs-theme', next);
 		} catch {
 			// storage unavailable — theme still applies for this page view
 		}
@@ -105,7 +105,6 @@
 	@media (hover: hover) and (pointer: fine) {
 		button:hover {
 			color: var(--accent-soft);
-			transform: translateY(-1px);
 		}
 	}
 

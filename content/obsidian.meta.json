@@ -1,0 +1,7 @@
+{
+	"title": "Obsidian",
+	"description": "Open content/ as a vault: wikilinks, embeds, callouts, and drafts build as-is, or migrate a vault once.",
+	"order": 7,
+	"icon": "pen",
+	"tags": ["guide"]
+}

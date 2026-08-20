@@ -1,4 +1,4 @@
-# __SITE_NAME__
+# **SITE_NAME**
 
 A documentation site built with [SVOCS](https://github.com/juddisjudd/svocs).
 

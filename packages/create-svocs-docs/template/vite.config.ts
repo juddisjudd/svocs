@@ -9,6 +9,7 @@ import { defineConfig, type Plugin } from 'vite';
 import adapter from '@sveltejs/adapter-static';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { highlightWithFilename } from './src/lib/build/code-highlighter';
+import { obsidian } from './src/lib/build/obsidian';
 
 const execFileAsync = promisify(execFile);
 
@@ -147,7 +148,7 @@ export default defineConfig({
 			paths: {
 				base: process.env.BASE_PATH?.startsWith('/') ? (process.env.BASE_PATH as `/${string}`) : ''
 			},
-			preprocess: [mdsvex(mdsvexOptions)],
+			preprocess: [obsidian(), mdsvex(mdsvexOptions)],
 			extensions: ['.svelte', '.svx', '.md']
 		})
 	]

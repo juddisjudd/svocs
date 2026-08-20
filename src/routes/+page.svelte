@@ -321,8 +321,8 @@
 			</div>
 			<h2>Bring your own runtime</h2>
 			<p>
-				The same project and scripts run under Bun, pnpm, Deno, or Nub. Pick whichever toolchain
-				you already use.
+				The same project and scripts run under Bun, pnpm, Deno, or Nub. Pick whichever toolchain you
+				already use.
 			</p>
 		</article>
 

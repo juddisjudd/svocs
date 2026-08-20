@@ -1,5 +1,5 @@
 import { error, text } from '@sveltejs/kit';
-import { getDocEntryBySlug, getDocsEntries, getRawMarkdownBySlug } from '$lib/core/content';
+import { getDocEntryBySlug, getDocsEntries, getRawMarkdownBySlug } from '$lib/server/content';
 import type { EntryGenerator, RequestHandler } from './$types';
 
 export const prerender = true;
@@ -13,13 +13,19 @@ export const entries: EntryGenerator = () => {
 export const GET: RequestHandler = async ({ params }) => {
 	const slugParts = params.slug.split('/');
 	const entry = getDocEntryBySlug(slugParts);
-	const raw = getRawMarkdownBySlug(slugParts);
+	const body = getRawMarkdownBySlug(slugParts);
 
-	if (!entry || raw === null) {
+	if (!entry || body === null) {
 		error(404, `Document not found: ${slugParts.join('/')}`);
 	}
 
-	return text(raw, {
+	// The layout renders title and description from metadata; the exported
+	// markdown carries them inline so it stands alone.
+	const header = [`# ${entry.title}`, entry.description ? `\n> ${entry.description}` : '']
+		.filter(Boolean)
+		.join('\n');
+
+	return text(`${header}\n\n${body.trim()}\n`, {
 		headers: { 'content-type': 'text/markdown; charset=utf-8' }
 	});
 };

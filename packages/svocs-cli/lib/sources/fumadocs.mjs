@@ -245,7 +245,9 @@ export default {
 		const beforePeers = state.autoCardCount;
 		annotated = collapseAutoCardPeers(annotated, state);
 		if (state.autoCardCount > beforePeers) {
-			notes.push(`${rel}: getPageTreePeers() Cards block converted to <Cards auto /> — verify it lists what you expect.`);
+			notes.push(
+				`${rel}: getPageTreePeers() Cards block converted to <Cards auto /> — verify it lists what you expect.`
+			);
 		}
 
 		// DocsCategory is a known, mapped import (see transformLine) so it

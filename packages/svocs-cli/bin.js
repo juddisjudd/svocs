@@ -4,6 +4,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { runDoctor } from './lib/doctor.mjs';
 import { runMigrate } from './lib/migrate.mjs';
+import { runSync } from './lib/sync.mjs';
 import { runUpdate } from './lib/update.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -18,8 +19,14 @@ Usage:
     --yes                      Apply without asking for confirmation
     --force                    Re-sync even when the template version matches
     --from=<dir>               Use a local create-svocs-docs package instead of npm
-  svocs migrate <src> <dest>   Convert an existing docs site into a new svocs site
-                               (Fumadocs, Nextra, Docusaurus, Starlight, MkDocs, mdBook)
+  svocs sync [dir]             Refresh pages with a "source:" and re-run repo analysis
+    --dry-run                  Show what would change without writing anything
+    --yes                      Apply without asking for confirmation
+    --skip-repo                Only refresh "source:" pages
+    --skip-sources             Only re-run repo analysis
+    --from=<dir>               Use a local create-svocs-docs package instead of npm
+  svocs migrate <src> <dest>   Convert an existing docs site or vault into a new svocs site
+                               (Fumadocs, Nextra, Docusaurus, Starlight, MkDocs, mdBook, Obsidian)
     --source=<framework>       Force the source framework instead of auto-detecting
     --site-name=<name>         Site name (default: derived from the source config)
     --site-url=<origin>        Production URL for the new site
@@ -43,6 +50,9 @@ async function main() {
 			return;
 		case 'update':
 			process.exitCode = await runUpdate(rest);
+			return;
+		case 'sync':
+			process.exitCode = await runSync(rest);
 			return;
 		case 'migrate':
 			process.exitCode = await runMigrate(args.filter((arg) => arg !== command));

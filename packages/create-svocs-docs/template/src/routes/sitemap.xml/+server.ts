@@ -1,5 +1,5 @@
 import { SitemapStream, streamToPromise } from 'sitemap';
-import { getDocsEntries } from '$lib/core/content';
+import { getDocsEntries } from '$lib/server/content';
 import { SITE_URL } from '$lib/site';
 import type { RequestHandler } from './$types';
 
@@ -23,7 +23,7 @@ async function buildSitemap(): Promise<string> {
 		stream.write({ url: path });
 	}
 	for (const doc of getDocsEntries()) {
-		stream.write({ url: doc.path });
+		stream.write({ url: doc.path, lastmod: doc.lastModified });
 	}
 	stream.end();
 

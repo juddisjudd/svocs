@@ -49,7 +49,7 @@
 			(function () {
 				var theme = 'dark';
 				try {
-					var stored = localStorage.getItem('docs-theme');
+					var stored = localStorage.getItem('svocs-theme');
 					if (stored === 'light' || stored === 'dark') {
 						theme = stored;
 					} else if (window.matchMedia('(prefers-color-scheme: light)').matches) {

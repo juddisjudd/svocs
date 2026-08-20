@@ -179,6 +179,7 @@
 								onclick={() => goToResult(result.url)}
 							>
 								<strong>{result.title}</strong>
+								<!-- eslint-disable-next-line svelte/no-at-html-tags -- escaped in highlightExcerpt -->
 								<span>{@html highlightExcerpt(result.excerpt, query)}</span>
 							</button>
 						</li>

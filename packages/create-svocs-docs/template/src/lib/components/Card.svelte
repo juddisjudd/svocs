@@ -8,8 +8,13 @@
 		external = false,
 		icon,
 		children
-	}: { title: string; href?: string; external?: boolean; icon?: string; children?: Snippet } =
-		$props();
+	}: {
+		title: string;
+		href?: string;
+		external?: boolean;
+		icon?: string;
+		children?: Snippet;
+	} = $props();
 </script>
 
 {#snippet body()}

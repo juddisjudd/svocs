@@ -20,6 +20,7 @@ import {
 	DEFAULT_ACCENT,
 	normalizeHexColor,
 	normalizeSiteUrl,
+	recordGeneratedContent,
 	scaffold,
 	SEARCH_BACKEND_IDS,
 	SEARCH_BACKENDS,
@@ -335,7 +336,8 @@ async function main() {
 		if (!isInteractive) return defaultUrl;
 		const answer = orExit(
 			await p.text({
-				message: 'Repository URL (adds a GitHub button to the header and "Edit on GitHub"; optional)',
+				message:
+					'Repository URL (adds a GitHub button to the header and "Edit on GitHub"; optional)',
 				placeholder: defaultUrl || 'owner/repo or full URL',
 				defaultValue: defaultUrl,
 				validate: (value) =>
@@ -575,6 +577,13 @@ async function main() {
 		}
 		if (generatedPages.length > 0) {
 			writeGeneratedPages(targetDir, generatedPages);
+			recordGeneratedContent(targetDir, {
+				repo: `${repoSlug.owner}/${repoSlug.repo}`,
+				mode: repoAnalysisMode,
+				provider: repoAnalysisMode === 'llm' ? llmProvider : undefined,
+				model: repoAnalysisMode === 'llm' ? llmModel : undefined,
+				scanDepth: repoAnalysisMode === 'llm' ? scanDepth : undefined
+			});
 			p.log.success(`Generated ${generatedPages.length} docs page(s) from the repo.`);
 		} else {
 			p.log.warn(

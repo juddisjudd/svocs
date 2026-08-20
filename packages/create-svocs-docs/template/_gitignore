@@ -25,3 +25,6 @@ vite.config.ts.timestamp-*
 # Logs
 *.log
 npm-debug.log*
+
+# Obsidian workspace state when content/ is opened as a vault
+.obsidian

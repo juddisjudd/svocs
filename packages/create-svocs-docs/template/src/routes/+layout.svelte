@@ -56,6 +56,7 @@
 				</div>
 				<ThemeToggle />
 				{#if REPO_URL}
+					<!-- eslint-disable svelte/no-navigation-without-resolve -- external URL -->
 					<a
 						class="repo"
 						href={REPO_URL}
@@ -63,6 +64,7 @@
 						rel="noreferrer"
 						aria-label="GitHub repository"
 					>
+						<!-- eslint-enable svelte/no-navigation-without-resolve -->
 						<svg viewBox="0 0 24 24" aria-hidden="true">
 							<path
 								d="M12 2C6.477 2 2 6.596 2 12.266c0 4.536 2.865 8.385 6.839 9.743.5.096.683-.222.683-.494 0-.244-.009-.89-.014-1.747-2.782.617-3.37-1.38-3.37-1.38-.455-1.183-1.11-1.498-1.11-1.498-.908-.639.069-.626.069-.626 1.004.072 1.532 1.058 1.532 1.058.893 1.57 2.341 1.117 2.91.854.091-.667.35-1.118.636-1.374-2.221-.259-4.555-1.14-4.555-5.075 0-1.121.39-2.039 1.029-2.757-.103-.261-.446-1.312.098-2.735 0 0 .84-.276 2.75 1.053A9.35 9.35 0 0 1 12 6.877c.85.004 1.705.118 2.504.347 1.909-1.329 2.747-1.053 2.747-1.053.546 1.423.203 2.474.1 2.735.64.718 1.027 1.636 1.027 2.757 0 3.945-2.338 4.813-4.566 5.067.359.318.678.946.678 1.907 0 1.377-.012 2.487-.012 2.826 0 .274.18.594.688.493C19.137 20.647 22 16.8 22 12.266 22 6.596 17.523 2 12 2z"
@@ -97,7 +99,13 @@
 			height="130%"
 			color-interpolation-filters="sRGB"
 		>
-			<feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="4" seed="7" result="noise" />
+			<feTurbulence
+				type="fractalNoise"
+				baseFrequency="0.012"
+				numOctaves="4"
+				seed="7"
+				result="noise"
+			/>
 			<feDisplacementMap
 				in="SourceGraphic"
 				in2="noise"
@@ -116,7 +124,13 @@
 			/>
 			<feComponentTransfer in="alpha-noise" result="threshold">
 				<feFuncA type="linear" slope="16" intercept="1">
-					<animate attributeName="intercept" values="1;-16" dur="0.9s" begin="indefinite" fill="freeze" />
+					<animate
+						attributeName="intercept"
+						values="1;-16"
+						dur="0.9s"
+						begin="indefinite"
+						fill="freeze"
+					/>
 				</feFuncA>
 			</feComponentTransfer>
 			<feComposite in="displaced" in2="threshold" operator="in" />

@@ -37,9 +37,10 @@ The scaffolder asks for your site name, production URL, repository link, accent 
 - **Social preview cards** — a 1200×630 OG image per page, rendered at build time by [Takumi](https://takumi.kane.tw/) with no headless browser
 - **Math and diagrams** — LaTeX via [KaTeX](https://katex.org/), diagrams via [Mermaid](https://mermaid.js.org/)
 - **AI-ready output** — `llms.txt` and `llms-full.txt` endpoints, plus a sitemap
+- **Obsidian-compatible** — open `content/` as a vault; `[[wikilinks]]`, `![[embeds]]`, `> [!tip]` callouts, highlights, comments, and `publish: false` drafts build as-is, and `npx svocs-cli migrate` imports an existing vault
 - **Theming** — one accent color drives the whole palette (dark and light), with a View Transitions dissolve on theme switch
-- **Site maintenance** — `npx svocs-cli doctor` checks configuration; `npx svocs-cli update` applies template fixes to files you haven't modified
-- **Migration** — `npx svocs-cli migrate` converts an existing [Fumadocs](https://fumadocs.dev/), [Nextra](https://nextra.site/), [Docusaurus](https://docusaurus.io/), [Starlight](https://starlight.astro.build/), [MkDocs](https://www.mkdocs.org/), or [mdBook](https://rust-lang.github.io/mdBook/) site, mapping components and flagging what needs a human — these are all tools we respect, svocs is just one more option
+- **Site maintenance** — `npx svocs-cli doctor` checks configuration; `npx svocs-cli update` applies template fixes to files you haven't modified; `npx svocs-cli sync` refreshes pages that mirror a README, a GitHub file, or a repo analysis; a scheduled workflow opens the resulting PR weekly
+- **Migration** — `npx svocs-cli migrate` converts an existing [Fumadocs](https://fumadocs.dev/), [Nextra](https://nextra.site/), [Docusaurus](https://docusaurus.io/), [Starlight](https://starlight.astro.build/), [MkDocs](https://www.mkdocs.org/), or [mdBook](https://rust-lang.github.io/mdBook/) site, or an [Obsidian](https://obsidian.md/) vault, mapping components and flagging what needs a human — these are all tools we respect, svocs is just one more option
 - **Static output** — deploys to Cloudflare Pages, GitHub Pages, or any static host; `BASE_PATH` support for sub-path hosting
 
 ## Packages

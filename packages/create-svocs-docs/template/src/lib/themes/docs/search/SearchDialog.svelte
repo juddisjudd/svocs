@@ -69,11 +69,33 @@
 		};
 	});
 
-	function toPlainText(input: string): string {
+	function stripHtml(input: string): string {
 		return input
 			.replace(/<[^>]+>/g, '')
 			.replace(/\s+/g, ' ')
 			.trim();
+	}
+
+	function escapeHtml(input: string): string {
+		return input.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+	}
+
+	function escapeRegExp(input: string): string {
+		return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+	}
+
+	// Backends disagree on excerpt markup, so strip to plain text and
+	// re-highlight from the query terms — every backend renders identically.
+	// escapeHtml must run before <mark> insertion so literal <> in excerpts
+	// can't break out of the {@html} render below.
+	function highlightExcerpt(excerpt: string, currentQuery: string): string {
+		const escaped = escapeHtml(stripHtml(excerpt));
+		const terms = currentQuery.trim().split(/\s+/).filter(Boolean).map(escapeRegExp);
+		if (terms.length === 0) {
+			return escaped;
+		}
+		const pattern = new RegExp(`(${terms.join('|')})`, 'gi');
+		return escaped.replace(pattern, '<mark>$1</mark>');
 	}
 
 	function goToResult(url: string) {
@@ -157,7 +179,8 @@
 								onclick={() => goToResult(result.url)}
 							>
 								<strong>{result.title}</strong>
-								<span>{toPlainText(result.excerpt)}</span>
+								<!-- eslint-disable-next-line svelte/no-at-html-tags -- escaped in highlightExcerpt -->
+								<span>{@html highlightExcerpt(result.excerpt, query)}</span>
 							</button>
 						</li>
 					{/each}
@@ -289,5 +312,12 @@
 	span {
 		font-size: 0.84rem;
 		color: var(--muted);
+	}
+
+	span :global(mark) {
+		background: color-mix(in srgb, var(--accent) 28%, transparent);
+		color: var(--accent-strong);
+		border-radius: 0.15rem;
+		padding: 0 0.1em;
 	}
 </style>

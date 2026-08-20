@@ -7,24 +7,25 @@
 
 		"guides-heading": { "type": "separator", "title": "Guides", "order": 5 },
 		"writing-content": { "order": 6 },
-		"components": { "order": 7 },
-		"navigation": { "order": 8 },
-		"theming": { "order": 9 },
-		"og-images": { "order": 10 },
+		"obsidian": { "order": 7 },
+		"components": { "order": 8 },
+		"navigation": { "order": 9 },
+		"theming": { "order": 10 },
+		"og-images": { "order": 11 },
 
-		"search-heading": { "type": "separator", "title": "Search", "order": 11 },
-		"search": { "order": 12 },
+		"search-heading": { "type": "separator", "title": "Search", "order": 12 },
+		"search": { "order": 13 },
 
-		"operating-heading": { "type": "separator", "title": "Operating Your Site", "order": 13 },
-		"cli": { "order": 14 },
-		"deployment": { "order": 15 },
-		"troubleshooting": { "order": 16 },
+		"operating-heading": { "type": "separator", "title": "Operating Your Site", "order": 14 },
+		"cli": { "order": 15 },
+		"deployment": { "order": 16 },
+		"troubleshooting": { "order": 17 },
 
-		"reference-heading": { "type": "separator", "title": "Reference", "order": 17 },
-		"architecture": { "order": 18 },
-		"ai": { "order": 19 },
+		"reference-heading": { "type": "separator", "title": "Reference", "order": 18 },
+		"architecture": { "order": 19 },
+		"ai": { "order": 20 },
 
-		"more-heading": { "type": "separator", "title": "More", "order": 20 },
-		"about": { "order": 21 }
+		"more-heading": { "type": "separator", "title": "More", "order": 21 },
+		"about": { "order": 22 }
 	}
 }

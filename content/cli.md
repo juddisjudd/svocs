@@ -1,6 +1,6 @@
 ## What it is
 
-`svocs` is the companion CLI for sites scaffolded with `create-svocs-docs`. The scaffolder gets you a working site; `svocs` keeps it working after day one. It has three commands: `doctor` checks a site's configuration, `update` pulls template fixes into it, and `migrate` converts an existing docs site — Fumadocs, Nextra, Docusaurus, Starlight, MkDocs, or mdBook — into a new svocs one.
+`svocs` is the companion CLI for sites scaffolded with `create-svocs-docs`. The scaffolder gets you a working site; `svocs` keeps it working after day one. It has four commands: `doctor` checks a site's configuration, `update` pulls template fixes into it, `sync` refreshes pages that mirror another file or a repo analysis, and `migrate` converts an existing docs site — Fumadocs, Nextra, Docusaurus, Starlight, MkDocs, mdBook, or an Obsidian vault — into a new svocs one.
 
 It needs no install step. Run it from your site's directory:
 
@@ -8,7 +8,7 @@ It needs no install step. Run it from your site's directory:
 npx svocs-cli doctor
 ```
 
-`bunx svocs-cli` and `pnpm dlx svocs-cli` work the same way, and installing the package globally gives you the shorter `svocs` command. Both commands also accept a path (`svocs doctor ../my-docs`) if you'd rather not `cd`.
+`bunx svocs-cli` and `pnpm dlx svocs-cli` work the same way, and installing the package globally gives you the shorter `svocs` command. `doctor` and `update` also accept a path (`svocs doctor ../my-docs`) if you'd rather not `cd`.
 
 ## svocs doctor
 
@@ -38,7 +38,7 @@ The exit code is non-zero when an error-level problem is found, so `npx svocs-cl
 
 Scaffolded sites are snapshots: a bug fixed in the template after you scaffold never reaches your site. `update` closes that gap without touching your work.
 
-It relies on the `.svocs.json` manifest that `create-svocs-docs` 0.18+ writes at scaffold time — the template version, the options you picked, and a hash of every file as it was generated. `update` fetches the latest template, rebuilds what an untouched scaffold with your options would look like, and compares file by file:
+It relies on the `.svocs.json` manifest that `create-svocs-docs` 0.17+ writes at scaffold time — the template version, the options you picked, and a hash of every file as it was generated. `update` fetches the latest template, rebuilds what an untouched scaffold with your options would look like, and compares file by file:
 
 ```txt
 ┌  svocs update
@@ -62,11 +62,12 @@ The rules:
 
 `package.json` follows the same rules, which in practice means it's skipped once you've added a dependency. When that happens `update` says so; compare its dependencies against the new template if a build breaks after updating.
 
-| Flag        | Effect                                                           |
-| ----------- | ---------------------------------------------------------------- |
-| `--dry-run` | Print the plan without writing anything                          |
-| `--yes`     | Apply without the confirmation prompt (required in CI / non-TTY) |
-| `--force`   | Re-sync even when the template version already matches           |
+| Flag        | Effect                                                                   |
+| ----------- | ------------------------------------------------------------------------ |
+| `--dry-run` | Print the plan without writing anything                                  |
+| `--yes`     | Apply without the confirmation prompt (required in CI / non-TTY)         |
+| `--force`   | Re-sync even when the template version already matches                   |
+| `--from`    | Use a local `create-svocs-docs` checkout instead of npm (`--from=<dir>`) |
 
 Since your content lives in `content/` and is either starter pages you've rewritten or your own files, it's protected by the same hash check as everything else. `update` has no special cases.
 
@@ -80,16 +81,17 @@ npx svocs-cli migrate ../my-docs-site ../my-svocs-site
 
 First, the honest part: every framework this command reads from is good software. [Fumadocs](https://fumadocs.dev/) and [Nextra](https://nextra.site/) in particular are projects we love — much of svocs's authoring model is a tribute to theirs — and [Docusaurus](https://docusaurus.io/), [Starlight](https://starlight.astro.build/), [MkDocs](https://www.mkdocs.org/), and [mdBook](https://rust-lang.github.io/mdBook/) have each earned their place. `migrate` isn't here to argue you out of any of them. It exists because people who write docs deserve options, and "I'd try the Svelte one if moving weren't a weekend of regex" shouldn't be the reason you can't. Your source site is never modified, so trying svocs costs an afternoon and reversing the experiment costs nothing.
 
-The source framework is auto-detected (override with `--source=fumadocs|nextra|docusaurus|starlight|mkdocs|mdbook`). The converter scaffolds a fresh site, then converts the source's content tree:
+The source framework is auto-detected (override with `--source=fumadocs|nextra|docusaurus|starlight|mkdocs|mdbook|obsidian`). The converter scaffolds a fresh site, then converts the source's content tree:
 
-| Source     | What maps over                                                                                                                                                                                                                                                                            |
-| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Fumadocs   | `content/docs/` MDX; `<Tabs>`/`<Callout>`/`<Cards>` map directly (`error` → `danger`); `[step]` headings become `<Steps>`; `meta.json` → `_meta.json`; `icon` (frontmatter or meta.json) and `<DocsCategory />` map to svocs [page icons](/docs/components#page-icons) and `<Cards auto>` |
-| Nextra     | `content/` or `pages/` MDX; `<Callout>`, `<Steps>`, `<Tabs items={…}>` pass through; `Tabs.Tab`/`Cards.Card`/`FileTree.*` lose the dots; `_meta.json` and (best-effort) `_meta.js/tsx` → `_meta.json`                                                                                     |
-| Docusaurus | `docs/` tree; `:::note`-style admonitions become `<Callout>`; `<Tabs>`/`<TabItem>` become the `items` shape; `01-` number prefixes, `sidebar_position`, and `_category_.json` become `_meta.json` ordering; `<DocCardList />` becomes `<Cards auto>`                                      |
-| Starlight  | `src/content/docs/`; asides (both `:::` and `<Aside>`) become `<Callout>`; `CardGrid`/`LinkCard` become `Cards`/`Card`; `sidebar:` frontmatter becomes ordering; root-relative links gain the `/docs` prefix; `Card` `icon` names translate where Starlight's vocabulary overlaps svocs's |
-| MkDocs     | `docs/` markdown; `!!! note` admonitions become `<Callout>`, `??? tip` collapsibles become `<Collapse>`, `=== "Tab"` content tabs become `<Tabs>`; the `mkdocs.yml` `nav:` becomes `_meta.json`; Material for MkDocs' frontmatter `icon: material/…` translates to a svocs page icon      |
-| mdBook     | `src/` markdown; `SUMMARY.md` becomes ordering (part headings become sidebar separators); `README.md` chapters become index pages; rust hidden lines (`# `) are stripped; `mdbook-admonish` blocks become `<Callout>`                                                                     |
+| Source     | What maps over                                                                                                                                                                                                                                                                                                                                                      |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Fumadocs   | `content/docs/` MDX; `<Tabs>`/`<Callout>`/`<Cards>` map directly (`error` → `danger`); `[step]` headings become `<Steps>`; `meta.json` → `_meta.json`; `icon` (frontmatter or meta.json) and `<DocsCategory />` map to svocs [page icons](/docs/components#page-icons) and `<Cards auto>`                                                                           |
+| Nextra     | `content/` or `pages/` MDX; `<Callout>`, `<Steps>`, `<Tabs items={…}>` pass through; `Tabs.Tab`/`Cards.Card`/`FileTree.*` lose the dots; `_meta.json` and (best-effort) `_meta.js/tsx` → `_meta.json`                                                                                                                                                               |
+| Docusaurus | `docs/` tree; `:::note`-style admonitions become `<Callout>`; `<Tabs>`/`<TabItem>` become the `items` shape; `01-` number prefixes, `sidebar_position`, and `_category_.json` become `_meta.json` ordering; `<DocCardList />` becomes `<Cards auto>`                                                                                                                |
+| Starlight  | `src/content/docs/`; asides (both `:::` and `<Aside>`) become `<Callout>`; `CardGrid`/`LinkCard` become `Cards`/`Card`; `sidebar:` frontmatter becomes ordering; root-relative links gain the `/docs` prefix; `Card` `icon` names translate where Starlight's vocabulary overlaps svocs's                                                                           |
+| MkDocs     | `docs/` markdown; `!!! note` admonitions become `<Callout>`, `??? tip` collapsibles become `<Collapse>`, `=== "Tab"` content tabs become `<Tabs>`; the `mkdocs.yml` `nav:` becomes `_meta.json`; Material for MkDocs' frontmatter `icon: material/…` translates to a svocs page icon                                                                                |
+| mdBook     | `src/` markdown; `SUMMARY.md` becomes ordering (part headings become sidebar separators); `README.md` chapters become index pages; rust hidden lines (`# `) are stripped; `mdbook-admonish` blocks become `<Callout>`                                                                                                                                               |
+| Obsidian   | any vault (detected by `.obsidian/`); `[[wikilinks]]` resolve against the vault's note index, `![[embeds]]` are copied into `static/attachments/`, `> [!tip]` callouts become `<Callout>`, `==marks==` become `<mark>`; notes with `publish: false` and the templates folder are skipped; Dataview and Templater blocks are flagged. See [Obsidian](/docs/obsidian) |
 
 Everywhere, the same rules apply:
 
@@ -104,6 +106,47 @@ Flags: `--site-name`, `--site-url`, `--repo-url`, `--repo-branch` (default `main
 
 Migrating from something not listed? Open an issue — the converter is built to grow one source at a time. And if you try svocs and go back, that's a fine outcome too; the point was that you got to choose.
 
-## Sites scaffolded before 0.18
+## svocs sync
+
+Some pages are mirrors of something that lives elsewhere: a `README.md` at the repo root, a `CHANGELOG.md`, a design doc in another repository. `sync` keeps them current without copy-paste.
+
+Give a page a `source:` — in its frontmatter or its sidecar `.meta.json` — and `sync` replaces the page body with that file:
+
+```md filename="content/changelog.md"
+---
+title: Changelog
+source: ../CHANGELOG.md
+---
+```
+
+```json filename="content/readme.meta.json"
+{
+	"title": "Overview",
+	"source": "https://github.com/owner/repo/blob/main/README.md"
+}
+```
+
+Local paths resolve from the site root; GitHub `blob` URLs are fetched raw, and relative links and images inside the fetched markdown are rewritten to absolute GitHub URLs so they keep working. Upstream frontmatter is dropped, and a leading `# Title` is removed when the page already has a title, since the layout renders it. The body starts with a comment saying where it came from; edit the source, not the page.
+
+Sites that were [scaffolded from a GitHub repo](/docs/repo-analysis) get a second behaviour: `sync` re-runs the analysis with the options recorded at scaffold time (mode, provider, model, scan depth) and rewrites generated pages you haven't edited since. Edited pages are hash-checked against the manifest and skipped; new pages are added and appended to `_meta.json`. LLM-powered analysis needs the provider's key in the environment (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, or `OPENROUTER_API_KEY`); without it, the LLM-written pages are left alone rather than downgraded to heuristic output.
+
+```sh
+npx svocs-cli sync --dry-run   # show what would change
+npx svocs-cli sync --yes       # apply (required in CI)
+```
+
+| Flag             | Effect                                                    |
+| ---------------- | --------------------------------------------------------- |
+| `--dry-run`      | Print the plan without writing anything                   |
+| `--yes`          | Apply without the confirmation prompt (required in CI)    |
+| `--skip-repo`    | Only refresh `source:` pages                              |
+| `--skip-sources` | Only re-run repo analysis                                 |
+| `--from`         | Use a local `create-svocs-docs` checkout (`--from=<dir>`) |
+
+## Scheduled maintenance
+
+New scaffolds ship `.github/workflows/svocs-maintenance.yml`: every Monday (or on demand) it runs `doctor`, `sync --yes`, and `update --yes`, builds the result, and opens a pull request with whatever changed. Nothing lands without review, and files you've edited are skipped by the same rules as above. Delete the file if you'd rather run the commands by hand.
+
+## Sites scaffolded before 0.17
 
 Older scaffolds have no `.svocs.json`, so `update` can't tell your edits from template files and refuses to guess. `doctor` still works. To adopt updates on an older site, compare it against a fresh scaffold once by hand, then keep the fresh scaffold's manifest.

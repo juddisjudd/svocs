@@ -1,12 +1,12 @@
 <script lang="ts">
 	import type { PageData } from './$types';
-	import { formatLastUpdated, getDocComponentBySlug } from '$lib/core/content';
-	import { getEditUrl } from '$lib/site';
+	import { formatLastUpdated } from '$lib/core/content';
+	import { SITE_URL, getEditUrl } from '$lib/site';
 	import PageActions from '$lib/themes/docs/PageActions.svelte';
 	import PageIcon from '$lib/icons/PageIcon.svelte';
 
 	let { data }: { data: PageData } = $props();
-	const Content = $derived(getDocComponentBySlug(data.entry.slug.split('/')));
+	const Content = $derived(data.Content);
 </script>
 
 <svelte:head>
@@ -14,6 +14,13 @@
 	{#if data.entry.description}
 		<meta name="description" content={data.entry.description} />
 	{/if}
+
+	<meta property="og:type" content="article" />
+	<meta property="og:title" content={data.entry.title} />
+	{#if data.entry.description}
+		<meta property="og:description" content={data.entry.description} />
+	{/if}
+	<meta property="og:url" content="{SITE_URL}/docs" />
 </svelte:head>
 
 <article>

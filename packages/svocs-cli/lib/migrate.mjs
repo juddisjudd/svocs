@@ -165,7 +165,7 @@ export async function runMigrate(args) {
 
 		// ---- convert the content tree
 		const notes = [];
-		const state = (await adapter.prepare?.({ sourceDir, contentDir, notes })) ?? {};
+		const state = (await adapter.prepare?.({ sourceDir, contentDir, targetDir, notes })) ?? {};
 		const extensions = adapter.extensions;
 		const pages = walkFiles(
 			contentDir,
@@ -178,6 +178,7 @@ export async function runMigrate(args) {
 		const linkRefs = [];
 		let svxCount = 0;
 		let hasRootIndex = false;
+		let skipped = 0;
 
 		const convertSpinner = p.spinner();
 		convertSpinner.start(`Converting ${pages.length} page(s)`);
@@ -186,7 +187,7 @@ export async function runMigrate(args) {
 			const outRelSource = adapter.outRel ? adapter.outRel(page.rel) : page.rel;
 			const baseDir =
 				dirname(outRelSource) === '.' ? '' : dirname(outRelSource).replace(/\\/g, '/');
-			const { ext, content } = adapter.convertPage(readFileSync(page.full, 'utf8'), {
+			const converted = adapter.convertPage(readFileSync(page.full, 'utf8'), {
 				rel: page.rel,
 				outRel: outRelSource,
 				baseDir,
@@ -194,6 +195,12 @@ export async function runMigrate(args) {
 				notes,
 				state
 			});
+			// adapters return null for pages the source marks unpublished
+			if (!converted) {
+				skipped += 1;
+				continue;
+			}
+			const { ext, content } = converted;
 			if (fileTodos.length > 0) {
 				todos.push({ rel: page.rel, count: fileTodos.length });
 			}
@@ -252,7 +259,7 @@ export async function runMigrate(args) {
 			metaCount += 1;
 		}
 		convertSpinner.stop(
-			`Converted ${pages.length} page(s): ${pages.length - svxCount} .md, ${svxCount} .svx${metaCount > 0 ? `, ${metaCount} _meta.json` : ''}`
+			`Converted ${pages.length - skipped} page(s): ${pages.length - skipped - svxCount} .md, ${svxCount} .svx${metaCount > 0 ? `, ${metaCount} _meta.json` : ''}${skipped > 0 ? `; skipped ${skipped} unpublished` : ''}`
 		);
 
 		for (const todo of todos) {
