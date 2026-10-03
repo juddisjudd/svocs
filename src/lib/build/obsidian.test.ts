@@ -64,7 +64,7 @@ describe('callouts', () => {
 				'title: T',
 				'---',
 				'<script>',
-				"\timport Callout from '$lib/components/Callout.svelte';",
+				"\timport Callout from '#lib/components/Callout.svelte';",
 				'</script>',
 				'',
 				'<Callout type="tip">',
@@ -83,10 +83,10 @@ describe('callouts', () => {
 
 	it('maps unknown and foldable types, reusing an existing script block', () => {
 		const { code } = run(
-			"<script>\n\timport Tabs from '$lib/components/Tabs.svelte';\n</script>\n\n> [!bug]- Folded\n> body"
+			"<script>\n\timport Tabs from '#lib/components/Tabs.svelte';\n</script>\n\n> [!bug]- Folded\n> body"
 		);
 		expect(code).toContain(
-			"<script>\n\timport Callout from '$lib/components/Callout.svelte';\n\timport Tabs"
+			"<script>\n\timport Callout from '#lib/components/Callout.svelte';\n\timport Tabs"
 		);
 		expect(code).toContain('<Callout type="danger">');
 	});

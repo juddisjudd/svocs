@@ -1,4 +1,4 @@
-import { base } from '$app/paths';
+import { resolve } from '$app/paths';
 import { create, insertMultiple, search, type AnyOrama } from '@orama/orama';
 import type { SearchClient, SearchResultItem } from '../types';
 import type { OramaDoc } from './orama-indexer';
@@ -8,7 +8,7 @@ export function createClient(): SearchClient {
 
 	async function ensureLoaded(): Promise<AnyOrama> {
 		if (!dbPromise) {
-			dbPromise = fetch(`${base}/search-index.orama.json`)
+			dbPromise = fetch(resolve('/search-index.orama.json'))
 				.then(async (res) => {
 					if (!res.ok) {
 						throw new Error('Search index is not available yet. Run bun run build first.');

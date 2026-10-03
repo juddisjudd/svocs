@@ -1,5 +1,4 @@
-import { json } from '@sveltejs/kit';
-import { getAllSearchDocuments } from '$lib/server/content';
+import { getAllSearchDocuments } from '#lib/server/content.js';
 import type { RequestHandler } from './$types';
 
 export const prerender = true;
@@ -7,5 +6,5 @@ export const prerender = true;
 // Always built regardless of provider; post-build sync scripts read this
 // file off disk instead of re-parsing content/.
 export const GET: RequestHandler = async () => {
-	return json(getAllSearchDocuments());
+	return Response.json(getAllSearchDocuments());
 };

@@ -1,6 +1,6 @@
 import { SitemapStream, streamToPromise } from 'sitemap';
-import { getDocsEntries } from '$lib/server/content';
-import { SITE_URL } from '$lib/site';
+import { getDocsEntries } from '#lib/server/content.js';
+import { SITE_URL } from '#lib/site.js';
 import type { RequestHandler } from './$types';
 
 export const prerender = true;

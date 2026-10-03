@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { browser } from '$app/environment';
+	import { browser } from '$app/env';
 
 	type Token = { text: string; cls?: string };
 	type Phase = 'typing' | 'hold-code' | 'revealing' | 'hold-docs' | 'hiding';

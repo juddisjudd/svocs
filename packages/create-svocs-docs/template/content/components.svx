@@ -1,23 +1,23 @@
 <script>
 	import { resolve } from '$app/paths';
-	import Callout from '$lib/components/Callout.svelte';
-	import Tabs from '$lib/components/Tabs.svelte';
-	import Tab from '$lib/components/Tab.svelte';
-	import Steps from '$lib/components/Steps.svelte';
-	import Cards from '$lib/components/Cards.svelte';
-	import Card from '$lib/components/Card.svelte';
-	import Collapse from '$lib/components/Collapse.svelte';
-	import Bleed from '$lib/components/Bleed.svelte';
-	import Banner from '$lib/components/Banner.svelte';
-	import FileTree from '$lib/components/FileTree.svelte';
-	import FileTreeFolder from '$lib/components/FileTreeFolder.svelte';
-	import FileTreeFile from '$lib/components/FileTreeFile.svelte';
-	import IconShowcase from '$lib/icons/IconShowcase.svelte';
+	import Callout from '#lib/components/Callout.svelte';
+	import Tabs from '#lib/components/Tabs.svelte';
+	import Tab from '#lib/components/Tab.svelte';
+	import Steps from '#lib/components/Steps.svelte';
+	import Cards from '#lib/components/Cards.svelte';
+	import Card from '#lib/components/Card.svelte';
+	import Collapse from '#lib/components/Collapse.svelte';
+	import Bleed from '#lib/components/Bleed.svelte';
+	import Banner from '#lib/components/Banner.svelte';
+	import FileTree from '#lib/components/FileTree.svelte';
+	import FileTreeFolder from '#lib/components/FileTreeFolder.svelte';
+	import FileTreeFile from '#lib/components/FileTreeFile.svelte';
+	import IconShowcase from '#lib/icons/IconShowcase.svelte';
 </script>
 
 <Banner id="components-intro">
 
-These components ship with SVOCS. Import them from `$lib/components` in any `.svx` file.
+These components ship with SVOCS. Import them from `#lib/components` in any `.svx` file.
 
 </Banner>
 
@@ -47,7 +47,7 @@ Don't nest a `Callout` inside another `Callout` — styling assumes one level.
 
 </Callout>
 
-Import path: `$lib/components/Callout.svelte`, added at the top of the `.svx` file's script block alongside your other imports.
+Import path: `#lib/components/Callout.svelte`, added at the top of the `.svx` file's script block alongside your other imports.
 
 ## Tabs
 
@@ -98,8 +98,8 @@ Run `bun run dev` and visit `/docs/example`.
 ## Cards
 
 <Cards>
-	<Card title="Getting Started" href={resolve('/docs/getting-started')} icon="rocket">Add your first page.</Card>
-	<Card title="Navigation" href={resolve('/docs/navigation')} icon="folder">Organize the sidebar with _meta.json.</Card>
+	<Card title="Getting Started" href={resolve('docs/getting-started')} icon="rocket">Add your first page.</Card>
+	<Card title="Navigation" href={resolve('docs/navigation')} icon="folder">Organize the sidebar with _meta.json.</Card>
 	<Card title="GitHub" href="https://github.com" external icon="star">Source and issue tracker.</Card>
 </Cards>
 
@@ -142,7 +142,7 @@ Wraps a screenshot so clicking it opens a full-size overlay (Escape or a click c
 <ImageZoom src="/screenshot.png" alt="Describe the image" width={1200} height={630} />
 ```
 
-Import path: `$lib/components/ImageZoom.svelte`. Takes `src`, `alt`, and optional `width`/`height` — set those two to the source image's real dimensions so the layout doesn't shift once it loads.
+Import path: `#lib/components/ImageZoom.svelte`. Takes `src`, `alt`, and optional `width`/`height` — set those two to the source image's real dimensions so the layout doesn't shift once it loads.
 
 ## Bleed
 

@@ -8,8 +8,8 @@ import { promisify } from 'node:util';
 import { defineConfig, type Plugin } from 'vite';
 import adapter from '@sveltejs/adapter-static';
 import { sveltekit } from '@sveltejs/kit/vite';
-import { highlightWithFilename } from './src/lib/build/code-highlighter';
-import { obsidian } from './src/lib/build/obsidian';
+import { highlightWithFilename } from './src/lib/build/code-highlighter.ts';
+import { obsidian } from './src/lib/build/obsidian.ts';
 
 const execFileAsync = promisify(execFile);
 
@@ -90,9 +90,9 @@ function contentDatesPlugin(): Plugin {
 	};
 }
 
-// $env/static/public (used in src/lib/search/resolver.ts) requires this to
-// be defined at build time — override it to pick a different search
-// backend, see https://svocs.dev/docs/search
+// The search resolver (src/lib/search/resolver.ts) reads this static env
+// var at build time — override it to pick a different search backend, see
+// https://svocs.dev/docs/search
 process.env.PUBLIC_SVOCS_SEARCH_PROVIDER ??= 'pagefind';
 
 type MdsvexOptions = NonNullable<Parameters<typeof mdsvex>[0]>;

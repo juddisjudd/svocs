@@ -1,5 +1,5 @@
 import type { PageLoad } from './$types';
-import { loadDocComponent } from '$lib/core/content';
+import { loadDocComponent } from '#lib/core/content.js';
 
 export const prerender = true;
 

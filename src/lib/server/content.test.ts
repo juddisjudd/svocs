@@ -80,7 +80,7 @@ describe('stripSourceForExport', () => {
 			'title: X',
 			'---',
 			'<script>',
-			"\timport Callout from '$lib/components/Callout.svelte';",
+			"\timport Callout from '#lib/components/Callout.svelte';",
 			'</script>',
 			'',
 			'Body',

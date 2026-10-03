@@ -20,7 +20,12 @@ export function renderMermaidBlocks(root: HTMLElement | null): void {
 			startOnLoad: false,
 			// Colors bake in at render time; a theme toggle applies on the next
 			// navigation, not live.
-			theme: document.documentElement.dataset.theme === 'light' ? 'neutral' : 'dark'
+			theme: document.documentElement.dataset.theme === 'light' ? 'neutral' : 'dark',
+			// Mermaid 12 changed these defaults; pin the v11 rendering.
+			look: 'classic',
+			layout: 'dagre',
+			fontFamily: '"trebuchet ms", verdana, arial, sans-serif',
+			flowchart: { wrappingWidth: 200 }
 		});
 		try {
 			await mermaid.run({ nodes });

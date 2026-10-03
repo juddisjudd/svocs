@@ -3,11 +3,11 @@
 	import type { PageData } from './$types';
 	import DocTypewriter from './DocTypewriter.svelte';
 	import VelvetBackground from './VelvetBackground.svelte';
-	import { SITE_URL } from '$lib/site';
-	import pmBun from '$lib/assets/pm-bun.svg';
-	import pmPnpm from '$lib/assets/pm-pnpm.svg';
-	import pmDeno from '$lib/assets/pm-deno.svg';
-	import pmNub from '$lib/assets/pm-nub.svg';
+	import { SITE_URL } from '#lib/site.js';
+	import pmBun from '#lib/assets/pm-bun.svg';
+	import pmPnpm from '#lib/assets/pm-pnpm.svg';
+	import pmDeno from '#lib/assets/pm-deno.svg';
+	import pmNub from '#lib/assets/pm-nub.svg';
 	// Build-time import from the monorepo's own CLI package — the rendered
 	// version is whatever this site build shipped with, no runtime fetch.
 	import cliPkg from '../../packages/create-svocs-docs/package.json';
@@ -102,7 +102,7 @@
 		</p>
 
 		<div class="actions anim" style:--i={3}>
-			<a class="btn primary" href={resolve('/docs/getting-started')}>
+			<a class="btn primary" href={resolve('docs/getting-started')}>
 				Get started
 				<span aria-hidden="true">→</span>
 			</a>
@@ -329,7 +329,7 @@
 		<!-- OG social cards -->
 		<article class="card span-3">
 			<div class="mock-og" aria-hidden="true">
-				<img src={asset('/og-card-example.png')} alt="" loading="lazy" width="1200" height="630" />
+				<img src={asset('og-card-example.png')} alt="" loading="lazy" width="1200" height="630" />
 			</div>
 			<h2>Social cards for every page</h2>
 			<p>
@@ -398,7 +398,7 @@
 		<h2>Set up your docs in a minute.</h2>
 		<p>One command scaffolds a working site. Everything after that is Markdown.</p>
 		<div class="actions">
-			<a class="btn primary" href={resolve('/docs/getting-started')}>
+			<a class="btn primary" href={resolve('docs/getting-started')}>
 				Get started
 				<span aria-hidden="true">→</span>
 			</a>

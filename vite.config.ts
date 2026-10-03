@@ -9,8 +9,8 @@ import { defineConfig, type Plugin } from 'vitest/config';
 import { playwright } from '@vitest/browser-playwright';
 import adapter from '@sveltejs/adapter-static';
 import { sveltekit } from '@sveltejs/kit/vite';
-import { highlightWithFilename } from './src/lib/build/code-highlighter';
-import { obsidian } from './src/lib/build/obsidian';
+import { highlightWithFilename } from './src/lib/build/code-highlighter.ts';
+import { obsidian } from './src/lib/build/obsidian.ts';
 
 const execFileAsync = promisify(execFile);
 
@@ -188,7 +188,7 @@ export default defineConfig({
 		expect: { requireAssertions: true },
 		projects: [
 			{
-				extends: './vite.config.ts',
+				extends: true,
 				test: {
 					name: 'client',
 					browser: {
@@ -202,7 +202,7 @@ export default defineConfig({
 			},
 
 			{
-				extends: './vite.config.ts',
+				extends: true,
 				test: {
 					name: 'server',
 					environment: 'node',
@@ -212,6 +212,7 @@ export default defineConfig({
 			},
 
 			{
+				extends: false,
 				test: {
 					name: 'packages',
 					environment: 'node',

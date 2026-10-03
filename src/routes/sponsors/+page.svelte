@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { SITE_URL } from '$lib/site';
+	import { SITE_URL } from '#lib/site.js';
 
 	const sponsorUrl = 'https://github.com/sponsors/juddisjudd';
 </script>

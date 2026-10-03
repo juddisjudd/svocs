@@ -1,4 +1,4 @@
-import type { ContentSummary, MetaItemConfig } from '$lib/core/content';
+import type { ContentSummary, MetaItemConfig } from '#lib/core/content.js';
 
 /** Directory path ('' for the content root) → that directory's `_meta.json` `items` map. */
 export type DirectoryMeta = Map<string, Record<string, MetaItemConfig>>;

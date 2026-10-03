@@ -1,4 +1,4 @@
-import { base } from '$app/paths';
+import { resolve } from '$app/paths';
 import { createDocumentIndex, type FlexDoc } from './flexsearch-config';
 import type { SearchClient, SearchResultItem } from '../types';
 
@@ -7,7 +7,7 @@ export function createClient(): SearchClient {
 
 	async function ensureLoaded() {
 		if (!indexPromise) {
-			indexPromise = fetch(`${base}/search-index.flexsearch.json`)
+			indexPromise = fetch(resolve('/search-index.flexsearch.json'))
 				.then(async (res) => {
 					if (!res.ok) {
 						throw new Error('Search index is not available yet. Run bun run build first.');
