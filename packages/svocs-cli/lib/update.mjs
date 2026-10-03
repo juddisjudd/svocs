@@ -14,8 +14,10 @@ import * as p from '@clack/prompts';
 import pc from 'picocolors';
 import {
 	fetchLatestPackage,
+	findLegacyLibImports,
 	hashFile,
 	isNewerVersion,
+	kitMajor,
 	MANIFEST_FILE,
 	readManifest
 } from './shared.mjs';
@@ -125,6 +127,11 @@ export async function runUpdate(args) {
 		for (const rel of orphans)
 			p.log.warn(`${pc.yellow('orphan')}  ${rel} (no longer in the template; left in place)`);
 
+		const toKit3 = kitMajor(expectedDir) >= 3 && kitMajor(dir) < 3;
+		if (toKit3) {
+			p.log.info('This update moves the site from SvelteKit 2 to SvelteKit 3.');
+		}
+
 		if (dryRun) {
 			p.outro(
 				`Dry run: ${plan.add.length} to add, ${plan.update.length} to update, ${plan.skip.length} skipped.`
@@ -168,6 +175,19 @@ export async function runUpdate(args) {
 			console.log(
 				'package.json was skipped (you modified it) — compare its dependencies against the new template if a build breaks.'
 			);
+		}
+		if (toKit3 && kitMajor(dir) < 3) {
+			console.log(
+				'package.json still asks for SvelteKit 2. Copy the dependency versions and the "imports" field from the new template\'s package.json, then reinstall.'
+			);
+		}
+		if (kitMajor(expectedDir) >= 3) {
+			const legacy = findLegacyLibImports(dir);
+			if (legacy.length > 0) {
+				console.log(
+					`SvelteKit 3 removed the $lib alias. Change $lib/ to #lib/ in:\n  ${legacy.join('\n  ')}`
+				);
+			}
 		}
 		return 0;
 	} finally {

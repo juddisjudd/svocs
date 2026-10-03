@@ -80,7 +80,7 @@ describe('obsidian adapter', () => {
 			}
 		);
 		expect(page.ext).toBe('.svx');
-		expect(page.content).toContain("import Callout from '$lib/components/Callout.svelte';");
+		expect(page.content).toContain("import Callout from '#lib/components/Callout.svelte';");
 		expect(page.content).toContain('title: Writing');
 		expect(page.content).toContain(
 			'See [start here](/docs/getting-started) and [Getting Started](/docs/getting-started#setup).'

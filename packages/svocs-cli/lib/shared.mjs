@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 
@@ -31,6 +31,40 @@ export function isNewerVersion(candidate, current) {
 		if (diff !== 0) return diff > 0;
 	}
 	return false;
+}
+
+/** Major version of @sveltejs/kit a site's package.json asks for, or 0. */
+export function kitMajor(dir) {
+	try {
+		const pkg = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8'));
+		const range = pkg.devDependencies?.['@sveltejs/kit'] ?? pkg.dependencies?.['@sveltejs/kit'];
+		return Number(range?.match(/\d+/)?.[0] ?? 0);
+	} catch {
+		return 0;
+	}
+}
+
+/** Files under src/ and content/ that still import through `$lib`, which SvelteKit 3 removed. */
+export function findLegacyLibImports(dir) {
+	const hits = [];
+	const walk = (rel) => {
+		const full = join(dir, rel);
+		if (!existsSync(full)) return;
+		for (const entry of readdirSync(full, { withFileTypes: true })) {
+			const childRel = `${rel}/${entry.name}`;
+			if (entry.isDirectory()) {
+				walk(childRel);
+			} else if (
+				/\.(svelte|svx|md|ts|js)$/.test(entry.name) &&
+				/['"]\$lib[/'"]/.test(readFileSync(join(dir, childRel), 'utf8'))
+			) {
+				hits.push(childRel);
+			}
+		}
+	};
+	walk('src');
+	walk('content');
+	return hits;
 }
 
 /** True when the directory looks like a scaffolded SVOCS site at all. */
