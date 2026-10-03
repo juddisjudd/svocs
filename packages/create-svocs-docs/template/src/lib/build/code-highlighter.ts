@@ -1,5 +1,7 @@
 import { code_highlighter } from 'mdsvex';
 
+let yamlReady: ReturnType<typeof code_highlighter> | undefined;
+
 // Curlies must be escaped in both helpers: this output is compiled as Svelte
 // template markup, where a bare `{` opens an expression.
 function escapeAttribute(value: string): string {
@@ -58,6 +60,13 @@ export async function highlightWithFilename(
 	// browser back into every diagram-using build.
 	if (lang === 'mermaid') {
 		return `<pre class="mermaid">${escapeText(code)}</pre>`;
+	}
+
+	// Prism's markdown grammar only highlights YAML front matter when YAML
+	// loaded first, and mdsvex ignores that optional dependency.
+	if (lang === 'md' || lang === 'markdown') {
+		yamlReady ??= code_highlighter('', 'yaml', undefined, undefined, false);
+		await yamlReady;
 	}
 
 	const html = await code_highlighter(code, lang, metastring, filename, optimise);

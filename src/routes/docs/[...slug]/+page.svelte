@@ -20,7 +20,9 @@
 	{#if data.entry.description}
 		<meta property="og:description" content={data.entry.description} />
 	{/if}
-	<meta property="og:url" content="{SITE_URL}{data.entry.path}" />
+	{#if SITE_URL}
+		<meta property="og:url" content="{SITE_URL}{data.entry.path}" />
+	{/if}
 </svelte:head>
 
 <article>

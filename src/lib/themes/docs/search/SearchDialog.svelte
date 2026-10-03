@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { browser } from '$app/env';
+	import { withBase } from '#lib/core/base-path.js';
 	import { getSearchClient } from '#lib/search/resolver.js';
 	import type { SearchResultItem } from '#lib/search/types.js';
 
@@ -101,7 +102,7 @@
 	function goToResult(url: string) {
 		dialogEl?.close();
 		if (browser) {
-			window.location.assign(url);
+			window.location.assign(withBase(url));
 		}
 	}
 
