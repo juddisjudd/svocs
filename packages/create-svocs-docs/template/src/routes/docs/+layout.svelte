@@ -349,23 +349,29 @@
 		font-weight: 600;
 	}
 
-	/* ---- shared prose styles for doc pages ---- */
+	/*
+	 * ---- shared prose styles for doc pages ----
+	 * Element rules skip anything inside .not-prose, the opt-out for
+	 * embedded live components that bring their own styles.
+	 */
 
 	.prose :global(h2),
 	.prose :global(h3) {
 		scroll-margin-top: 5rem;
 	}
 
-	.prose :global(code) {
+	.prose :global(code:not(:where(.not-prose, .not-prose *))) {
 		font-family: 'Cascadia Code', 'JetBrains Mono', Consolas, monospace;
 		font-size: 0.9em;
 	}
 
-	.prose :global(:not(pre) > code) {
+	.prose :global(:not(pre) > code:not(:where(.not-prose, .not-prose *))) {
 		padding: 0.12em 0.35em;
 		border-radius: 0.3em;
 		background: var(--bg-soft);
 		border: 1px solid var(--line);
+		/* long flags and expressions wrap instead of widening the page on phones */
+		overflow-wrap: anywhere;
 	}
 
 	.prose :global(.heading-anchor) {
@@ -382,20 +388,84 @@
 		opacity: 1;
 	}
 
-	.prose :global(p),
-	.prose :global(li) {
+	.prose :global(p:not(:where(.not-prose, .not-prose *))),
+	.prose :global(li:not(:where(.not-prose, .not-prose *))) {
 		color: var(--text-soft);
 		line-height: 1.7;
 	}
 
-	.prose :global(a) {
+	.prose :global(a:not(:where(.not-prose, .not-prose *))) {
 		color: var(--accent-strong);
 		text-decoration-color: color-mix(in srgb, var(--accent-strong) 45%, transparent);
 	}
 
-	.prose :global(a:hover) {
+	.prose :global(a:not(:where(.not-prose, .not-prose *)):hover) {
 		color: var(--accent-soft);
 		text-decoration-color: currentColor;
+	}
+
+	/*
+	 * The browser defaults the prose is designed around, restated so pages
+	 * keep their shape when a site also loads a CSS reset such as Tailwind's
+	 * preflight. Zero specificity, like the browser's own rules, so any
+	 * component's styles still win.
+	 */
+	:global(:where(.prose) :where(h2, h3, h4):not(:where(.not-prose, .not-prose *))) {
+		font-weight: 700;
+	}
+
+	:global(:where(.prose) :where(h2):not(:where(.not-prose, .not-prose *))) {
+		margin-block: 0.83em;
+		font-size: 1.5em;
+	}
+
+	:global(:where(.prose) :where(h3):not(:where(.not-prose, .not-prose *))) {
+		margin-block: 1em;
+		font-size: 1.17em;
+	}
+
+	:global(:where(.prose) :where(h4):not(:where(.not-prose, .not-prose *))) {
+		margin-block: 1.33em;
+		font-size: 1em;
+	}
+
+	:global(:where(.prose) :where(p, ul, ol):not(:where(.not-prose, .not-prose *))) {
+		margin-block: 1em;
+	}
+
+	:global(:where(.prose) :where(ul, ol):not(:where(.not-prose, .not-prose *))) {
+		padding-inline-start: 40px;
+	}
+
+	:global(:where(.prose) :where(ul):not(:where(.not-prose, .not-prose *))) {
+		list-style-type: disc;
+	}
+
+	:global(:where(.prose) :where(ol):not(:where(.not-prose, .not-prose *))) {
+		list-style-type: decimal;
+	}
+
+	:global(:where(.prose) :where(li :is(ul, ol)):not(:where(.not-prose, .not-prose *))) {
+		margin-block: 0;
+	}
+
+	:global(:where(.prose) :where(:is(ul, ol) ul):not(:where(.not-prose, .not-prose *))) {
+		list-style-type: circle;
+	}
+
+	:global(:where(.prose) :where(:is(ul, ol) :is(ul, ol) ul):not(:where(.not-prose, .not-prose *))) {
+		list-style-type: square;
+	}
+
+	:global(:where(.prose) :where(a):not(:where(.not-prose, .not-prose *))) {
+		text-decoration-line: underline;
+	}
+
+	/* A wide table scrolls inside the column instead of widening the page. */
+	:global(:where(.prose) :where(table):not(:where(.not-prose, .not-prose *))) {
+		display: block;
+		max-width: 100%;
+		overflow-x: auto;
 	}
 
 	/* code-frame markup comes from the build-time highlighter, code-copy
@@ -544,7 +614,7 @@
 		}
 	}
 
-	.prose :global(img) {
+	.prose :global(img:not(:where(.not-prose, .not-prose *))) {
 		max-width: 100%;
 		border: 1px solid var(--line);
 		border-radius: 0.65rem;
@@ -564,7 +634,7 @@
 		color: var(--text-dim);
 	}
 
-	.prose :global(blockquote) {
+	.prose :global(blockquote:not(:where(.not-prose, .not-prose *))) {
 		margin: 1rem 0;
 		padding: 0.75rem 0.9rem;
 		border-left: 3px solid var(--accent);

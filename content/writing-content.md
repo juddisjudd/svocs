@@ -101,4 +101,12 @@ Wikilinks (`[[Page]]`), image embeds (`![[diagram.png]]`), `> [!tip]` callouts, 
 
 `.svx` files (not `.md`) can import and use Svelte components inline. See the [Components](/docs/components) page for the full built-in set (Callout, Tabs, Steps, Cards, Collapse, Bleed, Banner, FileTree, ImageZoom) and how to import them.
 
+Page styles (paragraph colour, link colour, list markers, inline code, image borders) apply to everything in the page body. A live component or demo that brings its own styles can opt out: wrap it in an element with the `not-prose` class.
+
+```svelte filename="content/demo.svx"
+<div class="not-prose">
+	<MyWidget />
+</div>
+```
+
 > **Watch out:** don't put inline code containing `<` or `{` in a heading — plain inline code and inline code anywhere else on the page are both fine. See [Troubleshooting](/docs/troubleshooting#a-heading-with-code-containing-a-tag-or-brace-fails-the-build) for why.

@@ -61,6 +61,7 @@
 		display: flex;
 		align-items: center;
 		font-size: clamp(1.9rem, 3.4vw, 2.5rem);
+		font-weight: 700;
 		letter-spacing: -0.02em;
 		line-height: 1.15;
 	}

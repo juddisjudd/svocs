@@ -38,6 +38,7 @@
 	h1 {
 		margin: 0 0 0.75rem;
 		font-size: clamp(1.75rem, 4vw, 2.25rem);
+		font-weight: 700;
 		letter-spacing: -0.02em;
 	}
 
