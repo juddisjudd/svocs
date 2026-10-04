@@ -25,6 +25,8 @@
 	"files": [
 		"bin.js",
 		"template",
+		"!template/.svelte-kit/**",
+		"!template/build/**",
 		"recipes",
 		"lib"
 	],
