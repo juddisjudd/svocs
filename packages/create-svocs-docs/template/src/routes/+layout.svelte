@@ -45,7 +45,8 @@
 <a class="skip" href="#main-content">Skip to content</a>
 
 <div class="app-shell">
-	<header>
+	<!-- The same on every page, so kept out of the search index. -->
+	<header data-pagefind-ignore>
 		<div class="topbar">
 			<a class="brand" href={resolve('/')}>
 				{SITE_NAME}

@@ -31,8 +31,11 @@
 		{#if data.entry.description}
 			<p>{data.entry.description}</p>
 		{/if}
-		<p class="meta">{data.entry.readingTimeMinutes} min read · {data.entry.wordCount} words</p>
-		<PageActions slug={data.entry.slug} editHref={getEditUrl(data.entry.sourcePath)} />
+		<!-- Kept out of the search index, so excerpts show the page, not "3 min read · Copy Markdown". -->
+		<div data-pagefind-ignore>
+			<p class="meta">{data.entry.readingTimeMinutes} min read · {data.entry.wordCount} words</p>
+			<PageActions slug={data.entry.slug} editHref={getEditUrl(data.entry.sourcePath)} />
+		</div>
 	</header>
 
 	{#if Content}

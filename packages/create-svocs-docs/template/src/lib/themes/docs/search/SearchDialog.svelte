@@ -71,10 +71,10 @@
 	});
 
 	function stripHtml(input: string): string {
-		return input
-			.replace(/<[^>]+>/g, '')
-			.replace(/\s+/g, ' ')
-			.trim();
+		// textContent drops the tags and decodes entities (&lt; → <), so
+		// escapeHtml below doesn't double-escape code in excerpts.
+		const text = new DOMParser().parseFromString(input, 'text/html').body.textContent ?? '';
+		return text.replace(/\s+/g, ' ').trim();
 	}
 
 	function escapeHtml(input: string): string {
@@ -198,6 +198,9 @@
 <style>
 	.search-dialog {
 		width: min(34rem, calc(100vw - 2rem));
+		/* browsers center modal dialogs with margin: auto; CSS resets such as
+		   Tailwind's preflight zero it, which pins the dialog top-left */
+		margin: auto;
 		padding: 0;
 		border: 1px solid var(--line-strong);
 		border-radius: 0.85rem;
