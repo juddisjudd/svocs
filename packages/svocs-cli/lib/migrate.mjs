@@ -183,11 +183,23 @@ export async function runMigrate(args) {
 		let hasRootIndex = false;
 		let skipped = 0;
 
+		// svocs serves content/introduction at /docs and lists it in the
+		// sidebar; a root index page also serves /docs but never appears in the
+		// sidebar or the pager. So the source's root index becomes introduction,
+		// unless the source has an introduction page of its own.
+		const outRelFor = (page) => (adapter.outRel ? adapter.outRel(page.rel) : page.rel);
+		const hasIntroduction = pages.some((page) => /^introduction\.[^/.]+$/.test(outRelFor(page)));
+		let renamedRootIndex = false;
+
 		const convertSpinner = p.spinner();
 		convertSpinner.start(`Converting ${pages.length} page(s)`);
 		for (const page of pages) {
 			const fileTodos = [];
-			const outRelSource = adapter.outRel ? adapter.outRel(page.rel) : page.rel;
+			let outRelSource = outRelFor(page);
+			if (!hasIntroduction && /^index\.[^/.]+$/.test(outRelSource)) {
+				outRelSource = outRelSource.replace(/^index/, 'introduction');
+				renamedRootIndex = true;
+			}
 			const baseDir =
 				dirname(outRelSource) === '.' ? '' : dirname(outRelSource).replace(/\\/g, '/');
 			const converted = adapter.convertPage(readFileSync(page.full, 'utf8'), {
@@ -241,19 +253,29 @@ export async function runMigrate(args) {
 		}
 
 		// the /docs route needs a landing page; not every source has one
-		if (!hasRootIndex) {
+		if (!hasRootIndex && !renamedRootIndex && !hasIntroduction) {
 			writeFileSync(
-				join(targetDir, 'content', 'index.md'),
+				join(targetDir, 'content', 'introduction.md'),
 				`---\ntitle: ${JSON.stringify(siteName)}\n---\n\nThis site was migrated from ${adapter.label} with \`svocs migrate\`. The source\nhad no page at its docs root, so this stub fills the /docs route — replace it\nwith your own introduction.\n`
 			);
 			notes.push(
-				'the source had no root index page, so a stub content/index.md was generated for the /docs route.'
+				'the source had no root index page, so a stub content/introduction.md was generated for the /docs route.'
+			);
+		}
+		if (renamedRootIndex) {
+			notes.push(
+				'the root index page became content/introduction: svocs serves it at /docs and lists it in the sidebar.'
 			);
 		}
 
 		// ---- sidebar ordering and titles
 		const metaByDir =
 			(await adapter.collectMeta?.({ sourceDir, contentDir, pages, notes, state })) ?? new Map();
+		const rootMeta = metaByDir.get('');
+		if (renamedRootIndex && rootMeta?.index) {
+			rootMeta.introduction = { ...rootMeta.index, ...rootMeta.introduction };
+			delete rootMeta.index;
+		}
 		let metaCount = 0;
 		for (const [dir, items] of metaByDir) {
 			if (Object.keys(items).length === 0) {
