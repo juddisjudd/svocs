@@ -16,7 +16,7 @@
 	// docs/+page.ts), so sibling lookups need the same substitution the
 	// pager in docs/+layout.svelte uses. The base path is stripped so the
 	// lookup matches page-map paths when BASE_PATH is set.
-	const pathname = $derived(withoutBase(page.url.pathname).replace(/\/$/, '') || '/docs');
+	const pathname = $derived(withoutBase(page.url).replace(/\/$/, '') || '/docs');
 	const currentPath = $derived(pathname === '/docs' ? '/docs/introduction' : pathname);
 	const siblings = $derived(
 		auto && getPageMap ? getPageTreeSiblings(getPageMap(), currentPath) : []

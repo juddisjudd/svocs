@@ -12,7 +12,7 @@
 	let { children }: { children: Snippet } = $props();
 	const repoUrl = REPO_URL;
 	// Without the base path: SITE_URL already includes it.
-	const currentPath = $derived(withoutBase(page.url.pathname).replace(/\/$/, '') || '/');
+	const currentPath = $derived(withoutBase(page.url).replace(/\/$/, '') || '/');
 
 	// Every prerendered route gets a matching card from scripts/og/generate.mjs
 	// (build/og/<route>.png), so the URL is derivable straight from the path.

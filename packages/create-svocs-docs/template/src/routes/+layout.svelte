@@ -16,7 +16,7 @@
 	// scrapers require absolute og:image URLs, and a relative one would send
 	// SvelteKit's prerender crawler after /og/*.png files that don't exist
 	// until after the build. The base path is stripped: SITE_URL includes it.
-	const currentPath = $derived(withoutBase(page.url.pathname).replace(/\/$/, '') || '/');
+	const currentPath = $derived(withoutBase(page.url).replace(/\/$/, '') || '/');
 	const ogImage = $derived(`${SITE_URL}/og${currentPath === '/' ? '/index' : currentPath}.png`);
 
 	let searchDialog: ReturnType<typeof SearchDialog> | undefined = $state();

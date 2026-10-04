@@ -13,13 +13,16 @@ export function withBase(url: string): string {
 }
 
 /**
- * Strips the deploy base path from a pathname (`/my-repo/docs/x` →
+ * The page's pathname without the deploy base path (`/my-repo/docs/x` →
  * `/docs/x`), so it compares against page-map paths when BASE_PATH is set.
+ * Takes the URL, not the pathname: SvelteKit renders relative paths, so
+ * resolve('/') is `../`-style during prerendering and only becomes the
+ * absolute base once resolved against the page URL.
  */
-export function withoutBase(pathname: string): string {
-	const base = resolve('/').slice(0, -1);
-	if (!base || (pathname !== base && !pathname.startsWith(`${base}/`))) {
-		return pathname;
+export function withoutBase(url: { readonly href: string; readonly pathname: string }): string {
+	const root = new URL(resolve('/'), url.href).pathname;
+	if (`${url.pathname}/` === root) {
+		return '/';
 	}
-	return pathname.slice(base.length) || '/';
+	return url.pathname.startsWith(root) ? `/${url.pathname.slice(root.length)}` : url.pathname;
 }

@@ -40,7 +40,7 @@
 
 	// Without the base path, so it matches the page map's /docs/… paths
 	// when BASE_PATH is set.
-	const currentPath = $derived(withoutBase(page.url.pathname).replace(/\/$/, '') || '/docs');
+	const currentPath = $derived(withoutBase(page.url).replace(/\/$/, '') || '/docs');
 	const breadcrumbs = $derived(getBreadcrumbsByPath(currentPath, data.pageMap));
 
 	type TocItem = { id: string; text: string; depth: number };
