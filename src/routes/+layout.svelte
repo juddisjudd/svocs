@@ -7,10 +7,12 @@
 	import SearchDialog from '#lib/themes/docs/search/SearchDialog.svelte';
 	import ThemeToggle from '#lib/themes/docs/ThemeToggle.svelte';
 	import { SITE_URL, SITE_NAME, REPO_URL } from '#lib/site.js';
+	import { withoutBase } from '#lib/core/base-path.js';
 
 	let { children }: { children: Snippet } = $props();
 	const repoUrl = REPO_URL;
-	const currentPath = $derived(page.url.pathname.replace(/\/$/, '') || '/');
+	// Without the base path: SITE_URL already includes it.
+	const currentPath = $derived(withoutBase(page.url.pathname).replace(/\/$/, '') || '/');
 
 	// Every prerendered route gets a matching card from scripts/og/generate.mjs
 	// (build/og/<route>.png), so the URL is derivable straight from the path.

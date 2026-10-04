@@ -8,6 +8,8 @@ BASE_PATH=/my-repo bun run build
 
 Every internal link, asset URL, and the search index loader respect this automatically. (User/organization sites served from the domain root can skip `BASE_PATH` entirely.)
 
+Set `SITE_URL` in `src/lib/site.ts` to the full URL the site is served at, sub-path included, such as `https://<user>.github.io/<repo>`. The sitemap, `llms.txt` and social cards build their absolute URLs from it.
+
 A `.nojekyll` file already ships in `static/`, so GitHub won't run the output through Jekyll or strip underscore-prefixed asset folders.
 
 ## Deploy with GitHub Actions

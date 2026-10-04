@@ -3,6 +3,7 @@
 	import { getContext } from 'svelte';
 	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
+	import { withoutBase } from '#lib/core/base-path.js';
 	import { getPageTreeSiblings, type PageMapNode } from '#lib/core/page-map.js';
 	import { DOCS_PAGE_MAP_CONTEXT } from '#lib/core/page-map-context.js';
 	import Card from './Card.svelte';
@@ -13,12 +14,10 @@
 
 	// /docs itself renders the introduction document under the hood (see
 	// docs/+page.ts), so sibling lookups need the same substitution the
-	// pager in docs/+layout.svelte uses.
-	const currentPath = $derived(
-		(page.url.pathname.replace(/\/$/, '') || '/docs') === '/docs'
-			? '/docs/introduction'
-			: page.url.pathname.replace(/\/$/, '')
-	);
+	// pager in docs/+layout.svelte uses. The base path is stripped so the
+	// lookup matches page-map paths when BASE_PATH is set.
+	const pathname = $derived(withoutBase(page.url.pathname).replace(/\/$/, '') || '/docs');
+	const currentPath = $derived(pathname === '/docs' ? '/docs/introduction' : pathname);
 	const siblings = $derived(
 		auto && getPageMap ? getPageTreeSiblings(getPageMap(), currentPath) : []
 	);

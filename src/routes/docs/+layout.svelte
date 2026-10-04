@@ -12,6 +12,7 @@
 	import { renderMermaidBlocks } from '#lib/themes/docs/mermaid.js';
 	import { observeHeadings } from '#lib/themes/docs/scroll-spy.js';
 	import { readStorage } from '#lib/core/storage.js';
+	import { withoutBase } from '#lib/core/base-path.js';
 
 	let { data, children }: { data: LayoutData; children: Snippet } = $props();
 	let sidebarOpen = $state(false);
@@ -37,7 +38,9 @@
 	// value. Consumers call this inside their own `$derived` instead.
 	setContext(DOCS_PAGE_MAP_CONTEXT, () => data.pageMap);
 
-	const currentPath = $derived(page.url.pathname.replace(/\/$/, '') || '/docs');
+	// Without the base path, so it matches the page map's /docs/… paths
+	// when BASE_PATH is set.
+	const currentPath = $derived(withoutBase(page.url.pathname).replace(/\/$/, '') || '/docs');
 	const breadcrumbs = $derived(getBreadcrumbsByPath(currentPath, data.pageMap));
 
 	type TocItem = { id: string; text: string; depth: number };
@@ -76,7 +79,9 @@
 	}
 
 	const flatDocs = $derived(flattenDocs(data.pageMap));
-	// /docs renders the introduction document, so page through as that entry
+	const documentPaths = $derived(new Set(flatDocs.map((node) => node.path)));
+	// /docs renders the introduction document, so highlight and page through
+	// it as that entry
 	const pagerPath = $derived(currentPath === '/docs' ? '/docs/introduction' : currentPath);
 	const pagerIndex = $derived(flatDocs.findIndex((node) => node.path === pagerPath));
 	const prevDoc = $derived(pagerIndex > 0 ? flatDocs[pagerIndex - 1] : null);
@@ -97,7 +102,7 @@
 
 	<aside class:open={sidebarOpen}>
 		<nav aria-label="Documentation navigation">
-			<SidebarTree nodes={data.pageMap} {currentPath} onNavigate={closeSidebar} />
+			<SidebarTree nodes={data.pageMap} currentPath={pagerPath} onNavigate={closeSidebar} />
 		</nav>
 		<button
 			class="rail-toggle"
@@ -133,14 +138,19 @@
 				<ol>
 					{#each breadcrumbs as crumb (crumb.path)}
 						<li>
-							<a
-								href={crumb.path === '/docs'
-									? resolve('/docs')
-									: resolve('/docs/[...slug]', { slug: crumb.path.replace('/docs/', '') })}
-								aria-current={crumb.path === currentPath ? 'page' : undefined}
-							>
-								{crumb.title}
-							</a>
+							<!-- A folder without an index page has no route, so no link: it would 404. -->
+							{#if crumb.path === '/docs' || documentPaths.has(crumb.path)}
+								<a
+									href={crumb.path === '/docs'
+										? resolve('/docs')
+										: resolve('/docs/[...slug]', { slug: crumb.path.replace('/docs/', '') })}
+									aria-current={crumb.path === currentPath ? 'page' : undefined}
+								>
+									{crumb.title}
+								</a>
+							{:else}
+								<span>{crumb.title}</span>
+							{/if}
 						</li>
 					{/each}
 				</ol>
@@ -323,7 +333,8 @@
 		color: var(--line-strong);
 	}
 
-	.breadcrumbs a {
+	.breadcrumbs a,
+	.breadcrumbs span {
 		text-decoration: none;
 		color: var(--text-dim);
 		transition: color 120ms ease;
@@ -578,6 +589,8 @@
 		align-items: center;
 		gap: 0.5rem;
 		max-width: 48%;
+		/* long single-word titles (useReducedMotion) must wrap on phones */
+		overflow-wrap: anywhere;
 		font-weight: 600;
 		font-size: 0.95rem;
 		text-decoration: none;

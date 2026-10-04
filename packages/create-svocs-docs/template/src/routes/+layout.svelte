@@ -6,6 +6,7 @@
 	import SearchDialog from '#lib/themes/docs/search/SearchDialog.svelte';
 	import ThemeToggle from '#lib/themes/docs/ThemeToggle.svelte';
 	import { REPO_URL, SITE_NAME, SITE_URL } from '#lib/site.js';
+	import { withoutBase } from '#lib/core/base-path.js';
 
 	let { children }: { children: Snippet } = $props();
 
@@ -14,8 +15,8 @@
 	// straight from the path. The tags only render once SITE_URL is set:
 	// scrapers require absolute og:image URLs, and a relative one would send
 	// SvelteKit's prerender crawler after /og/*.png files that don't exist
-	// until after the build.
-	const currentPath = $derived(page.url.pathname.replace(/\/$/, '') || '/');
+	// until after the build. The base path is stripped: SITE_URL includes it.
+	const currentPath = $derived(withoutBase(page.url.pathname).replace(/\/$/, '') || '/');
 	const ogImage = $derived(`${SITE_URL}/og${currentPath === '/' ? '/index' : currentPath}.png`);
 
 	let searchDialog: ReturnType<typeof SearchDialog> | undefined = $state();

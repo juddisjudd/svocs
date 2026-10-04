@@ -11,3 +11,15 @@ export function withBase(url: string): string {
 	}
 	return root + url.slice(1);
 }
+
+/**
+ * Strips the deploy base path from a pathname (`/my-repo/docs/x` →
+ * `/docs/x`), so it compares against page-map paths when BASE_PATH is set.
+ */
+export function withoutBase(pathname: string): string {
+	const base = resolve('/').slice(0, -1);
+	if (!base || (pathname !== base && !pathname.startsWith(`${base}/`))) {
+		return pathname;
+	}
+	return pathname.slice(base.length) || '/';
+}
