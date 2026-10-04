@@ -6,6 +6,8 @@
  */
 export const SITE_URL = 'https://svocs.dev';
 export const SITE_NAME = 'SVOCS';
+export const SITE_DESCRIPTION =
+	'Markdown-first documentation site generator built on SvelteKit and Svelte 5.';
 export const REPO_URL = 'https://github.com/juddisjudd/svocs';
 export const REPO_BRANCH = 'main';
 

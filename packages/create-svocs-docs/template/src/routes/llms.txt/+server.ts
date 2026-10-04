@@ -1,6 +1,6 @@
 import { getAllLlmsDocuments, getDocsEntries, loadMetaByDirectory } from '#lib/server/content.js';
 import { buildDocsPageMap, type PageMapNode } from '#lib/core/page-map.js';
-import { SITE_NAME, SITE_URL } from '#lib/site.js';
+import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from '#lib/site.js';
 import type { RequestHandler } from './$types';
 
 export const prerender = true;
@@ -25,12 +25,7 @@ function buildIndex(): string {
 		getAllLlmsDocuments().map((doc) => [doc.slug, doc.description])
 	);
 
-	const lines: string[] = [
-		`# ${SITE_NAME}`,
-		'',
-		'> Markdown-first documentation site generator built on SvelteKit and Svelte 5.',
-		''
-	];
+	const lines: string[] = [`# ${SITE_NAME}`, '', `> ${SITE_DESCRIPTION}`, ''];
 
 	let currentSection: PageMapNode[] = [];
 	let sectionTitle = 'Docs';
