@@ -179,12 +179,61 @@ function wrapStepMarkers(annotated) {
 	return out;
 }
 
-/** fumadocs meta.json -> ordered _meta items (+ folder title/icon for the parent). */
-function convertMeta(metaJson, notes, relDir) {
-	const items = {};
-	let order = 1;
+/**
+ * fumadocs meta.json -> ordered _meta entries as [dir, name, config], plus
+ * the folder title/icon for the parent. Entries can land in a subfolder's
+ * _meta: fumadocs lists nested paths (`guides/setup`) in a parent's pages,
+ * while svocs keys each _meta.json by file names in its own folder.
+ */
+export function convertMeta(metaJson, notes, relDir) {
+	const entries = [];
+	const childDir = (dir, name) => (dir ? `${dir}/${name}` : name);
+	const orderIn = new Map([[relDir, 1]]);
+	const nextOrder = (dir) => {
+		const order = orderIn.get(dir) ?? 1;
+		orderIn.set(dir, order + 1);
+		return order;
+	};
+	const placed = new Set();
+	const notedFolders = new Set();
+	let separators = 0;
+
+	// `a/b/page` puts folder `a` at this position here, `b` inside `a`, and
+	// the page last inside `a/b`, in listing order.
+	const place = (path) => {
+		const segments = path.split('/').filter(Boolean);
+		let dir = relDir;
+		for (const [i, segment] of segments.entries()) {
+			const key = `${dir}\0${segment}`;
+			if (!placed.has(key)) {
+				placed.add(key);
+				entries.push([dir, segment, { order: nextOrder(dir) }]);
+			}
+			if (i < segments.length - 1) {
+				dir = childDir(dir, segment);
+			}
+		}
+	};
+
 	for (const entry of metaJson.pages ?? []) {
 		if (entry === '...') {
+			continue;
+		}
+		// `---Title---` (optionally `---[Icon]Title---`) is a sidebar separator
+		const separator = entry.match(/^---(?:\[[^\]]*\])?(.*)---$/);
+		if (separator) {
+			separators += 1;
+			entries.push([
+				relDir,
+				`separator-${separators}`,
+				{ type: 'separator', title: separator[1].trim(), order: nextOrder(relDir) }
+			]);
+			continue;
+		}
+		if (/^\[.*\]\(.*\)$/.test(entry)) {
+			notes.push(
+				`${relDir || '.'}: sidebar link "${entry}" has no svocs equivalent; dropped. Link to it from a page instead.`
+			);
 			continue;
 		}
 		if (entry.startsWith('!')) {
@@ -196,10 +245,25 @@ function convertMeta(metaJson, notes, relDir) {
 			// its listed position is still the best signal svocs has for
 			// where the author meant it to sit relative to its neighbors, so
 			// it gets one instead of falling back to alphabetical.
-			items[name] = { order: order++ };
+			place(name);
 			continue;
 		}
-		items[entry] = { order: order++ };
+		const extract = entry.match(/^\.\.\.(.+)$/);
+		if (extract) {
+			notes.push(
+				`${relDir || '.'}: "${entry}" inlined the pages of ${extract[1]}/ at this level in fumadocs; svocs shows ${extract[1]}/ as a folder group in that position instead.`
+			);
+			place(extract[1]);
+			continue;
+		}
+		const folder = entry.includes('/') ? entry.slice(0, entry.lastIndexOf('/')) : null;
+		if (folder && !notedFolders.has(folder)) {
+			notedFolders.add(folder);
+			notes.push(
+				`${relDir || '.'}: pages of ${folder}/ are listed here in fumadocs; svocs groups them under ${folder}/, in the order listed.`
+			);
+		}
+		place(entry);
 	}
 	let icon;
 	if (metaJson.icon) {
@@ -210,7 +274,7 @@ function convertMeta(metaJson, notes, relDir) {
 			);
 		}
 	}
-	return { items, title: metaJson.title, icon };
+	return { entries, title: metaJson.title, icon };
 }
 
 export default {
@@ -283,9 +347,9 @@ export default {
 		for (const meta of metas) {
 			const relDir = dirname(meta.rel) === '.' ? '' : dirname(meta.rel).replace(/\\/g, '/');
 			const parsed = JSON.parse(readFileSync(meta.full, 'utf8'));
-			const { items, title, icon } = convertMeta(parsed, notes, relDir);
-			for (const [name, config] of Object.entries(items)) {
-				metaItem(metaByDir, relDir, name, config);
+			const { entries, title, icon } = convertMeta(parsed, notes, relDir);
+			for (const [dir, name, config] of entries) {
+				metaItem(metaByDir, dir, name, config);
 			}
 			// the folder's own title/icon lands on the parent directory's _meta
 			if ((title || icon) && relDir) {

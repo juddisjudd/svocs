@@ -484,18 +484,32 @@ export function assemblePage(frontmatter, annotated) {
 	const frontmatterBlock =
 		frontmatterLines.length > 0 ? `---\n${frontmatterLines.join('\n')}\n---\n\n` : '';
 
-	if (used.length === 0) {
+	// A page that already has an instance <script> (mdsvex-flavoured sources)
+	// keeps it: the imports go into it, since a component can't have two.
+	const script = visibleText.match(INSTANCE_SCRIPT);
+	// already bound by any import, default or named (`import { Steps } from`)
+	const missing = used.filter(
+		(name) => !new RegExp(`\\bimport\\b[^;'"]*\\b${name}\\b[^;'"]*\\bfrom\\b`).test(text)
+	);
+
+	if (!script && used.length === 0) {
 		return { ext: '.md', content: `${frontmatterBlock}${text.trimEnd()}\n` };
 	}
 
-	const imports = used
+	const imports = missing
 		.map((name) => `\timport ${name} from '#lib/components/${name}.svelte';`)
 		.join('\n');
+	if (script) {
+		const body = imports ? text.replace(INSTANCE_SCRIPT, (tag) => `${tag}\n${imports}`) : text;
+		return { ext: '.svx', content: `${frontmatterBlock}${body.trimEnd()}\n` };
+	}
 	return {
 		ext: '.svx',
 		content: `${frontmatterBlock}<script>\n${imports}\n</script>\n\n${text.trimEnd()}\n`
 	};
 }
+
+const INSTANCE_SCRIPT = /^<script(?![^>]*\b(?:module|context\s*=))[^>]*>/m;
 
 // ---- filesystem helpers
 

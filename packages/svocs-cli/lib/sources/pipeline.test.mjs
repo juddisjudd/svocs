@@ -72,4 +72,35 @@ describe('stripImports + assemblePage', () => {
 		const page = assemblePage({}, annotateFences(['plain']));
 		expect(page).toEqual({ ext: '.md', content: 'plain\n' });
 	});
+
+	it('merges imports into a page that already has a script, without duplicates', () => {
+		const page = assemblePage(
+			{},
+			annotateFences([
+				'<script>',
+				"\timport { Step, Steps } from './docs';",
+				'</script>',
+				'',
+				'<Steps>',
+				'',
+				'<Callout>hi</Callout>',
+				'',
+				'</Steps>'
+			])
+		);
+		expect(page.ext).toBe('.svx');
+		expect(page.content.match(/<script>/g)).toHaveLength(1);
+		expect(page.content).toContain(
+			"<script>\n\timport Callout from '#lib/components/Callout.svelte';"
+		);
+		expect(page.content).not.toContain("import Steps from '#lib/components/Steps.svelte'");
+	});
+
+	it('keeps a page with its own script as .svx even without known components', () => {
+		const page = assemblePage(
+			{},
+			annotateFences(['<script>', '\tlet n = 1;', '</script>', '', '{n}'])
+		);
+		expect(page).toEqual({ ext: '.svx', content: '<script>\n\tlet n = 1;\n</script>\n\n{n}\n' });
+	});
 });
