@@ -94,14 +94,25 @@ export async function fetchLatestPackage(tmpRoot) {
 	if (!tarballResponse.ok) {
 		throw new Error(`tarball download failed (${tarballResponse.status})`);
 	}
-	const tarPath = join(tmpRoot, 'create-svocs-docs.tgz');
-	writeFileSync(tarPath, Buffer.from(await tarballResponse.arrayBuffer()));
+	writeFileSync(
+		join(tmpRoot, 'create-svocs-docs.tgz'),
+		Buffer.from(await tarballResponse.arrayBuffer())
+	);
 
-	const extractDir = join(tmpRoot, 'pkg');
-	mkdirSync(extractDir, { recursive: true });
-	const result = spawnSync('tar', ['-xzf', tarPath, '-C', extractDir], { stdio: 'ignore' });
+	mkdirSync(join(tmpRoot, 'pkg'), { recursive: true });
+	// Relative paths from tmpRoot: GNU tar (Git Bash on Windows) reads an
+	// absolute `C:\…` archive path as `host:path` and tries to reach host "C".
+	const result = spawnSync('tar', ['-xzf', 'create-svocs-docs.tgz', '-C', 'pkg'], {
+		cwd: tmpRoot,
+		stdio: ['ignore', 'ignore', 'pipe'],
+		encoding: 'utf8',
+		timeout: 60_000
+	});
 	if (result.error || result.status !== 0) {
-		throw new Error('Extracting the tarball failed — is `tar` on your PATH?');
+		const detail = result.stderr?.trim() || result.error?.message;
+		throw new Error(
+			`Extracting the tarball failed${detail ? `: ${detail}` : ' — is `tar` on your PATH?'}`
+		);
 	}
-	return { dir: join(extractDir, 'package'), version };
+	return { dir: join(tmpRoot, 'pkg', 'package'), version };
 }
