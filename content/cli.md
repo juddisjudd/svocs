@@ -58,6 +58,7 @@ The rules:
 - Files you never modified that the template changed are **updated**.
 - Files you modified are **skipped** and listed, so template changes to them become a manual review instead of a silent overwrite.
 - Files new in the template are **added**.
+- Files you deleted stay deleted: `update` lists them and moves on. A site that embeds svocs in an existing app, without the landing page, keeps it that way. Remove a file's entry from `.svocs.json` to get it back on the next update.
 - Files the template dropped are reported but never deleted — your code may still import them.
 
 `package.json` follows the same rules, which in practice means it's skipped once you've added a dependency. When that happens `update` says so; compare its dependencies against the new template if a build breaks after updating.

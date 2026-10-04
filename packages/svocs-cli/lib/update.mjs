@@ -85,7 +85,7 @@ export async function runUpdate(args) {
 		});
 		const expectedHashes = hashScaffold(expectedDir);
 
-		const plan = { add: [], update: [], skip: [], unchanged: [] };
+		const plan = { add: [], update: [], skip: [], unchanged: [], deleted: [] };
 		for (const [rel, expectedHash] of Object.entries(expectedHashes)) {
 			// Migrated and repo-analysis sites replaced the starter content; the whole
 			// content/ tree is user-owned there, including template additions.
@@ -94,7 +94,14 @@ export async function runUpdate(args) {
 			}
 			const localPath = join(dir, rel);
 			if (!existsSync(localPath)) {
-				plan.add.push(rel);
+				// Scaffolded, then removed: the user deleted it on purpose (a site
+				// embedding svocs in an existing app drops the landing page, for
+				// one). Only files new to the template get added.
+				if (manifest.files?.[rel]) {
+					plan.deleted.push(rel);
+				} else {
+					plan.add.push(rel);
+				}
 			} else {
 				const localHash = hashFile(localPath);
 				if (localHash === expectedHash) {
@@ -112,12 +119,22 @@ export async function runUpdate(args) {
 			(rel) => !(rel in expectedHashes) && existsSync(join(dir, rel))
 		);
 
+		if (plan.deleted.length > 0) {
+			const listed = plan.deleted.slice(0, 5).join(', ');
+			const more = plan.deleted.length > 5 ? ` and ${plan.deleted.length - 5} more` : '';
+			p.log.info(
+				`${pc.dim('leaving out')} ${plan.deleted.length} file(s) you deleted: ${listed}${more}. Remove an entry from ${MANIFEST_FILE} to get that file back.`
+			);
+		}
+
 		if (plan.add.length + plan.update.length === 0) {
 			for (const rel of plan.skip) {
 				p.log.warn(`modified, review manually: ${rel}`);
 			}
 			p.outro(pc.green(`Template ${version}: nothing to apply.`));
-			writeUpdatedManifest(dir, manifest, version, expectedHashes, plan);
+			if (!dryRun) {
+				writeUpdatedManifest(dir, manifest, version, expectedHashes, plan);
+			}
 			return 0;
 		}
 
@@ -205,7 +222,9 @@ function writeUpdatedManifest(dir, manifest, version, expectedHashes, plan) {
 	for (const rel of [...plan.add, ...plan.update, ...plan.unchanged]) {
 		files[rel] = expectedHashes[rel];
 	}
-	for (const rel of plan.skip) {
+	// Modified and deleted files keep their recorded hash, so the next update
+	// still treats them as the user's.
+	for (const rel of [...plan.skip, ...plan.deleted]) {
 		if (manifest.files?.[rel]) {
 			files[rel] = manifest.files[rel];
 		}
