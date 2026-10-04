@@ -76,7 +76,7 @@ export async function runDoctor(args) {
 
 	// SITE_URL and its dependents
 	const siteSource = readFileOr(join(dir, 'src/lib/site.ts'));
-	const siteUrl = siteSource.match(/SITE_URL\s*=\s*'([^']*)'/)?.[1] ?? '';
+	const siteUrl = siteSource.match(/SITE_URL\s*=\s*(['"`])(.*?)\1/)?.[2] ?? '';
 	if (siteUrl) {
 		ok(`SITE_URL is set (${siteUrl}).`);
 		const robots = readFileOr(join(dir, 'static/robots.txt'));

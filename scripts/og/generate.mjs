@@ -33,8 +33,9 @@ const layoutSource = readFileOr('src/routes/+layout.svelte', '');
 const siteSource = readFileOr('src/lib/site.ts', '');
 
 const accent = layoutSource.match(/--accent:\s*(#[0-9a-fA-F]{3,8})/)?.[1] ?? '#ff3c00';
-const siteName = siteSource.match(/SITE_NAME\s*=\s*'([^']*)'/)?.[1] || 'Docs';
-const siteUrl = siteSource.match(/SITE_URL\s*=\s*'([^']*)'/)?.[1] || '';
+// Either quote style, so a project formatting with double quotes keeps its name.
+const siteName = siteSource.match(/SITE_NAME\s*=\s*(['"`])(.*?)\1/)?.[2] || 'Docs';
+const siteUrl = siteSource.match(/SITE_URL\s*=\s*(['"`])(.*?)\1/)?.[2] || '';
 const siteHost = siteUrl.replace(/^https?:\/\//, '');
 
 // The card styles can't use CSS color-mix(), so the accent ramp is mixed here.
