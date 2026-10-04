@@ -195,6 +195,11 @@ async function main() {
 	const repoBranchFlag = args
 		.find((arg) => arg.startsWith('--repo-branch='))
 		?.slice('--repo-branch='.length);
+	const siteNameFlag =
+		args
+			.find((arg) => arg.startsWith('--site-name='))
+			?.slice('--site-name='.length)
+			.trim() || undefined;
 
 	const isInteractive = Boolean(process.stdin.isTTY);
 
@@ -510,7 +515,7 @@ async function main() {
 	}
 
 	const suggestedSiteName = repoContext?.name ? toSiteName(repoContext.name) : toSiteName(dirName);
-	const siteName = await ask('Site name', suggestedSiteName);
+	const siteName = siteNameFlag ?? (await ask('Site name', suggestedSiteName));
 	const packageName = toPackageName(dirName);
 	const siteUrl = siteUrlFlag ?? (await askSiteUrl());
 	const suggestedRepoUrl = repoSlug ? `https://github.com/${repoSlug.owner}/${repoSlug.repo}` : '';
