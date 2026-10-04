@@ -266,6 +266,30 @@
 
 	:global(*) {
 		box-sizing: border-box;
+		scrollbar-width: thin;
+	}
+
+	/* Quiet scrollbars everywhere: a slim thumb on a clear track. The colour
+	   is set once here and inherits; scrollbar-width doesn't, hence `*`. */
+	:global(:root) {
+		scrollbar-color: color-mix(in srgb, var(--line-strong) 85%, transparent) transparent;
+	}
+
+	/* Safari has no scrollbar-width/color; browsers that support them ignore
+	   these ::-webkit-scrollbar rules. */
+	:global(::-webkit-scrollbar) {
+		width: 8px;
+		height: 8px;
+	}
+
+	:global(::-webkit-scrollbar-track) {
+		background: transparent;
+	}
+
+	:global(::-webkit-scrollbar-thumb) {
+		border: 2px solid transparent;
+		border-radius: 999px;
+		background: color-mix(in srgb, var(--line-strong) 85%, transparent) padding-box;
 	}
 
 	:global(a:focus-visible),

@@ -1,15 +1,26 @@
 <script lang="ts">
-	import { resolve } from '$app/paths';
+	import { asset, resolve } from '$app/paths';
 	import { SITE_URL } from '#lib/site.js';
 
 	const repoUrl = 'https://github.com/juddisjudd/svocs';
 
+	// Each site's 1200x630 social card, copied into static/ rather than
+	// hotlinked, so the page makes no third-party requests.
 	const showcaseSites = [
 		{
 			title: 'SVOCS Docs',
 			description: 'This site — built with SVOCS itself, docs and all.',
 			href: resolve('/'),
+			image: asset('1200x630-OG.png'),
 			external: false
+		},
+		{
+			title: 'audiocn-svelte',
+			description:
+				'Audio components for Svelte and shadcn-svelte, with a live demo on every docs page.',
+			href: 'https://juddisjudd.github.io/audiocn-svelte/docs',
+			image: asset('showcase/audiocn-svelte.png'),
+			external: true
 		}
 	];
 </script>
@@ -38,12 +49,15 @@
 					target={site.external ? '_blank' : undefined}
 					rel={site.external ? 'noreferrer' : undefined}
 				>
-					<span class="preview" aria-hidden="true">
-						<i class="dot"></i><i class="dot"></i><i class="dot"></i>
-						<b style="width: 55%"></b>
-						<b style="width: 85%"></b>
-						<b style="width: 70%"></b>
-					</span>
+					<img
+						class="preview"
+						src={site.image}
+						alt=""
+						width="1200"
+						height="630"
+						loading="lazy"
+						decoding="async"
+					/>
 					<strong>{site.title}</strong>
 					<span class="desc">{site.description}</span>
 				</a>
@@ -106,34 +120,14 @@
 	}
 
 	.preview {
-		display: flex;
-		flex-wrap: wrap;
-		align-content: flex-start;
-		gap: 0.35rem;
-		height: 6rem;
-		padding: 0.7rem;
+		display: block;
+		width: 100%;
+		height: auto;
+		aspect-ratio: 1200 / 630;
 		border-radius: 0.6rem;
 		border: 1px solid var(--line);
 		background: var(--bg-soft);
-	}
-
-	.dot {
-		width: 0.45rem;
-		height: 0.45rem;
-		border-radius: 999px;
-		background: var(--line-strong);
-	}
-
-	.dot:first-child {
-		background: color-mix(in srgb, var(--accent) 65%, var(--line-strong));
-	}
-
-	.preview b {
-		display: block;
-		flex-basis: 100%;
-		height: 0.45rem;
-		border-radius: 999px;
-		background: var(--bg-soft-2);
+		object-fit: cover;
 	}
 
 	.submit-preview {
