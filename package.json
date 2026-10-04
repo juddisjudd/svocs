@@ -44,6 +44,7 @@
 		"@sveltejs/kit": "^3.0.0",
 		"@sveltejs/vite-plugin-svelte": "^7.3.1",
 		"@takumi-rs/core": "^2.14.0",
+		"@types/hast": "^3.0.4",
 		"@types/node": "^24.19.1",
 		"@vitest/browser-playwright": "^5.0.3",
 		"eslint": "^10.12.0",
