@@ -76,6 +76,64 @@ function outsideCode(line: string, fn: (text: string) => string): string {
 		.join('');
 }
 
+/**
+ * Like outsideCode, but also leaves Svelte `{…}` expressions alone — in a
+ * .svx page, `rows={[["a", 1]]}` or `{a == b}` is code, not a wikilink or a
+ * highlight. `state.depth` carries an open expression across lines.
+ */
+function outsideCodeAndExpressions(
+	line: string,
+	state: { depth: number },
+	fn: (text: string) => string
+): string {
+	let out = '';
+	let text = '';
+	let quote: string | null = null;
+	const flushText = () => {
+		out += text ? fn(text) : '';
+		text = '';
+	};
+	for (let i = 0; i < line.length; i += 1) {
+		const char = line[i];
+		if (state.depth > 0) {
+			out += char;
+			if (quote) {
+				if (char === '\\') {
+					out += line[++i] ?? '';
+				} else if (char === quote) {
+					quote = null;
+				}
+			} else if (char === '"' || char === "'" || char === '`') {
+				quote = char;
+			} else if (char === '{') {
+				state.depth += 1;
+			} else if (char === '}') {
+				state.depth -= 1;
+			}
+			continue;
+		}
+		if (char === '`') {
+			const run = line.slice(i).match(/^`+/)![0];
+			const close = line.indexOf(run, i + run.length);
+			if (close !== -1) {
+				flushText();
+				out += line.slice(i, close + run.length);
+				i = close + run.length - 1;
+				continue;
+			}
+		}
+		if (char === '{') {
+			flushText();
+			out += char;
+			state.depth = 1;
+			continue;
+		}
+		text += char;
+	}
+	flushText();
+	return out;
+}
+
 function headingAnchor(heading: string): string {
 	return `#${new GithubSlugger().slug(heading.trim())}`;
 }
@@ -147,6 +205,7 @@ export function transformObsidian(
 	let inRaw = false; // <script> / <style>
 	let inComment = false;
 	let usedCallout = false;
+	const expression = { depth: 0 };
 
 	for (let i = 0; i < lines.length; i += 1) {
 		const line = lines[i];
@@ -217,13 +276,19 @@ export function transformObsidian(
 				out.push(`**${convertInline(title, resolver, warn)}**`, '');
 			}
 			for (const bodyLine of bodyLines) {
-				out.push(outsideCode(bodyLine, (part) => convertInline(part, resolver, warn)));
+				out.push(
+					outsideCodeAndExpressions(bodyLine, expression, (part) =>
+						convertInline(part, resolver, warn)
+					)
+				);
 			}
 			out.push('', '</Callout>');
 			continue;
 		}
 
-		out.push(outsideCode(text, (part) => convertInline(part, resolver, warn)));
+		out.push(
+			outsideCodeAndExpressions(text, expression, (part) => convertInline(part, resolver, warn))
+		);
 	}
 
 	let result = out.join('\n');

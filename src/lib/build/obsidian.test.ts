@@ -36,6 +36,18 @@ describe('wikilinks', () => {
 		const source = 'Use `[[x]]` here.\n\n```md\n[[Getting Started]]\n==hi==\n```\n';
 		expect(run(source).code).toBe(source);
 	});
+
+	it('never touches Svelte expressions, even across lines', () => {
+		const inline = '<PropsTable rows={[["index", "number", "0"]]} />';
+		expect(run(inline)).toEqual({ code: inline, warnings: [] });
+
+		const multiline = '<PropsTable\n\trows={[\n\t\t["kind", \'"audioinput"\'],\n\t]}\n/>';
+		expect(run(multiline)).toEqual({ code: multiline, warnings: [] });
+
+		expect(run('{a == b} and ==this== and [[Getting Started]]').code).toBe(
+			'{a == b} and <mark>this</mark> and [Getting Started](/docs/getting-started)'
+		);
+	});
 });
 
 describe('embeds', () => {
