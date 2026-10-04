@@ -48,6 +48,12 @@ Don't nest a `Callout` inside another `Callout` — styling assumes one level.
 
 </Callout>
 
+<Callout type="tip" title="Custom title">
+
+Pass `title` to replace the type label in the header.
+
+</Callout>
+
 Import path: `#lib/components/Callout.svelte`, added at the top of the `.svx` file's script block alongside your other imports.
 
 ## Tabs

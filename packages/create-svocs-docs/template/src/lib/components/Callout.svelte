@@ -3,7 +3,16 @@
 
 	type CalloutType = 'info' | 'note' | 'tip' | 'warning' | 'danger';
 
-	let { type = 'info', children }: { type?: CalloutType; children: Snippet } = $props();
+	let {
+		type = 'info',
+		title,
+		children
+	}: {
+		type?: CalloutType;
+		/** Replaces the type label ("Tip", "Warning") in the header. */
+		title?: string;
+		children: Snippet;
+	} = $props();
 
 	const labels: Record<CalloutType, string> = {
 		info: 'Info',
@@ -42,7 +51,7 @@
 				<circle cx="8" cy="4.9" r="0.9" fill="currentColor" />
 			{/if}
 		</svg>
-		<span class="label">{labels[type]}</span>
+		<span class="label">{title ?? labels[type]}</span>
 	</div>
 	<div class="content">
 		{@render children()}
