@@ -1,6 +1,6 @@
 import { error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
-import { getDocEntryBySlug, getDocTocBySlug } from '$lib/server/content';
+import { getDocEntryBySlug, getDocTocBySlug } from '#lib/server/content.js';
 
 export const prerender = true;
 

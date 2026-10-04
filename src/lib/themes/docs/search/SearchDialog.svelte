@@ -1,7 +1,8 @@
 <script lang="ts">
-	import { browser } from '$app/environment';
-	import { getSearchClient } from '$lib/search/resolver';
-	import type { SearchResultItem } from '$lib/search/types';
+	import { browser } from '$app/env';
+	import { withBase } from '#lib/core/base-path.js';
+	import { getSearchClient } from '#lib/search/resolver.js';
+	import type { SearchResultItem } from '#lib/search/types.js';
 
 	let dialogEl: HTMLDialogElement | undefined = $state();
 	let query = $state('');
@@ -101,7 +102,7 @@
 	function goToResult(url: string) {
 		dialogEl?.close();
 		if (browser) {
-			window.location.assign(url);
+			window.location.assign(withBase(url));
 		}
 	}
 

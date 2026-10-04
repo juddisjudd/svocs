@@ -1,14 +1,13 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
+	import { readStorage } from '#lib/core/storage.js';
 
 	let { id, children }: { id: string; children: Snippet } = $props();
 
 	// Split into a persisted check (keyed on `id`, so it tracks the banner's
 	// identity) and a session flag for the click itself.
 	let dismissedNow = $state(false);
-	const dismissedBefore = $derived(
-		typeof localStorage !== 'undefined' && localStorage.getItem(`svocs-banner-${id}`) === '1'
-	);
+	const dismissedBefore = $derived(readStorage(`svocs-banner-${id}`) === '1');
 	const dismissed = $derived(dismissedNow || dismissedBefore);
 
 	function dismiss() {

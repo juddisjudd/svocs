@@ -1,5 +1,5 @@
-import { error, text } from '@sveltejs/kit';
-import { getDocEntryBySlug, getDocsEntries, getRawMarkdownBySlug } from '$lib/server/content';
+import { error } from '@sveltejs/kit';
+import { getDocEntryBySlug, getDocsEntries, getRawMarkdownBySlug } from '#lib/server/content.js';
 import type { EntryGenerator, RequestHandler } from './$types';
 
 export const prerender = true;
@@ -25,7 +25,7 @@ export const GET: RequestHandler = async ({ params }) => {
 		.filter(Boolean)
 		.join('\n');
 
-	return text(`${header}\n\n${body.trim()}\n`, {
+	return new Response(`${header}\n\n${body.trim()}\n`, {
 		headers: { 'content-type': 'text/markdown; charset=utf-8' }
 	});
 };

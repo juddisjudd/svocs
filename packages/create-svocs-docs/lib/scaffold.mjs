@@ -32,7 +32,7 @@ export const SEARCH_BACKENDS = {
 	},
 	typesense: {
 		label: 'Typesense — needs a running Typesense server',
-		dependencies: { typesense: '^3.0.6' },
+		dependencies: { typesense: '^3.1.0' },
 		scripts: { 'search:sync:typesense': 'bun run scripts/search/sync-typesense.ts' },
 		nextSteps: [
 			'Typesense needs a running server (self-hosted or Typesense Cloud) plus env vars:',
@@ -198,7 +198,7 @@ function buildResolverSource(backendId) {
 			? ''
 			: `\t\tcase '${backendId}':\n\t\t\tcached = (await import('./providers/${backendId}-client')).createClient();\n\t\t\tbreak;\n`;
 
-	return `import { PUBLIC_SVOCS_SEARCH_PROVIDER } from '$env/static/public';
+	return `import { PUBLIC_SVOCS_SEARCH_PROVIDER } from '$app/env/public';
 import type { SearchClient } from './types';
 
 let cached: SearchClient | undefined;

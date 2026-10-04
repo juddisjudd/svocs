@@ -1,7 +1,7 @@
 /**
  * Client-safe half of the content registry: shared types, display helpers,
  * and lazy per-page component loading. Everything that reads raw markdown
- * (summaries, TOC, search and llms documents) lives in $lib/server/content
+ * (summaries, TOC, search and llms documents) lives in #lib/server/content
  * so the source tree never ships to the browser.
  */
 import type { Component } from 'svelte';
@@ -14,7 +14,7 @@ export type ContentModule = {
 		description?: string;
 		order?: number;
 		tags?: string[];
-		/** Name from the curated icon set ($lib/icons/icon-set.ts). */
+		/** Name from the curated icon set (#lib/icons/icon-set.ts). */
 		icon?: string;
 		/** `draft: true` or `publish: false` excludes the page from the build. */
 		draft?: boolean;
@@ -25,7 +25,7 @@ export type ContentModule = {
 export type MetaItemConfig = {
 	title?: string;
 	order?: number;
-	/** Name from the curated icon set ($lib/icons/icon-set.ts). Wins over a
+	/** Name from the curated icon set (#lib/icons/icon-set.ts). Wins over a
 	 *  page's own frontmatter icon; see applyMetaFallback. */
 	icon?: string;
 	/** Separators are virtual sidebar headings with no backing file, so
@@ -44,7 +44,7 @@ export type ContentSummary = {
 	readingTimeMinutes: number;
 	/** Last git commit date for the source file (YYYY-MM-DD), when known. */
 	lastModified?: string;
-	/** Name from the curated icon set ($lib/icons/icon-set.ts). */
+	/** Name from the curated icon set (#lib/icons/icon-set.ts). */
 	icon?: string;
 	/** Repo-relative source path, e.g. `content/guides/index.md` — backs "Edit on GitHub". */
 	sourcePath: string;

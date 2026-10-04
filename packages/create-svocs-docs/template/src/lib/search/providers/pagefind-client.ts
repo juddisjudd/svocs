@@ -1,4 +1,4 @@
-import { base } from '$app/paths';
+import { resolve } from '$app/paths';
 import type { SearchClient, SearchResultItem } from '../types';
 
 type PagefindSearch = {
@@ -23,7 +23,7 @@ export function createClient(): SearchClient {
 
 		try {
 			const mod = (await import(
-				/* @vite-ignore */ `${base}/pagefind/pagefind.js`
+				/* @vite-ignore */ `${resolve('/')}pagefind/pagefind.js`
 			)) as PagefindSearch;
 			pagefind = mod;
 			return mod;

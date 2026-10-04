@@ -2,10 +2,10 @@
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import type { Snippet } from 'svelte';
-	import SearchBox from '$lib/themes/docs/SearchBox.svelte';
-	import SearchDialog from '$lib/themes/docs/search/SearchDialog.svelte';
-	import ThemeToggle from '$lib/themes/docs/ThemeToggle.svelte';
-	import { REPO_URL, SITE_NAME, SITE_URL } from '$lib/site';
+	import SearchBox from '#lib/themes/docs/SearchBox.svelte';
+	import SearchDialog from '#lib/themes/docs/search/SearchDialog.svelte';
+	import ThemeToggle from '#lib/themes/docs/ThemeToggle.svelte';
+	import { REPO_URL, SITE_NAME, SITE_URL } from '#lib/site.js';
 
 	let { children }: { children: Snippet } = $props();
 

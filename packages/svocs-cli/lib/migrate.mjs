@@ -138,6 +138,9 @@ export async function runMigrate(args) {
 			recipesDir: join(packageDir, 'recipes', 'search')
 		});
 		writeManifest(targetDir, version, options);
+		// Templates from before SvelteKit 3 only resolve the old $lib alias.
+		const targetPkg = JSON.parse(readFileSync(join(targetDir, 'package.json'), 'utf8'));
+		const legacyLibAlias = !targetPkg.imports?.['#lib/*'];
 		s.stop(`Scaffolded "${siteName}"`);
 
 		// Migrated content can carry dead links from the source site (most
@@ -226,7 +229,10 @@ export async function runMigrate(args) {
 			);
 			const outPath = join(targetDir, 'content', outRel);
 			mkdirSync(dirname(outPath), { recursive: true });
-			writeFileSync(outPath, content);
+			writeFileSync(
+				outPath,
+				legacyLibAlias ? content.replaceAll("from '#lib/", "from '$lib/") : content
+			);
 		}
 		for (const ref of linkRefs) {
 			if (!routes.has(ref.target.replace(/\/$/, ''))) {

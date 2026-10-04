@@ -1,5 +1,5 @@
 import type { PageServerLoad } from './$types';
-import { getDocEntryBySlug, getDocsEntries, getDocTocBySlug } from '$lib/server/content';
+import { getDocEntryBySlug, getDocsEntries, getDocTocBySlug } from '#lib/server/content.js';
 
 export const prerender = true;
 

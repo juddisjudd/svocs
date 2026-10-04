@@ -16,6 +16,7 @@ const RECIPES = join(PACKAGE, 'recipes/search');
 // the multi-provider search resolver) and owned by the template separately.
 const SHARED = [
 	'src/app.d.ts',
+	'src/env.ts',
 	'src/virtual.d.ts',
 	'src/lib/build',
 	'src/lib/components',

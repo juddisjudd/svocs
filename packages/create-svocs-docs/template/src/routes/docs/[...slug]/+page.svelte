@@ -1,9 +1,9 @@
 <script lang="ts">
 	import type { PageData } from './$types';
-	import { formatLastUpdated } from '$lib/core/content';
-	import { SITE_URL, getEditUrl } from '$lib/site';
-	import PageActions from '$lib/themes/docs/PageActions.svelte';
-	import PageIcon from '$lib/icons/PageIcon.svelte';
+	import { formatLastUpdated } from '#lib/core/content.js';
+	import { SITE_URL, getEditUrl } from '#lib/site.js';
+	import PageActions from '#lib/themes/docs/PageActions.svelte';
+	import PageIcon from '#lib/icons/PageIcon.svelte';
 
 	let { data }: { data: PageData } = $props();
 	const Content = $derived(data.Content);
@@ -20,7 +20,9 @@
 	{#if data.entry.description}
 		<meta property="og:description" content={data.entry.description} />
 	{/if}
-	<meta property="og:url" content="{SITE_URL}{data.entry.path}" />
+	{#if SITE_URL}
+		<meta property="og:url" content="{SITE_URL}{data.entry.path}" />
+	{/if}
 </svelte:head>
 
 <article>

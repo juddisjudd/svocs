@@ -1,6 +1,5 @@
-import { text } from '@sveltejs/kit';
-import { getAllLlmsDocuments } from '$lib/server/content';
-import { SITE_URL } from '$lib/site';
+import { getAllLlmsDocuments } from '#lib/server/content.js';
+import { SITE_URL } from '#lib/site.js';
 import type { RequestHandler } from './$types';
 
 export const prerender = true;
@@ -18,7 +17,7 @@ function buildFullText(): string {
 }
 
 export const GET: RequestHandler = async () => {
-	return text(buildFullText(), {
+	return new Response(buildFullText(), {
 		headers: { 'content-type': 'text/plain; charset=utf-8' }
 	});
 };

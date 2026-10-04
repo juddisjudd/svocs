@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import PageIcon from '$lib/icons/PageIcon.svelte';
+	import PageIcon from '#lib/icons/PageIcon.svelte';
 
 	let {
 		title,

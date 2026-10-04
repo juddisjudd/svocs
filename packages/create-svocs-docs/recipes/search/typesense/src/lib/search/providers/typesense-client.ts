@@ -1,15 +1,21 @@
-import { env } from '$env/dynamic/public';
+import {
+	PUBLIC_TYPESENSE_COLLECTION_NAME,
+	PUBLIC_TYPESENSE_HOST,
+	PUBLIC_TYPESENSE_PORT,
+	PUBLIC_TYPESENSE_PROTOCOL,
+	PUBLIC_TYPESENSE_SEARCH_API_KEY
+} from '$app/env/public';
 import { SearchClient as TypesenseSearchClient } from 'typesense';
 import type { SearchClient, SearchResultItem } from '../types';
 
 type TypesenseDoc = { id: string; url: string; title: string; content: string };
 
 export function createClient(): SearchClient {
-	const host = env.PUBLIC_TYPESENSE_HOST;
-	const port = Number(env.PUBLIC_TYPESENSE_PORT ?? '443');
-	const protocol = env.PUBLIC_TYPESENSE_PROTOCOL ?? 'https';
-	const apiKey = env.PUBLIC_TYPESENSE_SEARCH_API_KEY;
-	const collectionName = env.PUBLIC_TYPESENSE_COLLECTION_NAME;
+	const host = PUBLIC_TYPESENSE_HOST;
+	const port = Number(PUBLIC_TYPESENSE_PORT ?? '443');
+	const protocol = PUBLIC_TYPESENSE_PROTOCOL ?? 'https';
+	const apiKey = PUBLIC_TYPESENSE_SEARCH_API_KEY;
+	const collectionName = PUBLIC_TYPESENSE_COLLECTION_NAME;
 
 	const client = new TypesenseSearchClient({
 		nodes: [{ host: host ?? '', port, protocol }],

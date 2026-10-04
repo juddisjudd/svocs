@@ -489,7 +489,7 @@ export function assemblePage(frontmatter, annotated) {
 	}
 
 	const imports = used
-		.map((name) => `\timport ${name} from '$lib/components/${name}.svelte';`)
+		.map((name) => `\timport ${name} from '#lib/components/${name}.svelte';`)
 		.join('\n');
 	return {
 		ext: '.svx',

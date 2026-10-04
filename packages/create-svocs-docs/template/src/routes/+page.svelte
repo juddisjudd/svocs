@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import { SITE_NAME, SITE_DESCRIPTION } from '$lib/site';
+	import { SITE_NAME, SITE_DESCRIPTION } from '#lib/site.js';
 </script>
 
 <svelte:head>

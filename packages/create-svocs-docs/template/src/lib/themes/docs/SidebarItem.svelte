@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import type { PageMapNode } from '$lib/core/page-map';
-	import PageIcon from '$lib/icons/PageIcon.svelte';
+	import type { PageMapNode } from '#lib/core/page-map.js';
+	import PageIcon from '#lib/icons/PageIcon.svelte';
 	import SidebarTree from './SidebarTree.svelte';
 
 	let {

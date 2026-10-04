@@ -1,6 +1,10 @@
 <script lang="ts">
+	import { withBase } from '#lib/core/base-path.js';
+
 	let { src, alt, width, height }: { src: string; alt: string; width?: number; height?: number } =
 		$props();
+
+	const url = $derived(withBase(src));
 
 	let dialogEl: HTMLDialogElement | undefined = $state();
 
@@ -14,11 +18,11 @@
 </script>
 
 <button type="button" class="trigger" onclick={open} aria-label={`Zoom image: ${alt}`}>
-	<img {src} {alt} {width} {height} loading="lazy" />
+	<img src={url} {alt} {width} {height} loading="lazy" />
 </button>
 
 <dialog bind:this={dialogEl} class="zoom-dialog" onclick={close} onclose={close}>
-	<img {src} {alt} />
+	<img src={url} {alt} />
 </dialog>
 
 <style>

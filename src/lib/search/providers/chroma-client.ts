@@ -1,15 +1,21 @@
-import { env } from '$env/dynamic/public';
+import {
+	PUBLIC_CHROMA_COLLECTION_NAME,
+	PUBLIC_CHROMA_HOST,
+	PUBLIC_CHROMA_PORT,
+	PUBLIC_CHROMA_SSL,
+	PUBLIC_CHROMA_TOKEN
+} from '$app/env/public';
 import { ChromaClient } from 'chromadb';
 import type { SearchClient, SearchResultItem } from '../types';
 
 type ChromaMeta = { url: string; title: string; description?: string };
 
 export function createClient(): SearchClient {
-	const host = env.PUBLIC_CHROMA_HOST;
-	const port = Number(env.PUBLIC_CHROMA_PORT ?? '8000');
-	const ssl = env.PUBLIC_CHROMA_SSL === 'true';
-	const token = env.PUBLIC_CHROMA_TOKEN;
-	const collectionName = env.PUBLIC_CHROMA_COLLECTION_NAME;
+	const host = PUBLIC_CHROMA_HOST;
+	const port = Number(PUBLIC_CHROMA_PORT ?? '8000');
+	const ssl = PUBLIC_CHROMA_SSL === 'true';
+	const token = PUBLIC_CHROMA_TOKEN;
+	const collectionName = PUBLIC_CHROMA_COLLECTION_NAME;
 
 	return {
 		async search(query: string): Promise<SearchResultItem[]> {

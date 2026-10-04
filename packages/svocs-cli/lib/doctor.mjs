@@ -2,7 +2,14 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import * as p from '@clack/prompts';
 import pc from 'picocolors';
-import { fetchLatestVersion, isNewerVersion, looksLikeSvocsSite, readManifest } from './shared.mjs';
+import {
+	fetchLatestVersion,
+	findLegacyLibImports,
+	isNewerVersion,
+	kitMajor,
+	looksLikeSvocsSite,
+	readManifest
+} from './shared.mjs';
 
 function readFileOr(path, fallback = '') {
 	try {
@@ -106,6 +113,27 @@ export async function runDoctor(args) {
 		}
 	} else {
 		ok(`Search backend "${backend}" needs no server config.`);
+	}
+
+	// SvelteKit 3: Node floor and the $lib → #lib alias change
+	const kit = kitMajor(dir);
+	if (kit >= 3) {
+		const [major, minor] = process.versions.node.split('.').map(Number);
+		if (major < 22 || (major === 22 && minor < 17)) {
+			fail(`Node ${process.versions.node} is too old: SvelteKit 3 needs Node 22.17 or newer.`);
+		} else {
+			ok(`Node ${process.versions.node} meets SvelteKit 3's minimum (22.17).`);
+		}
+		const legacy = findLegacyLibImports(dir);
+		if (legacy.length > 0) {
+			fail(
+				`SvelteKit 3 removed the $lib alias. Change $lib/ to #lib/ in: ${legacy.slice(0, 5).join(', ')}${legacy.length > 5 ? ` (+${legacy.length - 5} more)` : ''}.`
+			);
+		}
+	} else if (kit === 2) {
+		warn(
+			`This site is on SvelteKit 2; current SVOCS templates use SvelteKit 3. Run ${pc.cyan('npx svocs-cli update')} to move it.`
+		);
 	}
 
 	if (!existsSync(join(dir, 'node_modules'))) {

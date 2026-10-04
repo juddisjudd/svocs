@@ -1,12 +1,12 @@
 <script lang="ts">
-	import logoMark from '$lib/assets/logo-mark.svg';
-	import { resolve, base } from '$app/paths';
+	import logoMark from '#lib/assets/logo-mark.svg';
+	import { asset, resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import type { Snippet } from 'svelte';
-	import SearchBox from '$lib/themes/docs/SearchBox.svelte';
-	import SearchDialog from '$lib/themes/docs/search/SearchDialog.svelte';
-	import ThemeToggle from '$lib/themes/docs/ThemeToggle.svelte';
-	import { SITE_URL, SITE_NAME, REPO_URL } from '$lib/site';
+	import SearchBox from '#lib/themes/docs/SearchBox.svelte';
+	import SearchDialog from '#lib/themes/docs/search/SearchDialog.svelte';
+	import ThemeToggle from '#lib/themes/docs/ThemeToggle.svelte';
+	import { SITE_URL, SITE_NAME, REPO_URL } from '#lib/site.js';
 
 	let { children }: { children: Snippet } = $props();
 	const repoUrl = REPO_URL;
@@ -33,9 +33,9 @@
 
 <svelte:head>
 	<link rel="icon" type="image/svg+xml" href={logoMark} />
-	<link rel="icon" type="image/png" sizes="32x32" href="{base}/favicon-32x32.png" />
-	<link rel="icon" type="image/png" sizes="16x16" href="{base}/favicon-16x16.png" />
-	<link rel="apple-touch-icon" href="{base}/apple-touch-icon.png" />
+	<link rel="icon" type="image/png" sizes="32x32" href={asset('favicon-32x32.png')} />
+	<link rel="icon" type="image/png" sizes="16x16" href={asset('favicon-16x16.png')} />
+	<link rel="apple-touch-icon" href={asset('apple-touch-icon.png')} />
 
 	<!-- Site-wide social preview defaults — individual pages set their own
 	     og:title/og:description/og:url alongside their <title>, while the

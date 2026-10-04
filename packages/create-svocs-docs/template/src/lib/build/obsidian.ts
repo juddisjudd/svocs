@@ -59,7 +59,7 @@ const CALLOUT_TYPES: Record<string, string> = {
 };
 
 const IMAGE_RE = /\.(png|jpe?g|gif|svg|webp|avif)$/i;
-const CALLOUT_IMPORT = "import Callout from '$lib/components/Callout.svelte';";
+const CALLOUT_IMPORT = "import Callout from '#lib/components/Callout.svelte';";
 
 function splitFrontmatter(source: string): { frontmatter: string; body: string } {
 	const match = source.match(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/);
@@ -230,7 +230,7 @@ export function transformObsidian(
 
 	if (
 		usedCallout &&
-		!/Callout\.svelte|\bCallout\b[^\n]*from\s+['"]\$lib\/components['"]/.test(result)
+		!/Callout\.svelte|\bCallout\b[^\n]*from\s+['"]#lib\/components['"]/.test(result)
 	) {
 		const scriptOpen = result.match(/^<script(\s[^>]*)?>\s*$/m);
 		if (scriptOpen && scriptOpen.index !== undefined) {

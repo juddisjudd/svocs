@@ -3,8 +3,8 @@
 	import { getContext } from 'svelte';
 	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
-	import { getPageTreeSiblings, type PageMapNode } from '$lib/core/page-map';
-	import { DOCS_PAGE_MAP_CONTEXT } from '$lib/core/page-map-context';
+	import { getPageTreeSiblings, type PageMapNode } from '#lib/core/page-map.js';
+	import { DOCS_PAGE_MAP_CONTEXT } from '#lib/core/page-map-context.js';
 	import Card from './Card.svelte';
 
 	let { auto = false, children }: { auto?: boolean; children?: Snippet } = $props();

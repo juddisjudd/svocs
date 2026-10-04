@@ -13,7 +13,7 @@ RUN bun install --frozen-lockfile
 COPY . .
 RUN git config --global --add safe.directory /app && bun run build
 
-FROM nginx:1.27-alpine
+FROM nginx:1.30-alpine
 COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/build /usr/share/nginx/html
 

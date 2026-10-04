@@ -2,20 +2,20 @@
 	import type { LayoutData } from './$types';
 	import type { Snippet } from 'svelte';
 	import { setContext } from 'svelte';
-	import { browser } from '$app/environment';
 	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
-	import { getBreadcrumbsByPath, type PageMapNode } from '$lib/core/page-map';
-	import { DOCS_PAGE_MAP_CONTEXT } from '$lib/core/page-map-context';
-	import SidebarTree from '$lib/themes/docs/SidebarTree.svelte';
-	import Toc from '$lib/themes/docs/Toc.svelte';
-	import { enhanceCodeBlocks } from '$lib/themes/docs/code-blocks';
-	import { renderMermaidBlocks } from '$lib/themes/docs/mermaid';
-	import { observeHeadings } from '$lib/themes/docs/scroll-spy';
+	import { getBreadcrumbsByPath, type PageMapNode } from '#lib/core/page-map.js';
+	import { DOCS_PAGE_MAP_CONTEXT } from '#lib/core/page-map-context.js';
+	import SidebarTree from '#lib/themes/docs/SidebarTree.svelte';
+	import Toc from '#lib/themes/docs/Toc.svelte';
+	import { enhanceCodeBlocks } from '#lib/themes/docs/code-blocks.js';
+	import { renderMermaidBlocks } from '#lib/themes/docs/mermaid.js';
+	import { observeHeadings } from '#lib/themes/docs/scroll-spy.js';
+	import { readStorage } from '#lib/core/storage.js';
 
 	let { data, children }: { data: LayoutData; children: Snippet } = $props();
 	let sidebarOpen = $state(false);
-	let navCollapsed = $state(browser && localStorage.getItem('docs-nav') === 'collapsed');
+	let navCollapsed = $state(readStorage('docs-nav') === 'collapsed');
 	let proseEl: HTMLDivElement | undefined = $state();
 	let activeHeadingId: string | undefined = $state();
 

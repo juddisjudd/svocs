@@ -1,7 +1,6 @@
-import { text } from '@sveltejs/kit';
-import { getAllLlmsDocuments, getDocsEntries, loadMetaByDirectory } from '$lib/server/content';
-import { buildDocsPageMap, type PageMapNode } from '$lib/core/page-map';
-import { SITE_NAME, SITE_URL } from '$lib/site';
+import { getAllLlmsDocuments, getDocsEntries, loadMetaByDirectory } from '#lib/server/content.js';
+import { buildDocsPageMap, type PageMapNode } from '#lib/core/page-map.js';
+import { SITE_NAME, SITE_URL } from '#lib/site.js';
 import type { RequestHandler } from './$types';
 
 export const prerender = true;
@@ -66,7 +65,7 @@ function buildIndex(): string {
 }
 
 export const GET: RequestHandler = async () => {
-	return text(buildIndex(), {
+	return new Response(buildIndex(), {
 		headers: { 'content-type': 'text/plain; charset=utf-8' }
 	});
 };

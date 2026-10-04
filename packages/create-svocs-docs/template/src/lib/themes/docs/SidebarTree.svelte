@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { PageMapNode } from '$lib/core/page-map';
+	import type { PageMapNode } from '#lib/core/page-map.js';
 	import SidebarItem from './SidebarItem.svelte';
 
 	let {

@@ -5,28 +5,28 @@
  * loads and endpoints ask for the same data per page.
  *
  * Server-only (prerendered into data and endpoints) so raw markdown never
- * reaches the client bundle. Client code imports $lib/core/content instead.
+ * reaches the client bundle. Client code imports #lib/core/content instead.
  */
 import GithubSlugger from 'github-slugger';
 import contentDates from 'virtual:svocs-content-dates';
-import type { SearchDocument } from '$lib/search/types';
+import type { SearchDocument } from '#lib/search/types.js';
 import type {
 	ContentModule,
 	ContentSummary,
 	LlmsDocument,
 	MetaItemConfig,
 	TocItem
-} from '$lib/core/content';
+} from '#lib/core/content.js';
 import {
 	CONTENT_PREFIX,
 	EXTENSION_RE,
 	isReservedSource,
 	routeFromSlug,
 	toSlug
-} from '$lib/core/content-paths';
-import { createObsidianResolver, transformObsidian } from '$lib/build/obsidian';
+} from '#lib/core/content-paths.js';
+import { createObsidianResolver, transformObsidian } from '#lib/build/obsidian.js';
 
-export type { ContentSummary, LlmsDocument, MetaItemConfig, TocItem } from '$lib/core/content';
+export type { ContentSummary, LlmsDocument, MetaItemConfig, TocItem } from '#lib/core/content.js';
 
 type DirectoryMetaModule = {
 	items?: Record<string, MetaItemConfig>;

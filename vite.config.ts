@@ -9,8 +9,9 @@ import { defineConfig, type Plugin } from 'vitest/config';
 import { playwright } from '@vitest/browser-playwright';
 import adapter from '@sveltejs/adapter-static';
 import { sveltekit } from '@sveltejs/kit/vite';
-import { highlightWithFilename } from './src/lib/build/code-highlighter';
-import { obsidian } from './src/lib/build/obsidian';
+import { highlightWithFilename } from './src/lib/build/code-highlighter.ts';
+import { obsidian } from './src/lib/build/obsidian.ts';
+import { rehypeBasePath } from './src/lib/build/base-path.ts';
 
 const execFileAsync = promisify(execFile);
 
@@ -112,6 +113,10 @@ function contentDatesPlugin(): Plugin {
 // branches — otherwise a broken dep in an unused provider fails every build.
 process.env.PUBLIC_SVOCS_SEARCH_PROVIDER ??= 'pagefind';
 
+// Set BASE_PATH when deploying under a sub-path, e.g. GitHub Pages
+// project sites: BASE_PATH=/my-repo
+const base = process.env.BASE_PATH?.startsWith('/') ? (process.env.BASE_PATH as `/${string}`) : '';
+
 type MdsvexOptions = NonNullable<Parameters<typeof mdsvex>[0]>;
 type MdsvexRehypePlugin = NonNullable<MdsvexOptions['rehypePlugins']>[number];
 type MdsvexRemarkPlugin = NonNullable<MdsvexOptions['remarkPlugins']>[number];
@@ -138,7 +143,8 @@ const rehypePlugins: NonNullable<MdsvexOptions['rehypePlugins']> = [
 			}
 		}
 	] as unknown as MdsvexRehypePlugin,
-	rehypeKatex as unknown as MdsvexRehypePlugin
+	rehypeKatex as unknown as MdsvexRehypePlugin,
+	rehypeBasePath(base) as unknown as MdsvexRehypePlugin
 ];
 
 const mdsvexOptions = {
@@ -156,6 +162,9 @@ const INERT_SEARCH_INDEX_ROUTES = new Set([
 ]);
 
 export default defineConfig({
+	// Doc pages lazy-load content/ modules in the browser; Vite only serves
+	// allow-listed directories in dev.
+	server: { fs: { allow: ['content'] } },
 	plugins: [
 		contentDatesPlugin(),
 		sveltekit({
@@ -167,16 +176,12 @@ export default defineConfig({
 			// Static hosts serve this for unmatched paths so the client-side
 			// router can render +error.svelte instead of the host's 404.
 			adapter: adapter({ fallback: '404.html' }),
-			// Set BASE_PATH when deploying under a sub-path, e.g. GitHub Pages
-			// project sites: BASE_PATH=/my-repo
-			paths: {
-				base: process.env.BASE_PATH?.startsWith('/') ? (process.env.BASE_PATH as `/${string}`) : ''
-			},
+			paths: { base },
 			preprocess: [obsidian(), mdsvex(mdsvexOptions)],
 			extensions: ['.svelte', '.svx', '.md'],
 			prerender: {
 				handleHttpError: ({ path, message }) => {
-					if (INERT_SEARCH_INDEX_ROUTES.has(path)) {
+					if (INERT_SEARCH_INDEX_ROUTES.has(path.slice(base.length))) {
 						return;
 					}
 					throw new Error(message);
@@ -188,7 +193,7 @@ export default defineConfig({
 		expect: { requireAssertions: true },
 		projects: [
 			{
-				extends: './vite.config.ts',
+				extends: true,
 				test: {
 					name: 'client',
 					browser: {
@@ -202,7 +207,7 @@ export default defineConfig({
 			},
 
 			{
-				extends: './vite.config.ts',
+				extends: true,
 				test: {
 					name: 'server',
 					environment: 'node',
@@ -212,6 +217,7 @@ export default defineConfig({
 			},
 
 			{
+				extends: false,
 				test: {
 					name: 'packages',
 					environment: 'node',

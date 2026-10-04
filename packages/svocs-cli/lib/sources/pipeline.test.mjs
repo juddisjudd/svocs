@@ -64,7 +64,7 @@ describe('stripImports + assemblePage', () => {
 		expect(identifiers.size).toBe(0);
 		const page = assemblePage({ title: 'T' }, lines);
 		expect(page.ext).toBe('.svx');
-		expect(page.content).toContain("import Callout from '$lib/components/Callout.svelte';");
+		expect(page.content).toContain("import Callout from '#lib/components/Callout.svelte';");
 		expect(page.content.startsWith('---\ntitle: T\n---')).toBe(true);
 	});
 

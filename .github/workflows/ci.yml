@@ -14,9 +14,12 @@ jobs:
     name: Lint, test, build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
       - run: bun run check
@@ -25,6 +28,7 @@ jobs:
       - run: bun run test:unit -- --run
       - run: node scripts/sync-template.mjs --check
       - run: bun run build
+      - run: bunx playwright test
 
   scaffold:
     name: Scaffold smoke test
@@ -33,7 +37,10 @@ jobs:
       CREATE: ${{ github.workspace }}/packages/create-svocs-docs
       CLI: ${{ github.workspace }}/packages/svocs-cli
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
       - uses: oven-sh/setup-bun@v2
       # The packages aren't workspaces of the root; each carries its own lockfile.
       - run: bun install --frozen-lockfile
@@ -47,6 +54,12 @@ jobs:
         working-directory: ${{ runner.temp }}/smoke-site
       - run: bun run check && bun run lint && bun run build
         working-directory: ${{ runner.temp }}/smoke-site
+      # GitHub Pages project sites build under a sub-path.
+      - run: bun run build
+        working-directory: ${{ runner.temp }}/smoke-site
+        env:
+          BASE_PATH: /smoke-site
+          SVOCS_OG: '0'
       - run: node "$CLI/bin.js" doctor
         working-directory: ${{ runner.temp }}/smoke-site
       - run: node "$CLI/bin.js" update --from="$CREATE" --dry-run --force

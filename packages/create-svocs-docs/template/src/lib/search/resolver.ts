@@ -1,4 +1,4 @@
-import { PUBLIC_SVOCS_SEARCH_PROVIDER } from '$env/static/public';
+import { PUBLIC_SVOCS_SEARCH_PROVIDER } from '$app/env/public';
 import type { SearchClient } from './types';
 
 let cached: SearchClient | undefined;

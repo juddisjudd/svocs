@@ -1,11 +1,11 @@
-import { PUBLIC_SVOCS_SEARCH_PROVIDER } from '$env/static/public';
+import { PUBLIC_SVOCS_SEARCH_PROVIDER } from '$app/env/public';
 import type { SearchClient } from './types';
 
 let cached: SearchClient | undefined;
 
 /**
  * Resolves the active search backend. The switch must stay on the
- * $env/static/public constant with literal-string imports so the bundler
+ * static $app/env/public constant with literal-string imports so the bundler
  * drops unselected branches — a broken dep in an unused provider would
  * otherwise fail every build.
  */

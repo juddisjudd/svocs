@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import { SITE_URL } from '$lib/site';
+	import { SITE_URL } from '#lib/site.js';
 
 	const repoUrl = 'https://github.com/juddisjudd/svocs';
 
