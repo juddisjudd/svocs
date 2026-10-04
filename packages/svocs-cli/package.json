@@ -1,6 +1,6 @@
 {
 	"name": "svocs-cli",
-	"version": "0.6.0",
+	"version": "0.7.0",
 	"description": "Companion CLI for SVOCS docs sites: check your setup, pull template updates, sync mirrored pages, migrate from Fumadocs, Nextra, Docusaurus, Starlight, MkDocs, mdBook, or an Obsidian vault.",
 	"type": "module",
 	"license": "MIT",
