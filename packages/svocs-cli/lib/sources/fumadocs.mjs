@@ -257,15 +257,15 @@ export function convertMeta(metaJson, notes, relDir) {
 			continue;
 		}
 		if (entry.startsWith('!')) {
-			const name = entry.slice(1);
-			notes.push(
-				`${relDir || '.'}: "${entry}" hid "${name}" from the fumadocs sidebar; svocs has no hidden pages, so it stays visible, in the position "${entry}" was listed.`
-			);
-			// Fumadocs hides it entirely, so it carries no "real" order — but
-			// its listed position is still the best signal svocs has for
-			// where the author meant it to sit relative to its neighbors, so
-			// it gets one instead of falling back to alphabetical.
-			place(name);
+			const segments = entry.slice(1).split('/').filter(Boolean);
+			place(segments.join('/'));
+			const dir = segments
+				.slice(0, -1)
+				.reduce((parent, segment) => childDir(parent, segment), relDir);
+			const hiddenEntry = entries.find(([d, name]) => d === dir && name === segments.at(-1));
+			if (hiddenEntry) {
+				hiddenEntry[2].hidden = true;
+			}
 			continue;
 		}
 		const extract = entry.match(/^\.\.\.(.+)$/);

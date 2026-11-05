@@ -263,14 +263,10 @@ export default {
 					});
 					continue;
 				}
-				if (entry.hidden) {
-					notes.push(
-						`${meta.rel}: "${entry.key}" was hidden in the Nextra sidebar; svocs has no hidden pages, so it stays visible.`
-					);
-				}
 				metaItem(metaByDir, relDir, entry.key, {
 					order: order++,
-					...(entry.title ? { title: entry.title } : {})
+					...(entry.title ? { title: entry.title } : {}),
+					...(entry.hidden ? { hidden: true } : {})
 				});
 			}
 		}

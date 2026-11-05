@@ -86,3 +86,16 @@ describe('convertPage', () => {
 		expect(todos).toHaveLength(1);
 	});
 });
+
+describe('convertMeta hidden entries', () => {
+	it('turns !name into a hidden item in its listed position', () => {
+		const notes = [];
+		const { entries } = convertMeta({ pages: ['a', '!secret', 'b'] }, notes, '');
+		expect(entries).toEqual([
+			['', 'a', { order: 1 }],
+			['', 'secret', { order: 2, hidden: true }],
+			['', 'b', { order: 3 }]
+		]);
+		expect(notes).toEqual([]);
+	});
+});

@@ -65,6 +65,7 @@ function sidebarFromRaw(raw) {
 	}
 	return {
 		order: block.match(/^\s+order:\s*(\d+)/m)?.[1],
+		hidden: /^\s+hidden:\s*true\s*$/m.test(block),
 		label: block
 			.match(/^\s+label:\s*(.+)$/m)?.[1]
 			?.trim()
@@ -176,7 +177,8 @@ export default {
 		state.pageMeta.push({
 			outRel,
 			order: sidebar.order ? Number(sidebar.order) : null,
-			title: sidebar.label ?? null
+			title: sidebar.label ?? null,
+			hidden: sidebar.hidden === true
 		});
 
 		let annotated = annotateFences(body.split(/\r?\n/));
@@ -251,14 +253,15 @@ export default {
 	collectMeta({ state }) {
 		const metaByDir = new Map();
 		for (const page of state.pageMeta) {
-			if (page.order === null && page.title === null) {
+			if (page.order === null && page.title === null && !page.hidden) {
 				continue;
 			}
 			const slugRel = page.outRel.replace(/\.mdx?$/, '');
 			const dir = dirname(slugRel) === '.' ? '' : dirname(slugRel);
 			metaItem(metaByDir, dir, basename(slugRel), {
 				...(page.order !== null ? { order: page.order } : {}),
-				...(page.title ? { title: page.title } : {})
+				...(page.title ? { title: page.title } : {}),
+				...(page.hidden ? { hidden: true } : {})
 			});
 		}
 		return metaByDir;
