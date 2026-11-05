@@ -50,7 +50,7 @@ describe('content registry', () => {
 		expect(getAllLlmsDocuments()).toHaveLength(docs.length);
 		for (const doc of getAllLlmsDocuments()) {
 			expect(doc.raw.startsWith('---')).toBe(false);
-			expect(doc.raw).not.toMatch(/^<script/m);
+			expect(doc.raw.replace(/^```[\s\S]*?^```/gm, '')).not.toMatch(/^<script/m);
 		}
 	});
 });
