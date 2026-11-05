@@ -69,7 +69,11 @@ export async function highlightWithFilename(
 		await yamlReady;
 	}
 
-	const html = await code_highlighter(code, lang, metastring, filename, optimise);
+	// mdsvex puts code in a template literal and escapes only \t, \r and \n, so `\d` lost its backslash and a trailing `\` ate the line break.
+	const html = (await code_highlighter(code, lang, metastring, filename, optimise)).replace(
+		/\\/g,
+		'&#92;'
+	);
 
 	const name = metastring?.match(/filename="([^"]+)"/)?.[1];
 	const pre = name
