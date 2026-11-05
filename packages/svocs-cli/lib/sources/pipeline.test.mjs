@@ -3,6 +3,8 @@ import {
 	annotateFences,
 	assemblePage,
 	hoistLeadingH1,
+	includeTag,
+	resolveIncludes,
 	rewriteLinks,
 	splitFrontmatter,
 	stripImports,
@@ -50,6 +52,54 @@ describe('rewriteLinks', () => {
 		expect(rewriteLinks('[a](./other.md) [b](../up/page.mdx#x) [c](https://x.y)', 'guides')).toBe(
 			'[a](/docs/guides/other) [b](/docs/up/page#x) [c](https://x.y)'
 		);
+	});
+
+	it('retries a dead file-relative link against the source page URL', () => {
+		const routes = new Set(['/docs', '/docs/guides', '/docs/guides/git', '/docs/ox_core']);
+		const links = { dir: 'ox_core', urlBase: ['docs'], routes };
+		expect(rewriteLinks('[a](../docs/guides/git) [b](./missing)', links)).toBe(
+			'[a](/docs/guides/git) [b](/docs/ox_core/missing)'
+		);
+	});
+
+	it('keeps a live file-relative link even when the URL reading differs', () => {
+		const routes = new Set(['/docs/ox_core/setup', '/docs/setup']);
+		const links = { dir: 'ox_core', urlBase: ['docs'], routes };
+		expect(rewriteLinks('[a](./setup)', links)).toBe('[a](/docs/ox_core/setup)');
+	});
+
+	it('leaves angle-bracket destinations alone', () => {
+		const text = '[p](<http://x.y/a_(b)>)';
+		expect(rewriteLinks(text, 'guides')).toBe(text);
+	});
+});
+
+describe('resolveIncludes', () => {
+	const outRels = new Map([['resources/tebex.mdx', 'resources/tebex.md']]);
+
+	it('imports the included page and adds a script after the frontmatter', () => {
+		const page = `---\ntitle: T\n---\n\n${includeTag('resources/tebex.mdx')}\n`;
+		const { content, missing, imported } = resolveIncludes(page, 'introduction.md', outRels);
+		expect(imported).toBe(true);
+		expect(missing).toEqual([]);
+		expect(content).toBe(
+			"---\ntitle: T\n---\n\n<script>\n\timport IncludeTebex from './resources/tebex.md';\n</script>\n\n<IncludeTebex />\n"
+		);
+	});
+
+	it('joins an existing instance script and imports relative to the page', () => {
+		const page = `<script>\n\timport Cards from '#lib/components/Cards.svelte';\n</script>\n\n${includeTag('resources/tebex.mdx')}\n`;
+		const { content } = resolveIncludes(page, 'guides/index.svx', outRels);
+		expect(content).toContain(
+			"<script>\n\timport IncludeTebex from '../resources/tebex.md';\n\timport Cards"
+		);
+	});
+
+	it('flags an include that is not a migrated page', () => {
+		const { content, missing, imported } = resolveIncludes(includeTag('nope.mdx'), 'a.md', outRels);
+		expect(imported).toBe(false);
+		expect(missing).toEqual(['nope.mdx']);
+		expect(content).toContain('svocs migrate TODO');
 	});
 });
 

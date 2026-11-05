@@ -330,7 +330,7 @@ export default {
 			?.trim();
 	},
 
-	convertPage(source, { rel, baseDir, todos, notes }) {
+	convertPage(source, { rel, links, todos, notes }) {
 		const { frontmatter, fields, body } = splitFrontmatter(source);
 		let { title, body: rest } = { title: null, body };
 		if (!frontmatter.title) {
@@ -339,7 +339,7 @@ export default {
 
 		const converted = convertBlocks(rest.split(/\r?\n/), todos);
 		let annotated = annotateFences(converted);
-		annotated = mdxCommentPass(annotated, (text) => rewriteLinks(text, baseDir));
+		annotated = mdxCommentPass(annotated, (text) => rewriteLinks(text, links));
 
 		const icon = fields.icon ? mapMaterialIcon(fields.icon) : undefined;
 		if (fields.icon && !icon) {

@@ -49,7 +49,8 @@ The framework is auto-detected (or forced with `--source=<framework>`). It scaff
 
 - Frontmatter, sidebar ordering, and titles carry over (`meta.json`, `_meta.js`, `sidebar_position`/`_category_.json`, `sidebar:` frontmatter, `nav:`, or `SUMMARY.md`, depending on the source) as `_meta.json`.
 - Components map to their svocs equivalents: callouts/admonitions/asides become `<Callout>`, tab constructs become `<Tabs items={…}>`/`<Tab>`, MkDocs `???` collapsibles become `<Collapse>`, card grids become `<Cards>`/`<Card>`.
-- MDX indentation, JSX comments, and relative links are rewritten to what mdsvex and static routes expect.
+- MDX indentation, JSX comments, and relative links are rewritten to what mdsvex and static routes expect. A relative link that resolves to no page is retried against the source page's URL, the way a browser reads it.
+- Static files in `public/` (Fumadocs, Nextra, Starlight) or `static/` (Docusaurus) are copied into `static/`, and a Fumadocs `<include>` of another page becomes an import of the migrated page.
 - Anything unmappable (custom components, raw JSX, `{{#include}}`) is commented out in place with `svocs migrate TODO` markers instead of breaking the build.
 - Dead links inherited from the source are listed, and the new site warns on them during prerender rather than failing.
 

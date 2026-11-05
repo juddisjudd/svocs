@@ -53,6 +53,7 @@ export default {
 		'Docusaurus carries a huge share of the open-source ecosystem’s documentation, and it does it well — svocs is just another door.',
 	extensions: ['.mdx', '.md'],
 	contentHint: 'no docs/ directory',
+	publicDir: 'static',
 
 	detect(sourceDir) {
 		const deps = readDeps(sourceDir);
@@ -82,7 +83,7 @@ export default {
 		return { pageMeta: [] };
 	},
 
-	convertPage(source, { rel, outRel, baseDir, todos, notes, state }) {
+	convertPage(source, { rel, outRel, links, todos, notes, state }) {
 		const { frontmatter, fields, body } = splitFrontmatter(source);
 		let { title, body: rest } = { title: null, body };
 		if (!frontmatter.title) {
@@ -132,7 +133,7 @@ export default {
 				docCardLists += 1;
 			}
 			out = fixInlineHtml(out);
-			out = rewriteLinks(out, baseDir, stripNumberPrefix);
+			out = rewriteLinks(out, links, stripNumberPrefix);
 			return out;
 		});
 		if (customIds > 0) {

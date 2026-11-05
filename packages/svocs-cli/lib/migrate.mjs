@@ -6,6 +6,7 @@
 // the build. The point is choice, not conquest: every supported source is
 // good software, and the migration is meant to be reversible curiosity.
 import {
+	copyFileSync,
 	existsSync,
 	mkdirSync,
 	mkdtempSync,
@@ -20,7 +21,7 @@ import { pathToFileURL } from 'node:url';
 import * as p from '@clack/prompts';
 import pc from 'picocolors';
 import { fetchLatestPackage, MANIFEST_FILE, readManifest } from './shared.mjs';
-import { walkFiles } from './sources/pipeline.mjs';
+import { resolveIncludes, walkFiles } from './sources/pipeline.mjs';
 import { detectSource, SOURCES } from './sources/index.mjs';
 
 function prettifyName(name) {
@@ -29,6 +30,32 @@ function prettifyName(name) {
 		.filter(Boolean)
 		.map((part) => part.charAt(0).toUpperCase() + part.slice(1))
 		.join(' ');
+}
+
+function copyStaticAssets(fromDir, toDir, notes) {
+	if (!existsSync(fromDir)) {
+		return;
+	}
+	const kept = [];
+	let copied = 0;
+	for (const file of walkFiles(fromDir, () => true)) {
+		const dest = join(toDir, file.rel);
+		if (existsSync(dest)) {
+			kept.push(`static/${file.rel}`);
+			continue;
+		}
+		mkdirSync(dirname(dest), { recursive: true });
+		copyFileSync(file.full, dest);
+		copied += 1;
+	}
+	if (copied > 0) {
+		notes.push(`copied ${copied} static file(s) from ${basename(fromDir)}/ into static/.`);
+	}
+	if (kept.length > 0) {
+		notes.push(
+			`kept the scaffold's ${kept.join(', ')} instead of the source's copy; merge them by hand if you need both.`
+		);
+	}
 }
 
 function packageName(sourceDir) {
@@ -190,22 +217,39 @@ export async function runMigrate(args) {
 		const outRelFor = (page) => (adapter.outRel ? adapter.outRel(page.rel) : page.rel);
 		const hasIntroduction = pages.some((page) => /^introduction\.[^/.]+$/.test(outRelFor(page)));
 		let renamedRootIndex = false;
+		const extPattern = new RegExp(`(${extensions.map((e) => e.replace('.', '\\.')).join('|')})$`);
+		// same semantics as the template's toSlug()
+		const slugOf = (rel) => {
+			const slugPath = rel.replace(extPattern, '');
+			return slugPath === 'index' ? '' : slugPath.replace(/\/index$/, '');
+		};
+		const routeOf = (slug) => (slug ? `/docs/${slug}` : '/docs');
 
-		const convertSpinner = p.spinner();
-		convertSpinner.start(`Converting ${pages.length} page(s)`);
-		for (const page of pages) {
-			const fileTodos = [];
-			let outRelSource = outRelFor(page);
+		const plans = pages.map((page) => {
+			const sourceRel = outRelFor(page);
+			let outRelSource = sourceRel;
 			if (!hasIntroduction && /^index\.[^/.]+$/.test(outRelSource)) {
 				outRelSource = outRelSource.replace(/^index/, 'introduction');
 				renamedRootIndex = true;
 			}
+			const sourceSlug = slugOf(sourceRel);
+			const urlBase = ['docs', ...(sourceSlug ? sourceSlug.split('/') : [])].slice(0, -1);
+			return { page, outRelSource, slug: slugOf(outRelSource), urlBase };
+		});
+		const knownRoutes = new Set(['/docs', ...plans.map((plan) => routeOf(plan.slug))]);
+
+		const convertSpinner = p.spinner();
+		convertSpinner.start(`Converting ${pages.length} page(s)`);
+		const outputs = [];
+		for (const { page, outRelSource, slug, urlBase } of plans) {
+			const fileTodos = [];
 			const baseDir =
 				dirname(outRelSource) === '.' ? '' : dirname(outRelSource).replace(/\\/g, '/');
 			const converted = adapter.convertPage(readFileSync(page.full, 'utf8'), {
 				rel: page.rel,
 				outRel: outRelSource,
 				baseDir,
+				links: { dir: baseDir, urlBase, routes: knownRoutes },
 				todos: fileTodos,
 				notes,
 				state
@@ -215,36 +259,48 @@ export async function runMigrate(args) {
 				skipped += 1;
 				continue;
 			}
-			const { ext, content } = converted;
+			routes.add(routeOf(slug));
+			if (!slug) {
+				hasRootIndex = true;
+			}
+			outputs.push({ rel: page.rel, outRelSource, ...converted, todos: fileTodos });
+		}
+
+		// A page that imports an include becomes .svx, so settle every extension before writing import paths.
+		const outRelOf = (output) => output.outRelSource.replace(extPattern, output.ext);
+		const outRelBySource = () => new Map(outputs.map((output) => [output.rel, outRelOf(output)]));
+		const draftOutRels = outRelBySource();
+		for (const output of outputs) {
+			if (resolveIncludes(output.content, outRelOf(output), draftOutRels).imported) {
+				output.ext = '.svx';
+			}
+		}
+		const finalOutRels = outRelBySource();
+		for (const output of outputs) {
+			const included = resolveIncludes(output.content, outRelOf(output), finalOutRels);
+			output.content = included.content;
+			output.todos.push(...included.missing);
+		}
+
+		for (const { rel, outRelSource, ext, content, todos: fileTodos } of outputs) {
 			if (fileTodos.length > 0) {
-				todos.push({ rel: page.rel, count: fileTodos.length });
+				todos.push({ rel, count: fileTodos.length });
 			}
 			if (ext === '.svx') {
 				svxCount += 1;
 			}
-			const slugPath = outRelSource.replace(
-				new RegExp(`(${extensions.map((e) => e.replace('.', '\\.')).join('|')})$`),
-				''
-			);
-			// same semantics as the template's toSlug()
-			const slug = slugPath === 'index' ? '' : slugPath.replace(/\/index$/, '');
-			routes.add(slug ? `/docs/${slug}` : '/docs');
-			if (!slug) {
-				hasRootIndex = true;
-			}
 			for (const match of content.matchAll(/\]\((\/docs[^)#?\s]*)/g)) {
-				linkRefs.push({ target: match[1], from: page.rel });
+				linkRefs.push({ target: match[1], from: rel });
 			}
-			const outRel = outRelSource.replace(
-				new RegExp(`(${extensions.map((e) => e.replace('.', '\\.')).join('|')})$`),
-				ext
-			);
-			const outPath = join(targetDir, 'content', outRel);
+			const outPath = join(targetDir, 'content', outRelSource.replace(extPattern, ext));
 			mkdirSync(dirname(outPath), { recursive: true });
 			writeFileSync(
 				outPath,
 				legacyLibAlias ? content.replaceAll("from '#lib/", "from '$lib/") : content
 			);
+		}
+		if (adapter.publicDir) {
+			copyStaticAssets(join(sourceDir, adapter.publicDir), join(targetDir, 'static'), notes);
 		}
 		for (const ref of linkRefs) {
 			if (!routes.has(ref.target.replace(/\/$/, ''))) {

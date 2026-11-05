@@ -182,7 +182,7 @@ export default {
 		return { summary, titles };
 	},
 
-	convertPage(source, { rel, baseDir, todos, state }) {
+	convertPage(source, { rel, links, todos, state }) {
 		const { frontmatter, body } = splitFrontmatter(source);
 		let { title, body: rest } = { title: null, body };
 		if (!frontmatter.title) {
@@ -193,7 +193,7 @@ export default {
 		const converted = convertFences(rest.split(/\r?\n/), todos);
 		let annotated = annotateFences(converted);
 		annotated = mdxCommentPass(annotated, (text) =>
-			rewriteLinks(text, baseDir, mapReadme).replace(/\]\((\/[^)]*?)\.md(#[^)]*)?\)/g, ']($1$2)')
+			rewriteLinks(text, links, mapReadme).replace(/\]\((\/[^)]*?)\.md(#[^)]*)?\)/g, ']($1$2)')
 		);
 
 		return assemblePage(

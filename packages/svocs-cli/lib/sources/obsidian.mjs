@@ -338,7 +338,7 @@ export default {
 		};
 	},
 
-	convertPage(source, { rel, baseDir, todos, state }) {
+	convertPage(source, { rel, links, todos, state }) {
 		if (state.skipDirs?.some((dir) => rel.startsWith(`${dir}/`))) {
 			return null;
 		}
@@ -349,7 +349,7 @@ export default {
 
 		const title = frontmatter.title ?? basename(rel, '.md');
 		let text = convertBody(body, state, todos);
-		text = rewriteLinks(text, baseDir, slugifySegment);
+		text = rewriteLinks(text, links, slugifySegment);
 
 		const annotated = annotateFences(text.split('\n'));
 		const page = assemblePage(

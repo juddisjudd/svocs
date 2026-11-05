@@ -2,7 +2,7 @@
 // Everything line-based works on { text, inFence } annotated lines so
 // transforms never touch fenced code.
 import { readFileSync, readdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, posix } from 'node:path';
 
 // Components the svocs template ships. A converted page that uses any of
 // these becomes .svx with the matching imports; everything else stays .md.
@@ -401,11 +401,9 @@ export function convertDirectives(annotated, typeMap) {
  * Absolute /docs/ routes sidestep the mismatch entirely. `mapSegment` lets
  * adapters rewrite path segments (Docusaurus number prefixes, mdBook README).
  */
-export function absolutizeLink(target, baseDir, mapSegment) {
-	const [pathPart, hash = ''] = target.split(/(?=#)/);
-	const cleaned = pathPart.replace(/\.(mdx?|svx)$/, '').replace(/\/$/, '');
+function resolveSegments(baseParts, path, mapSegment) {
 	const segments = [];
-	for (const part of `${baseDir}/${cleaned}`.split('/')) {
+	for (const part of [...baseParts, ...path.split('/')]) {
 		if (part === '' || part === '.') {
 			continue;
 		}
@@ -418,14 +416,31 @@ export function absolutizeLink(target, baseDir, mapSegment) {
 	if (segments[segments.length - 1] === 'index') {
 		segments.pop();
 	}
-	return `/docs${segments.length > 0 ? `/${segments.join('/')}` : ''}${hash}`;
+	return segments;
+}
+
+// `links` is a content dir, or `{ dir, urlBase, routes }` to retry a dead route the way a browser resolves it from the source page's URL.
+export function absolutizeLink(target, links, mapSegment) {
+	const { dir, urlBase, routes } = typeof links === 'string' ? { dir: links } : links;
+	const [pathPart, hash = ''] = target.split(/(?=#)/);
+	const cleaned = pathPart.replace(/\.(mdx?|svx)$/, '').replace(/\/$/, '');
+	const fileSegments = resolveSegments(dir.split('/'), cleaned, mapSegment);
+	const fileRoute = `/docs${fileSegments.length > 0 ? `/${fileSegments.join('/')}` : ''}`;
+	if (routes && urlBase && !routes.has(fileRoute)) {
+		const urlSegments = resolveSegments(urlBase, cleaned, mapSegment);
+		const urlRoute = `/${urlSegments.join('/')}`;
+		if (urlSegments[0] === 'docs' && routes.has(urlRoute)) {
+			return `${urlRoute}${hash}`;
+		}
+	}
+	return `${fileRoute}${hash}`;
 }
 
 /** Rewrite one line's internal links: absolutize relative, strip extensions. */
-export function rewriteLinks(text, baseDir, mapSegment) {
+export function rewriteLinks(text, links, mapSegment) {
 	let out = text.replace(
-		/\]\((?!https?:|mailto:|#|\/)([^)\s]+)\)/g,
-		(full, target) => `](${absolutizeLink(target, baseDir, mapSegment)})`
+		/\]\((?!https?:|mailto:|#|\/|<)([^)\s]+)\)/g,
+		(full, target) => `](${absolutizeLink(target, links, mapSegment)})`
 	);
 	out = out.replace(/\]\((\/[^)]*?)\.mdx?(#[^)]*)?\)/g, ']($1$2)');
 	return out;
@@ -510,6 +525,62 @@ export function assemblePage(frontmatter, annotated) {
 }
 
 const INSTANCE_SCRIPT = /^<script(?![^>]*\b(?:module|context\s*=))[^>]*>/m;
+
+// ---- includes
+
+/** Placeholder for an include of another page, by its content-relative source path. */
+export const includeTag = (src) => `<svocs-include src="${src}" />`;
+
+function includeName(outRel) {
+	const base = posix.basename(outRel).replace(/\.[^.]+$/, '');
+	const name = base === 'index' ? posix.basename(posix.dirname(outRel)) : base;
+	const words = name.split(/[^A-Za-z0-9]+/).filter(Boolean);
+	return `Include${words.map((word) => word[0].toUpperCase() + word.slice(1)).join('')}`;
+}
+
+/** Turn include placeholders into imports of the migrated pages they name. */
+export function resolveIncludes(content, fromOutRel, outRelBySource) {
+	const names = new Map();
+	const missing = [];
+	const body = content.replace(/<svocs-include src="([^"]+)" \/>/g, (tag, src) => {
+		const target = outRelBySource.get(src);
+		if (!target) {
+			missing.push(src);
+			return `<!-- svocs migrate TODO: include ${src} by hand; it isn't a migrated page -->`;
+		}
+		if (!names.has(target)) {
+			const taken = new Set(names.values());
+			let name = includeName(target);
+			for (let n = 2; taken.has(name); n += 1) {
+				name = `${includeName(target)}${n}`;
+			}
+			names.set(target, name);
+		}
+		return `<${names.get(target)} />`;
+	});
+	if (names.size === 0) {
+		return { content: body, missing, imported: false };
+	}
+	const imports = [...names]
+		.map(([target, name]) => {
+			const from = posix.relative(posix.dirname(fromOutRel), target);
+			return `\timport ${name} from '${from.startsWith('.') ? from : `./${from}`}';`;
+		})
+		.join('\n');
+	if (INSTANCE_SCRIPT.test(body)) {
+		return {
+			content: body.replace(INSTANCE_SCRIPT, (tag) => `${tag}\n${imports}`),
+			missing,
+			imported: true
+		};
+	}
+	const frontmatter = body.match(/^---\n[\s\S]*?\n---\n\n?/)?.[0] ?? '';
+	return {
+		content: `${frontmatter}<script>\n${imports}\n</script>\n\n${body.slice(frontmatter.length)}`,
+		missing,
+		imported: true
+	};
+}
 
 // ---- filesystem helpers
 

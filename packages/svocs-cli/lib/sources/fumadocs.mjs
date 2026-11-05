@@ -3,13 +3,14 @@
 // `Callout` types map 1:1 apart from warn/error), so this is the most direct
 // of the converters.
 import { existsSync, readFileSync } from 'node:fs';
-import { basename, dirname, join } from 'node:path';
+import { basename, dirname, join, posix } from 'node:path';
 import {
 	annotateFences,
 	assemblePage,
 	blankLine,
 	commentUnportableBlocks,
 	fixInlineHtml,
+	includeTag,
 	mdxCommentPass,
 	metaItem,
 	normalizeComponents,
@@ -80,11 +81,11 @@ function mapIconName(name) {
 	return name ? (LUCIDE_ICON_MAP[name.toLowerCase()] ?? null) : null;
 }
 
-function transformLine(text, baseDir, state) {
+function transformLine(text, links, state) {
 	let out = fixInlineHtml(text);
 	// fumadocs-only Tabs props svocs doesn't use
 	out = out.replace(/(<Tabs\b[^>]*?)\s+groupId="[^"]*"/g, '$1');
-	out = rewriteLinks(out, baseDir);
+	out = rewriteLinks(out, links);
 	// fumadocs Callout types -> svocs Callout types
 	out = out.replace(/<Callout(\s[^>]*)?>/g, (tag, attrs = '') => {
 		const typeMatch = attrs?.match(/type="([a-z]+)"/);
@@ -116,32 +117,51 @@ function transformLine(text, baseDir, state) {
  * and source identifiers it leaves behind are gone by the time the
  * unportable-block pass looks for them.
  */
-function collapseAutoCardPeers(annotated, state) {
+function collapseAutoCardPeers(annotated, rel, notes) {
 	const out = [];
 	for (let i = 0; i < annotated.length; i += 1) {
 		const line = annotated[i];
 		if (!line.inFence && /^\s*<Cards>\s*$/.test(line.text)) {
 			let j = i + 1;
-			let sawPeers = false;
+			let peers = null;
 			while (j < annotated.length && !/^\s*<\/Cards>\s*$/.test(annotated[j].text)) {
 				if (annotated[j].inFence) {
 					break;
 				}
 				if (annotated[j].text.includes('getPageTreePeers(')) {
-					sawPeers = true;
+					peers = annotated[j].text;
 				}
 				j += 1;
 			}
-			if (sawPeers && j < annotated.length) {
-				out.push({ text: '<Cards auto />', inFence: false });
+			if (peers !== null && j < annotated.length) {
+				const of = peers.match(/getPageTreePeers\([^,]+,\s*(["'`])(\/[^"'`]*)\1/)?.[2];
+				const tag = of ? `<Cards of="${of.replace(/(.)\/$/, '$1')}" />` : '<Cards auto />';
+				out.push({ text: tag, inFence: false });
+				const filtered = peers.includes('.filter(')
+					? ' The source filtered that list; svocs shows every page.'
+					: '';
+				notes.push(
+					`${rel}: getPageTreePeers() Cards block converted to ${tag}.${filtered} Verify it lists what you expect.`
+				);
 				i = j;
-				state.autoCardCount += 1;
 				continue;
 			}
 		}
 		out.push(line);
 	}
 	return out;
+}
+
+// Fumadocs inlines `<include>` targets at build time; a page include becomes an import of the migrated page.
+function convertIncludes(text, dir, todos) {
+	return text.replace(/<include(\s[^>]*)?>([^<]*)<\/include>/g, (tag, attrs, target) => {
+		const path = target.trim();
+		if (attrs?.trim() || !/\.mdx?$/.test(path)) {
+			todos.push(tag);
+			return `<!-- svocs migrate TODO: port this include by hand: ${tag} -->`;
+		}
+		return includeTag(posix.normalize(posix.join(dir, path)));
+	});
 }
 
 /**
@@ -285,6 +305,7 @@ export default {
 		'Fumadocs is genuinely great software, and this converter is not an argument against it — it just makes trying a Svelte-based alternative cheap.',
 	extensions: ['.mdx', '.md'],
 	contentHint: 'no content/docs directory',
+	publicDir: 'public',
 
 	detect(sourceDir) {
 		return Object.keys(readDeps(sourceDir)).some((name) => name.startsWith('fumadocs'));
@@ -299,20 +320,14 @@ export default {
 		return { autoCardCount: 0 };
 	},
 
-	convertPage(source, { rel, baseDir, todos, notes, state }) {
+	convertPage(source, { rel, links, todos, notes, state }) {
 		const { frontmatter, fields, body } = splitFrontmatter(source);
 		let annotated = annotateFences(body.split(/\r?\n/));
 
 		// Runs first: collapses the raw getPageTreePeers() idiom to <Cards auto />
 		// while its `source`/`getPageTreePeers` identifiers are still attached to
 		// the block being removed, so stripImports never sees them used elsewhere.
-		const beforePeers = state.autoCardCount;
-		annotated = collapseAutoCardPeers(annotated, state);
-		if (state.autoCardCount > beforePeers) {
-			notes.push(
-				`${rel}: getPageTreePeers() Cards block converted to <Cards auto /> — verify it lists what you expect.`
-			);
-		}
+		annotated = collapseAutoCardPeers(annotated, rel, notes);
 
 		// DocsCategory is a known, mapped import (see transformLine) so it
 		// doesn't fall into the unportable-block path before conversion runs.
@@ -322,8 +337,10 @@ export default {
 		// expression is still one contiguous block and gets commented whole.
 		annotated = commentUnportableBlocks(annotated, stripped.identifiers, todos);
 		annotated = normalizeComponents(annotated);
+		const includeDir = posix.dirname(rel) === '.' ? '' : posix.dirname(rel);
+		annotated = mdxCommentPass(annotated, (text) => convertIncludes(text, includeDir, todos));
 		const before = state.autoCardCount;
-		annotated = mdxCommentPass(annotated, (text) => transformLine(text, baseDir, state));
+		annotated = mdxCommentPass(annotated, (text) => transformLine(text, links, state));
 		if (state.autoCardCount > before) {
 			notes.push(
 				`${rel}: <DocsCategory /> converted to <Cards auto /> — verify it lists what you expect.`

@@ -146,6 +146,7 @@ export default {
 		'Starlight is a lovely piece of the Astro ecosystem — if it fits you, keep it. This just makes a Svelte-based alternative easy to try.',
 	extensions: ['.mdx', '.md'],
 	contentHint: 'no src/content/docs directory',
+	publicDir: 'public',
 
 	detect(sourceDir) {
 		return '@astrojs/starlight' in readDeps(sourceDir);
@@ -169,7 +170,7 @@ export default {
 		return { pageMeta: [], strippedSteps: false, strippedFileTrees: false };
 	},
 
-	convertPage(source, { rel, outRel, baseDir, todos, notes, state }) {
+	convertPage(source, { rel, outRel, links, todos, notes, state }) {
 		const { frontmatter, raw, body } = splitFrontmatter(source);
 		const sidebar = sidebarFromRaw(raw);
 		state.pageMeta.push({
@@ -233,7 +234,7 @@ export default {
 		annotated = convertDirectives(annotated, ASIDE_TYPES);
 		annotated = mdxCommentPass(annotated, (text) => {
 			let out = fixInlineHtml(text);
-			out = rewriteLinks(out, baseDir);
+			out = rewriteLinks(out, links);
 			out = prefixDocsLinks(out);
 			return out;
 		});
