@@ -77,6 +77,13 @@
 		overflow: hidden;
 	}
 
+	/* Info follows the accent, capped at OKLCH lightness 0.54 so white text keeps 4.5:1 on any hue. */
+	@supports (color: oklch(from red l c h)) {
+		.callout {
+			--callout-color: oklch(from var(--accent) min(l, 0.54) c h);
+		}
+	}
+
 	.callout.note {
 		--callout-color: #5b5551;
 	}
