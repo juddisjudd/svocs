@@ -93,3 +93,21 @@ describe('getBreadcrumbsByPath', () => {
 		expect(getBreadcrumbsByPath('/showcase', map)).toEqual([]);
 	});
 });
+
+describe('hidden items', () => {
+	const hiddenMeta: DirectoryMeta = new Map([
+		['', { guides: { hidden: true }, deploy: { order: 3 } }]
+	]);
+	const map = buildDocsPageMap(entries, hiddenMeta);
+
+	it('keeps hidden nodes in the map, flagged, so breadcrumbs and llms.txt still find them', () => {
+		const guides = map.find((node) => node.kind === 'page' && node.slug === 'guides');
+		expect(guides).toMatchObject({ hidden: true });
+		expect(getBreadcrumbsByPath('/docs/guides/writing', map)[1].title).toBe('Guides');
+	});
+
+	it('leaves hidden pages out of auto cards', () => {
+		expect(getPageTreeSiblings(map, '/docs/intro').map((n) => n.slug)).toEqual(['deploy']);
+		expect(getPageTreeSiblings(map, '/docs/deploy').map((n) => n.slug)).toEqual(['deploy/pages']);
+	});
+});

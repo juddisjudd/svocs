@@ -11,6 +11,7 @@ type MutablePageNode = {
 	order: number;
 	isDocument: boolean;
 	icon?: string;
+	hidden: boolean;
 	children: Map<string, MutablePageNode>;
 };
 
@@ -24,6 +25,7 @@ export type PageMapNode =
 			order: number;
 			isDocument: boolean;
 			icon?: string;
+			hidden?: boolean;
 			children: PageMapNode[];
 	  }
 	| {
@@ -60,6 +62,7 @@ function finalizeNode(node: MutablePageNode, dirMeta: DirectoryMeta): PageMapNod
 		order: node.order,
 		isDocument: node.isDocument,
 		icon: node.icon,
+		...(node.hidden ? { hidden: true } : {}),
 		children: buildLevel(Array.from(node.children.values()), node.slug, dirMeta)
 	};
 }
@@ -122,6 +125,7 @@ export function buildDocsPageMap(
 					order: override?.order ?? 999,
 					isDocument: false,
 					icon: override?.icon,
+					hidden: override?.hidden === true,
 					children: new Map<string, MutablePageNode>()
 				};
 				current.set(segment, node);
@@ -177,7 +181,7 @@ export function getPageTreeSiblings(
 	path: string
 ): Extract<PageMapNode, { kind: 'page' }>[] {
 	const isDocumentPage = (node: PageMapNode): node is Extract<PageMapNode, { kind: 'page' }> =>
-		node.kind === 'page' && node.isDocument;
+		node.kind === 'page' && node.isDocument && !node.hidden;
 
 	function findByPath(list: PageMapNode[]): PageMapNode | null {
 		for (const node of list) {
@@ -222,7 +226,7 @@ export function getPageTreeSiblings(
 	const siblings = siblingsWithin(nodes) ?? [];
 	return siblings.filter(
 		(node): node is Extract<PageMapNode, { kind: 'page' }> =>
-			node.kind === 'page' && node.path !== path && node.isDocument
+			isDocumentPage(node) && node.path !== path
 	);
 }
 

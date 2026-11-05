@@ -65,7 +65,7 @@
 		const out: PagerLink[] = [];
 		const walk = (list: PageMapNode[]) => {
 			for (const node of list) {
-				if (node.kind !== 'page') {
+				if (node.kind !== 'page' || node.hidden) {
 					continue;
 				}
 				if (node.isDocument) {

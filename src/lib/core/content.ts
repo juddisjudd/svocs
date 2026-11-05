@@ -31,6 +31,8 @@ export type MetaItemConfig = {
 	/** Separators are virtual sidebar headings with no backing file, so
 	 *  `title` and `order` are required. */
 	type?: 'separator';
+	/** Leaves the page or folder out of the sidebar, pager and auto cards; it still builds and is searchable. */
+	hidden?: boolean;
 };
 
 export type ContentSummary = {

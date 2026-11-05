@@ -19,6 +19,7 @@ Each key under `items` is a file or folder name (no extension) relative to that 
 - `order` — a sort key. Lower sorts first. Items without an explicit order default to `999` and sort after everything that has one.
 - `icon` — a name from the curated icon set (see [Components](/docs/components#page-icons)). Set here, it wins over the same page's frontmatter `icon`, so a section can standardize icons without editing every file. On a folder entry, this is also the only way to give a folder an icon when it has no index page of its own.
 - `type: "separator"` — turns this entry into a non-clickable heading (see below) instead of pointing at a real file. Separators can carry an `icon` too.
+- `hidden: true` — leaves the page out of the sidebar, the previous/next pager, and `<Cards auto>`. On a folder entry, it hides the whole folder. The page still builds, keeps its URL, and stays in search and `llms.txt`, so you can link to it from a header link or another page.
 
 ## Precedence
 

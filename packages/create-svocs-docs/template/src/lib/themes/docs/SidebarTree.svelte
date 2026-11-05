@@ -16,7 +16,7 @@
 </script>
 
 <ul class:nested={depth > 0}>
-	{#each nodes as node (node.kind === 'page' ? node.path : `sep-${node.title}`)}
+	{#each nodes.filter((node) => node.kind !== 'page' || !node.hidden) as node (node.kind === 'page' ? node.path : `sep-${node.title}`)}
 		<SidebarItem {node} {currentPath} {onNavigate} {depth} />
 	{/each}
 </ul>
