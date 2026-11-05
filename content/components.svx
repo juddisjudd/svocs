@@ -120,6 +120,12 @@ Pass `auto` instead of children and `Cards` lists the current page's siblings â€
 
 _(the grid above is live â€” it's this page's own siblings in the sidebar)_
 
+Pass `of` with a docs path to list another page's children instead, for example a landing page that points into one section:
+
+```svelte
+<Cards of="/docs/guides" />
+```
+
 ## Page icons
 
 <Callout type="info">

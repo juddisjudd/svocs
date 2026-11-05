@@ -8,7 +8,11 @@
 	import { DOCS_PAGE_MAP_CONTEXT } from '#lib/core/page-map-context.js';
 	import Card from './Card.svelte';
 
-	let { auto = false, children }: { auto?: boolean; children?: Snippet } = $props();
+	let {
+		auto = false,
+		of,
+		children
+	}: { auto?: boolean; of?: string; children?: Snippet } = $props();
 
 	const getPageMap = getContext<(() => PageMapNode[]) | undefined>(DOCS_PAGE_MAP_CONTEXT);
 
@@ -16,15 +20,16 @@
 	// docs/+page.ts), so sibling lookups need the same substitution the
 	// pager in docs/+layout.svelte uses. The base path is stripped so the
 	// lookup matches page-map paths when BASE_PATH is set.
-	const pathname = $derived(withoutBase(page.url).replace(/\/$/, '') || '/docs');
+	const listsPages = $derived(auto || of !== undefined);
+	const pathname = $derived((of ?? withoutBase(page.url)).replace(/\/$/, '') || '/docs');
 	const currentPath = $derived(pathname === '/docs' ? '/docs/introduction' : pathname);
 	const siblings = $derived(
-		auto && getPageMap ? getPageTreeSiblings(getPageMap(), currentPath) : []
+		listsPages && getPageMap ? getPageTreeSiblings(getPageMap(), currentPath) : []
 	);
 </script>
 
 <div class="cards">
-	{#if auto}
+	{#if listsPages}
 		{#each siblings as sibling (sibling.path)}
 			<Card
 				title={sibling.title}
