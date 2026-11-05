@@ -89,7 +89,7 @@ function proseLines(raw: string): string[] {
 
 export function extractTocFromMarkdown(raw: string): TocItem[] {
 	const toc: TocItem[] = [];
-	// Same slugger rehype-slug uses, so TOC ids always match rendered heading
+	// Same slugger rehypeHeadingIds uses, so TOC ids always match rendered heading
 	// ids (including underscore handling and duplicate-heading suffixes).
 	const slugger = new GithubSlugger();
 
@@ -100,7 +100,7 @@ export function extractTocFromMarkdown(raw: string): TocItem[] {
 		}
 
 		const depth = match[1].length as 2 | 3;
-		// Strip markdown link syntax: rehype-slug ids come from the rendered
+		// Strip markdown link syntax: heading ids come from the rendered
 		// text, so the slugger must see "Datadog", not "[Datadog](https://…)".
 		const text = match[2].trim().replace(/\[([^\]]*)\]\([^)]*\)/g, '$1');
 		const id = slugger.slug(text);

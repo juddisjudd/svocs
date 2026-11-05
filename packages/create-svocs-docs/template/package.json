@@ -43,7 +43,6 @@
 		"prettier-plugin-svelte": "^4.1.1",
 		"rehype-autolink-headings": "^7.1.0",
 		"rehype-katex-svelte": "^1.2.0",
-		"rehype-slug": "^6.0.0",
 		"remark-math": "^3.0.1",
 		"sitemap": "^9.0.1",
 		"svelte": "^5.57.1",

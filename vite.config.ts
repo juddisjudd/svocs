@@ -1,5 +1,4 @@
 import { mdsvex } from 'mdsvex';
-import rehypeSlug from 'rehype-slug';
 import rehypeAutolinkHeadings from 'rehype-autolink-headings';
 import rehypeKatex from 'rehype-katex-svelte';
 import remarkMath from 'remark-math';
@@ -12,6 +11,8 @@ import { sveltekit } from '@sveltejs/kit/vite';
 import { highlightWithFilename } from './src/lib/build/code-highlighter.ts';
 import { obsidian } from './src/lib/build/obsidian.ts';
 import { rehypeBasePath } from './src/lib/build/base-path.ts';
+import { rehypeHeadingIds } from './src/lib/build/heading-ids.ts';
+import { contentModules } from './src/lib/build/content-modules.ts';
 
 const execFileAsync = promisify(execFile);
 
@@ -132,7 +133,7 @@ const remarkPlugins: NonNullable<MdsvexOptions['remarkPlugins']> = [
 ];
 
 const rehypePlugins: NonNullable<MdsvexOptions['rehypePlugins']> = [
-	rehypeSlug as unknown as MdsvexRehypePlugin,
+	rehypeHeadingIds() as unknown as MdsvexRehypePlugin,
 	[
 		rehypeAutolinkHeadings,
 		{
@@ -167,6 +168,8 @@ export default defineConfig({
 	server: { fs: { allow: ['content'] } },
 	plugins: [
 		contentDatesPlugin(),
+		// Must stay ahead of sveltekit(): its server-only guard also runs at enforce: 'pre'.
+		contentModules(),
 		sveltekit({
 			compilerOptions: {
 				// Force runes mode for the project, except for libraries. Can be removed in svelte 6.
