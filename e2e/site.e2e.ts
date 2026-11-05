@@ -9,6 +9,11 @@ function collectErrors(page: Page): string[] {
 	return errors;
 }
 
+// A button clicked before Svelte hydrates does nothing, so wait for the page's scripts to finish loading.
+async function gotoHydrated(page: Page, path: string) {
+	await page.goto(path, { waitUntil: 'networkidle' });
+}
+
 test.beforeEach(async ({ page }) => {
 	// Analytics is loaded from app.html; keep tests offline and quiet.
 	await page.route('https://umami.bawkbawk.net/**', (route) =>
@@ -47,7 +52,7 @@ test('renders KaTeX math and Mermaid diagrams', async ({ page }) => {
 });
 
 test('search finds pages from the built index', async ({ page }) => {
-	await page.goto('/docs');
+	await gotoHydrated(page, '/docs');
 	await page.getByRole('button', { name: 'Search documentation' }).click();
 	await page.getByRole('combobox').fill('mermaid');
 
@@ -59,7 +64,7 @@ test('search finds pages from the built index', async ({ page }) => {
 
 test('theme toggle switches to light mode', async ({ page }) => {
 	await page.emulateMedia({ colorScheme: 'dark' });
-	await page.goto('/docs');
+	await gotoHydrated(page, '/docs');
 	await page.getByRole('button', { name: 'Switch to light mode' }).click();
 	await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
 });
