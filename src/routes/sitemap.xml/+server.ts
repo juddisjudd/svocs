@@ -18,12 +18,14 @@ async function buildSitemap(): Promise<string> {
 	}
 
 	const stream = new SitemapStream({ hostname: SITE_URL });
+	// Relative URLs resolve against the origin, which drops a sub-path such as /my-repo.
+	const absolute = (path: string) => `${SITE_URL}${path}`;
 
 	for (const path of STATIC_ROUTES) {
-		stream.write({ url: path });
+		stream.write({ url: absolute(path) });
 	}
 	for (const doc of getDocsEntries()) {
-		stream.write({ url: doc.path, lastmod: doc.lastModified });
+		stream.write({ url: absolute(doc.path), lastmod: doc.lastModified });
 	}
 	stream.end();
 
