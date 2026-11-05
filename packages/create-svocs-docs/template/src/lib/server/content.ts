@@ -7,6 +7,7 @@
  * Server-only (prerendered into data and endpoints) so raw markdown never
  * reaches the client bundle. Client code imports #lib/core/content instead.
  */
+import { posix } from 'node:path';
 import GithubSlugger from 'github-slugger';
 import contentDates from 'virtual:svocs-content-dates';
 import type { SearchDocument } from '#lib/search/types.js';
@@ -156,6 +157,41 @@ export function stripSourceForExport(raw: string): string {
 	return out;
 }
 
+const INCLUDE_IMPORT_RE =
+	/^\s*import\s+([A-Z][\w$]*)\s+from\s+['"](\.{1,2}\/[^'"]+\.(?:md|svx))['"];?\s*$/gm;
+
+/** Inlines content pages a page renders as components, so its TOC, search text and exports match what readers see. */
+export function expandIncludes(
+	raw: string,
+	filePath: string,
+	load: (filePath: string) => string | undefined,
+	seen: ReadonlySet<string> = new Set()
+): string {
+	const includes = new Map<string, string>();
+	for (const [, name, specifier] of raw.matchAll(INCLUDE_IMPORT_RE)) {
+		includes.set(name, posix.join(posix.dirname(filePath), specifier));
+	}
+	if (includes.size === 0) {
+		return raw;
+	}
+	const inside = new Set([...seen, filePath]);
+	let inCodeFence = false;
+	return raw
+		.split(/\r?\n/)
+		.map((line) => {
+			if (/^\s*(```|~~~)/.test(line)) {
+				inCodeFence = !inCodeFence;
+			}
+			const tag = inCodeFence ? undefined : line.trim().match(/^<([A-Z][\w$]*)\s*\/>$/)?.[1];
+			const target = tag ? includes.get(tag) : undefined;
+			const included = target && !inside.has(target) ? load(target) : undefined;
+			return target && included !== undefined
+				? stripSourceForExport(expandIncludes(included, target, load, inside))
+				: line;
+		})
+		.join('\n');
+}
+
 /** Directory path ('' for the content root) → that directory's `_meta.json` items. */
 export function loadMetaByDirectory(): Map<string, Record<string, MetaItemConfig>> {
 	const metaByDirectory = new Map<string, Record<string, MetaItemConfig>>();
@@ -226,7 +262,14 @@ function buildRegistry(): Registry {
 		}
 		// Same Obsidian rewrites the build applies, so exports and search see
 		// the page as rendered rather than as authored.
-		const raw = transformObsidian(rawContentModules[filePath] ?? '', obsidianResolver());
+		const raw = expandIncludes(
+			transformObsidian(rawContentModules[filePath] ?? '', obsidianResolver()),
+			filePath,
+			(path) =>
+				rawContentModules[path] === undefined
+					? undefined
+					: transformObsidian(rawContentModules[path], obsidianResolver())
+		);
 		const wordCount = countWords(stripMarkdownToText(raw));
 
 		rawBySlug.set(slug, raw);

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+	expandIncludes,
 	extractTocFromMarkdown,
 	getAllLlmsDocuments,
 	getAllSearchDocuments,
@@ -70,6 +71,33 @@ describe('extractTocFromMarkdown', () => {
 			{ id: 'with-a-link', text: 'With a link', depth: 3 },
 			{ id: 'getting-started-1', text: 'Getting Started', depth: 2 }
 		]);
+	});
+});
+
+describe('expandIncludes', () => {
+	const files: Record<string, string> = {
+		'/content/a/partial.md': '---\ntitle: Partial\n---\n\n## Partial heading\n\nBody.',
+		'/content/a/loop.svx':
+			"<script>\n\timport IncludeLoop from './loop.svx';\n</script>\n\n## Loop\n\n<IncludeLoop />"
+	};
+	const load = (path: string) => files[path];
+	const host = "<script>\n\timport IncludePartial from './partial.md';\n</script>\n\n## Host\n\n";
+
+	it('inlines an imported content page where it renders', () => {
+		const out = expandIncludes(`${host}<IncludePartial />\n`, '/content/a/host.svx', load);
+		expect(extractTocFromMarkdown(out).map((item) => item.text)).toEqual([
+			'Host',
+			'Partial heading'
+		]);
+		expect(out).not.toContain('title: Partial');
+	});
+
+	it('leaves self-includes and fenced examples alone', () => {
+		expect(expandIncludes(files['/content/a/loop.svx'], '/content/a/loop.svx', load)).toBe(
+			files['/content/a/loop.svx']
+		);
+		const fenced = `${host}\`\`\`svelte\n<IncludePartial />\n\`\`\`\n`;
+		expect(expandIncludes(fenced, '/content/a/host.svx', load)).toBe(fenced);
 	});
 });
 
