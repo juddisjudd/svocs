@@ -25,13 +25,13 @@
 		text-align: center;
 	}
 
-	h1 {
+	.hero h1 {
 		margin: 0 0 0.75rem;
 		font-size: clamp(2.25rem, 5vw, 3.25rem);
 		letter-spacing: -0.02em;
 	}
 
-	p {
+	.hero p {
 		margin: 0 auto 2rem;
 		max-width: 30rem;
 		color: var(--text-soft);
