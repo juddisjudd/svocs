@@ -1,0 +1,5 @@
+{
+	"title": "Migrating to svocs",
+	"description": "Move a Fumadocs, Nextra, Docusaurus, Starlight, MkDocs, mdBook or Obsidian site to svocs: run the migration, port what it can't convert, fix dead links, and deploy.",
+	"tags": ["guide", "setup"]
+}

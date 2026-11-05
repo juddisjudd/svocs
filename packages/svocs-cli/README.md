@@ -43,6 +43,12 @@ Applies template fixes to a scaffolded site without touching your work. Sites sc
 
 Converts an existing docs site into a new svocs site. Supported sources: [Fumadocs](https://fumadocs.dev/), [Nextra](https://nextra.site/), [Docusaurus](https://docusaurus.io/), [Starlight](https://starlight.astro.build/), [MkDocs](https://www.mkdocs.org/), and [mdBook](https://rust-lang.github.io/mdBook/).
 
+```sh
+npx svocs-cli@latest migrate ../my-docs-site ../my-svocs-site
+```
+
+For the whole move, including what to port by hand, fixing dead links, and deploying, follow [Migrating to svocs](https://svocs.dev/docs/migrating).
+
 All of these are tools we respect — Fumadocs and Nextra especially are projects we love. This command isn't a pitch to leave them; it's here so that trying a Svelte-based docs site is an afternoon's experiment instead of a rewrite. Your source site is never touched.
 
 The framework is auto-detected (or forced with `--source=<framework>`). It scaffolds fresh, converts the content tree, and reports what needs a human:

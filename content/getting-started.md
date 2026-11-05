@@ -1,5 +1,7 @@
 ## Scaffold a project
 
+You need Node.js 22.17 or newer. Moving an existing docs site instead of starting fresh? Follow [Migrating to svocs](/docs/migrating).
+
 The fastest way to start is the `create-svocs-docs` starter, which sets up a working SVOCS site with the same page structure as this one:
 
 ```sh filename="bun"
