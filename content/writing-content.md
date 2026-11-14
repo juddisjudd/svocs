@@ -110,3 +110,37 @@ Page styles (paragraph colour, link colour, list markers, inline code, image bor
 ```
 
 > **Watch out:** don't put inline code containing `<` or `{` in a heading — plain inline code and inline code anywhere else on the page are both fine. See [Troubleshooting](/docs/troubleshooting#a-heading-with-code-containing-a-tag-or-brace-fails-the-build) for why.
+
+## Reusing content
+
+Use `<include>` to show the same content on more than one page. Give the path of a `.md` or `.svx` page, relative to the current file. Add `#id` to take only part of that page:
+
+```md filename="content/api/player.md"
+## Ped methods
+
+<include>./ped.svx#methods</include>
+```
+
+What `#id` takes:
+
+- An id on a `<section>` element: everything inside that element.
+- A heading's anchor, as shown in the table of contents: that heading and everything under it, down to the next heading at the same level or higher.
+- No `#id`: the whole page.
+
+Mark the shared part with a `<section>` when it doesn't line up with a heading:
+
+```md filename="content/api/ped.svx"
+## Methods
+
+<section id="methods">
+
+### getArmour
+
+Gets the entity's current armour.
+
+</section>
+```
+
+Included content builds as part of the page. Its headings appear in the table of contents, and its text in search and `llms.txt`. If it uses components, svocs adds their imports to the page. Other code in the included page's script block does not come along.
+
+The build fails when the page or the id does not exist, or when a page includes itself.

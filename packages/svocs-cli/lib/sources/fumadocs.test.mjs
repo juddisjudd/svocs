@@ -80,6 +80,15 @@ describe('convertPage', () => {
 		expect(todos).toEqual([]);
 	});
 
+	it('keeps the section of a section include', () => {
+		const { content, todos } = convert(
+			'<include>Ped.mdx#pedmethods</include>',
+			'ox_lib/Player.mdx'
+		);
+		expect(content).toContain('<svocs-include src="ox_lib/Ped.mdx" section="pedmethods" />');
+		expect(todos).toEqual([]);
+	});
+
 	it('flags includes it cannot map', () => {
 		const { content, todos } = convert('<include lang="ts">./code.ts</include>');
 		expect(content).toContain('svocs migrate TODO');

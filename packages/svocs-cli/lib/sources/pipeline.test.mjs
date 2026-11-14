@@ -95,6 +95,13 @@ describe('resolveIncludes', () => {
 		);
 	});
 
+	it('keeps a section include as an <include> of the migrated page', () => {
+		const page = `## Ped methods\n\n${includeTag('resources/tebex.mdx', 'pedmethods')}\n`;
+		const { content, imported } = resolveIncludes(page, 'guides/player.md', outRels);
+		expect(imported).toBe(false);
+		expect(content).toBe('## Ped methods\n\n<include>../resources/tebex.md#pedmethods</include>\n');
+	});
+
 	it('flags an include that is not a migrated page', () => {
 		const { content, missing, imported } = resolveIncludes(includeTag('nope.mdx'), 'a.md', outRels);
 		expect(imported).toBe(false);

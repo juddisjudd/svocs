@@ -528,8 +528,11 @@ const INSTANCE_SCRIPT = /^<script(?![^>]*\b(?:module|context\s*=))[^>]*>/m;
 
 // ---- includes
 
-/** Placeholder for an include of another page, by its content-relative source path. */
-export const includeTag = (src) => `<svocs-include src="${src}" />`;
+/** Placeholder for an include of another page or one of its sections, by its content-relative source path. */
+export const includeTag = (src, section) =>
+	section
+		? `<svocs-include src="${src}" section="${section}" />`
+		: `<svocs-include src="${src}" />`;
 
 function includeName(outRel) {
 	const base = posix.basename(outRel).replace(/\.[^.]+$/, '');
@@ -538,26 +541,33 @@ function includeName(outRel) {
 	return `Include${words.map((word) => word[0].toUpperCase() + word.slice(1)).join('')}`;
 }
 
-/** Turn include placeholders into imports of the migrated pages they name. */
+/** Turn page include placeholders into imports of the migrated pages they name, and section includes into `<include>` tags. */
 export function resolveIncludes(content, fromOutRel, outRelBySource) {
 	const names = new Map();
 	const missing = [];
-	const body = content.replace(/<svocs-include src="([^"]+)" \/>/g, (tag, src) => {
-		const target = outRelBySource.get(src);
-		if (!target) {
-			missing.push(src);
-			return `<!-- svocs migrate TODO: include ${src} by hand; it isn't a migrated page -->`;
-		}
-		if (!names.has(target)) {
-			const taken = new Set(names.values());
-			let name = includeName(target);
-			for (let n = 2; taken.has(name); n += 1) {
-				name = `${includeName(target)}${n}`;
+	const body = content.replace(
+		/<svocs-include src="([^"]+)"(?: section="([^"]+)")? \/>/g,
+		(tag, src, section) => {
+			const target = outRelBySource.get(src);
+			if (!target) {
+				missing.push(src);
+				return `<!-- svocs migrate TODO: include ${src} by hand; it isn't a migrated page -->`;
 			}
-			names.set(target, name);
+			if (section) {
+				const from = posix.relative(posix.dirname(fromOutRel), target);
+				return `<include>${from.startsWith('.') ? from : `./${from}`}#${section}</include>`;
+			}
+			if (!names.has(target)) {
+				const taken = new Set(names.values());
+				let name = includeName(target);
+				for (let n = 2; taken.has(name); n += 1) {
+					name = `${includeName(target)}${n}`;
+				}
+				names.set(target, name);
+			}
+			return `<${names.get(target)} />`;
 		}
-		return `<${names.get(target)} />`;
-	});
+	);
 	if (names.size === 0) {
 		return { content: body, missing, imported: false };
 	}

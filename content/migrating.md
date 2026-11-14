@@ -46,12 +46,11 @@ The migration ends with a report. It has four kinds of lines:
 
 Search the new site for `svocs migrate TODO`. Each match is a block the converter commented out instead of guessing, so the site still builds. Common cases:
 
-| Source block                                                    | What to do                                                                         |
-| --------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| A custom component, such as `<ResourceLinks repo="x" />`        | Rewrite it as a Svelte component. See [Your own components](#your-own-components). |
-| Raw JSX with `style={{…}}` or `className=`                      | Rewrite it as plain HTML with `style="…"` and `class="…"`.                         |
-| An include of one section, such as `<include>a.mdx#b</include>` | Link to that section instead. svocs includes whole pages only.                     |
-| An mdBook `{{#include}}`                                        | Paste the included content in.                                                     |
+| Source block                                             | What to do                                                                                               |
+| -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| A custom component, such as `<ResourceLinks repo="x" />` | Rewrite it as a Svelte component. See [Your own components](#your-own-components).                       |
+| Raw JSX with `style={{…}}` or `className=`               | Rewrite it as plain HTML with `style="…"` and `class="…"`.                                               |
+| An mdBook `{{#include}}`                                 | Use an [`<include>`](/docs/writing-content#reusing-content) for a Markdown page. Paste anything else in. |
 
 ### Your own components
 
@@ -82,6 +81,8 @@ Import another content page and render it like a component. svocs adds its headi
 ```
 
 If the shared page should not appear in the sidebar on its own, set `"hidden": true` on it in `_meta.json`. See [Navigation](/docs/navigation#fields).
+
+A Fumadocs include of one section, such as `<include>ped.mdx#methods</include>`, stays an `<include>` of that section. See [Reusing content](/docs/writing-content#reusing-content). One difference: when the id is a heading, Fumadocs stops at the next heading of any level, and svocs stops at the next heading at the same level or higher. Check pages that include a heading with subheadings under it.
 
 ## 4. Port the site around the content
 

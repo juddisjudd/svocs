@@ -8,6 +8,7 @@ import { defineConfig, type Plugin } from 'vite';
 import adapter from '@sveltejs/adapter-static';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { highlightWithFilename } from './src/lib/build/code-highlighter.ts';
+import { includes } from './src/lib/build/includes.ts';
 import { obsidian } from './src/lib/build/obsidian.ts';
 import { rehypeBasePath } from './src/lib/build/base-path.ts';
 import { rehypeHeadingIds } from './src/lib/build/heading-ids.ts';
@@ -156,7 +157,7 @@ export default defineConfig({
 			// Cloudflare serve for unknown routes
 			adapter: adapter({ fallback: '404.html' }),
 			paths: { base },
-			preprocess: [obsidian(), mdsvex(mdsvexOptions)],
+			preprocess: [includes(), obsidian(), mdsvex(mdsvexOptions)],
 			extensions: ['.svelte', '.svx', '.md']
 		})
 	]

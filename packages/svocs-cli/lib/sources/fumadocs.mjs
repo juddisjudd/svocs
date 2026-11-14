@@ -152,15 +152,15 @@ function collapseAutoCardPeers(annotated, rel, notes) {
 	return out;
 }
 
-// Fumadocs inlines `<include>` targets at build time; a page include becomes an import of the migrated page.
+// Fumadocs inlines `<include>` targets at build time; a page include becomes an import of the migrated page, a section include an svocs `<include>`.
 function convertIncludes(text, dir, todos) {
 	return text.replace(/<include(\s[^>]*)?>([^<]*)<\/include>/g, (tag, attrs, target) => {
-		const path = target.trim();
+		const [path, section] = target.trim().split('#');
 		if (attrs?.trim() || !/\.mdx?$/.test(path)) {
 			todos.push(tag);
 			return `<!-- svocs migrate TODO: port this include by hand: ${tag} -->`;
 		}
-		return includeTag(posix.normalize(posix.join(dir, path)));
+		return includeTag(posix.normalize(posix.join(dir, path)), section);
 	});
 }
 

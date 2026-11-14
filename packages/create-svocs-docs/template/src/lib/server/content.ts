@@ -25,6 +25,7 @@ import {
 	routeFromSlug,
 	toSlug
 } from '#lib/core/content-paths.js';
+import { inlineIncludes } from '#lib/build/includes.js';
 import { createObsidianResolver, transformObsidian } from '#lib/build/obsidian.js';
 
 export type { ContentSummary, LlmsDocument, MetaItemConfig, TocItem } from '#lib/core/content.js';
@@ -241,6 +242,15 @@ function obsidianResolver() {
 	return (resolver ??= createObsidianResolver());
 }
 
+function asBuilt(filePath: string): string | undefined {
+	const source = rawContentModules[filePath];
+	if (source === undefined) {
+		return undefined;
+	}
+	const { code } = inlineIncludes(source, filePath, (path) => rawContentModules[path]);
+	return transformObsidian(code, obsidianResolver());
+}
+
 function buildRegistry(): Registry {
 	const metaByDirectory = loadMetaByDirectory();
 	const summaries: ContentSummary[] = [];
@@ -262,14 +272,7 @@ function buildRegistry(): Registry {
 		}
 		// Same Obsidian rewrites the build applies, so exports and search see
 		// the page as rendered rather than as authored.
-		const raw = expandIncludes(
-			transformObsidian(rawContentModules[filePath] ?? '', obsidianResolver()),
-			filePath,
-			(path) =>
-				rawContentModules[path] === undefined
-					? undefined
-					: transformObsidian(rawContentModules[path], obsidianResolver())
-		);
+		const raw = expandIncludes(asBuilt(filePath) ?? '', filePath, asBuilt);
 		const wordCount = countWords(stripMarkdownToText(raw));
 
 		rawBySlug.set(slug, raw);
