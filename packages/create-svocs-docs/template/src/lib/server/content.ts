@@ -89,38 +89,54 @@ function proseLines(raw: string): string[] {
 	return out;
 }
 
+function tocHeading(line: string, slugger: GithubSlugger): TocItem | undefined {
+	const match = line.match(/^(#{2,3})\s+(.+)$/);
+	if (!match) {
+		return undefined;
+	}
+	// Strip markdown link syntax: heading ids come from the rendered
+	// text, so the slugger must see "Datadog", not "[Datadog](https://…)".
+	const text = match[2].trim().replace(/\[([^\]]*)\]\([^)]*\)/g, '$1');
+	const id = slugger.slug(text);
+	return id ? { id, text, depth: match[1].length as 2 | 3 } : undefined;
+}
+
 export function extractTocFromMarkdown(raw: string): TocItem[] {
-	const toc: TocItem[] = [];
 	// Same slugger rehypeHeadingIds uses, so TOC ids always match rendered heading
 	// ids (including underscore handling and duplicate-heading suffixes).
 	const slugger = new GithubSlugger();
-
-	for (const line of proseLines(raw)) {
-		const match = line.match(/^(#{2,3})\s+(.+)$/);
-		if (!match) {
-			continue;
-		}
-
-		const depth = match[1].length as 2 | 3;
-		// Strip markdown link syntax: heading ids come from the rendered
-		// text, so the slugger must see "Datadog", not "[Datadog](https://…)".
-		const text = match[2].trim().replace(/\[([^\]]*)\]\([^)]*\)/g, '$1');
-		const id = slugger.slug(text);
-
-		if (id) {
-			toc.push({ id, text, depth });
-		}
-	}
-
-	return toc;
+	return proseLines(raw).flatMap((line) => tocHeading(line, slugger) ?? []);
 }
 
-export function stripMarkdownToText(raw: string): string {
-	return proseLines(stripSourceForExport(raw))
+function markdownToText(markdown: string): string {
+	return proseLines(markdown)
 		.map((line) => line.replace(/[`*_#[\]()<>-]/g, ' '))
 		.join(' ')
 		.replace(/\s+/g, ' ')
 		.trim();
+}
+
+export function stripMarkdownToText(raw: string): string {
+	return markdownToText(stripSourceForExport(raw));
+}
+
+/** The page's text split at its TOC headings, so search can link to the section a match is in. */
+export function extractSearchSections(raw: string): SearchDocument['sections'] {
+	const slugger = new GithubSlugger();
+	const sections: { id: string; title: string; lines: string[] }[] = [];
+	for (const line of proseLines(stripSourceForExport(raw))) {
+		const heading = tocHeading(line, slugger);
+		if (heading) {
+			sections.push({ id: heading.id, title: heading.text.replace(/`|\*\*/g, ''), lines: [] });
+		} else {
+			sections.at(-1)?.lines.push(line);
+		}
+	}
+	return sections.map(({ id, title, lines }) => ({
+		id,
+		title,
+		content: markdownToText(lines.join('\n'))
+	}));
 }
 
 function countWords(text: string): number {
@@ -354,13 +370,16 @@ export function getAllLlmsDocuments(): LlmsDocument[] {
 
 /** The canonical source every search backend's indexer builds from. */
 export function getAllSearchDocuments(): SearchDocument[] {
-	const { docs, rawBySlug, tocBySlug } = getRegistry();
-	return docs.map((entry) => ({
-		id: entry.slug,
-		url: entry.path,
-		title: entry.title,
-		description: entry.description,
-		content: stripMarkdownToText(rawBySlug.get(entry.slug) ?? ''),
-		headings: (tocBySlug.get(entry.slug) ?? []).map(({ id, text }) => ({ id, text }))
-	}));
+	const { docs, rawBySlug } = getRegistry();
+	return docs.map((entry) => {
+		const raw = rawBySlug.get(entry.slug) ?? '';
+		return {
+			id: entry.slug,
+			url: entry.path,
+			title: entry.title,
+			description: entry.description,
+			content: stripMarkdownToText(raw),
+			sections: extractSearchSections(raw)
+		};
+	});
 }

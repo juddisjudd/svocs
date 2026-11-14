@@ -10,6 +10,10 @@ PUBLIC_SVOCS_SEARCH_PROVIDER=orama bun run build
 
 Leave it unset and you get Pagefind, which needs no configuration and no extra process.
 
+## What a result shows
+
+Each result is a page. Under it, the dialog lists up to three sections of that page that match the query. Each section links straight to its heading. Pagefind, Orama and FlexSearch return sections. Typesense and Chroma return pages only.
+
 ## The three shapes
 
 | Backend                               | How the index is built                                                                            | Who runs it                   | Live server?              |

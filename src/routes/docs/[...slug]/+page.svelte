@@ -25,7 +25,8 @@
 	{/if}
 </svelte:head>
 
-<article>
+<!-- Only the article is indexed, so the header, sidebar and search dialog never show up in results. -->
+<article data-pagefind-body>
 	<header>
 		<h1><PageIcon name={data.entry.icon} class="title-icon" />{data.entry.title}</h1>
 		{#if data.entry.description}

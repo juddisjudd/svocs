@@ -12,7 +12,7 @@ Same static-only shape as Orama with a different index library; there's no serve
 
 ## How it works
 
-A prerendered route, `/search-index.flexsearch.json`, serves FlexSearch's exported index chunks. FlexSearch's `export()` is callback-based and multi-chunk (one call per internal data structure), so every `{key, data}` pair gets collected into one JSON object rather than a single blob. The `⌘K` dialog fetches that once and calls `import(key, data)` for each entry to rebuild the index client-side, then searches with `enrich: true, merge: true` to get full documents back per hit instead of bare ids.
+A prerendered route, `/search-index.flexsearch.json`, serves FlexSearch's exported index chunks. FlexSearch's `export()` is callback-based and multi-chunk (one call per internal data structure), so every `{key, data}` pair gets collected into one JSON object rather than a single blob. The `⌘K` dialog fetches that once and calls `import(key, data)` for each entry to rebuild the index client-side, then searches the title, heading and body fields with `enrich: true` to get full records back instead of bare ids. FlexSearch has no field boosts, so title hits rank first, then heading hits, then body hits.
 
 ## A shared config, on purpose
 

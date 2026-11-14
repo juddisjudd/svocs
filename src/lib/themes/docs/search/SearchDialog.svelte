@@ -4,12 +4,48 @@
 	import { getSearchClient } from '#lib/search/resolver.js';
 	import type { SearchResultItem } from '#lib/search/types.js';
 
+	type Row = {
+		key: string;
+		url: string;
+		title: string;
+		excerpt: string;
+		page?: string;
+	};
+
 	let dialogEl: HTMLDialogElement | undefined = $state();
 	let query = $state('');
 	let loading = $state(false);
 	let errorMessage = $state('');
 	let results = $state<SearchResultItem[]>([]);
 	let activeIndex = $state(-1);
+
+	// A page's own excerpt only shows when no section under it matched, so each match is listed once.
+	const rows = $derived<Row[]>(
+		results.flatMap((result) => {
+			const sections = result.sections ?? [];
+			return [
+				{
+					key: result.id,
+					url: result.url,
+					title: result.title,
+					excerpt: sections.length > 0 ? '' : result.excerpt
+				},
+				...sections.map((section) => ({
+					key: `${result.id}${section.url}`,
+					url: section.url,
+					title: section.title,
+					excerpt: section.excerpt,
+					page: result.title
+				}))
+			];
+		})
+	);
+
+	$effect(() => {
+		if (activeIndex >= 0) {
+			document.getElementById(resultId(activeIndex))?.scrollIntoView({ block: 'nearest' });
+		}
+	});
 
 	let inputEl: HTMLInputElement | undefined = $state();
 
@@ -40,7 +76,11 @@
 
 		try {
 			const client = await getSearchClient();
-			results = await client.search(normalized);
+			const found = await client.search(normalized);
+			if (term !== query) {
+				return;
+			}
+			results = found;
 			activeIndex = results.length > 0 ? 0 : -1;
 		} catch (error) {
 			errorMessage = error instanceof Error ? error.message : 'Unable to run search right now.';
@@ -109,17 +149,17 @@
 	function onInputKeydown(event: KeyboardEvent) {
 		if (event.key === 'ArrowDown') {
 			event.preventDefault();
-			if (results.length > 0) {
-				activeIndex = (activeIndex + 1) % results.length;
+			if (rows.length > 0) {
+				activeIndex = (activeIndex + 1) % rows.length;
 			}
 		} else if (event.key === 'ArrowUp') {
 			event.preventDefault();
-			if (results.length > 0) {
-				activeIndex = (activeIndex - 1 + results.length) % results.length;
+			if (rows.length > 0) {
+				activeIndex = (activeIndex - 1 + rows.length) % rows.length;
 			}
 		} else if (event.key === 'Enter') {
 			event.preventDefault();
-			const active = results[activeIndex];
+			const active = rows[activeIndex];
 			if (active) {
 				goToResult(active.url);
 			}
@@ -153,7 +193,7 @@
 				bind:this={inputEl}
 				type="search"
 				role="combobox"
-				aria-expanded={results.length > 0}
+				aria-expanded={rows.length > 0}
 				aria-controls="search-results"
 				aria-activedescendant={activeIndex >= 0 ? resultId(activeIndex) : undefined}
 				autocomplete="off"
@@ -169,19 +209,32 @@
 				<p class="status">Searching...</p>
 			{:else if errorMessage}
 				<p class="status error">{errorMessage}</p>
-			{:else if results.length > 0}
+			{:else if rows.length > 0}
 				<ul id="search-results" role="listbox">
-					{#each results as result, i (result.id)}
-						<li id={resultId(i)} role="option" aria-selected={i === activeIndex}>
+					{#each rows as row, i (row.key)}
+						<li
+							id={resultId(i)}
+							role="option"
+							aria-selected={i === activeIndex}
+							class:section={row.page !== undefined}
+						>
 							<button
 								type="button"
 								class:active={i === activeIndex}
 								onmouseenter={() => (activeIndex = i)}
-								onclick={() => goToResult(result.url)}
+								onclick={() => goToResult(row.url)}
 							>
-								<strong>{result.title}</strong>
-								<!-- eslint-disable-next-line svelte/no-at-html-tags -- escaped in highlightExcerpt -->
-								<span>{@html highlightExcerpt(result.excerpt, query)}</span>
+								<strong>
+									{#if row.page !== undefined}
+										<span class="hash" aria-hidden="true">#</span>
+										<span class="visually-hidden">{row.page}:</span>
+									{/if}
+									{row.title}
+								</strong>
+								{#if row.excerpt}
+									<!-- eslint-disable-next-line svelte/no-at-html-tags -- escaped in highlightExcerpt -->
+									<span class="excerpt">{@html highlightExcerpt(row.excerpt, query)}</span>
+								{/if}
 							</button>
 						</li>
 					{/each}
@@ -282,7 +335,11 @@
 		margin: 0;
 		padding: 0;
 		display: grid;
-		gap: 0.3rem;
+	}
+
+	/* the gap goes between pages only, so a page's section rail stays unbroken */
+	li + li:not(.section) {
+		margin-top: 0.3rem;
 	}
 
 	button {
@@ -313,12 +370,41 @@
 		transition: color 120ms ease;
 	}
 
-	span {
+	.excerpt {
+		display: -webkit-box;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 2;
+		line-clamp: 2;
+		overflow: hidden;
 		font-size: 0.84rem;
 		color: var(--muted);
 	}
 
-	span :global(mark) {
+	li.section {
+		margin-left: 0.9rem;
+		padding-left: 0.5rem;
+		border-left: 1px solid var(--line);
+	}
+
+	li.section strong {
+		font-weight: 500;
+	}
+
+	.hash {
+		margin-right: 0.3rem;
+		color: var(--text-dim);
+	}
+
+	.visually-hidden {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
+
+	.excerpt :global(mark) {
 		background: color-mix(in srgb, var(--accent) 28%, transparent);
 		color: var(--accent-strong);
 		border-radius: 0.15rem;

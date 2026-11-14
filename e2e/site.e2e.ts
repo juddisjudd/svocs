@@ -62,6 +62,17 @@ test('search finds pages from the built index', async ({ page }) => {
 	await expect(page).toHaveURL(/\/docs\//);
 });
 
+test('search lists matching sections and opens them at their heading', async ({ page }) => {
+	await gotoHydrated(page, '/docs');
+	await page.getByRole('button', { name: 'Search documentation' }).click();
+	await page.getByRole('combobox').fill('reusing content');
+
+	const section = page.getByRole('option', { name: /Reusing content/ }).first();
+	await expect(section).toBeVisible();
+	await section.getByRole('button').click();
+	await expect(page).toHaveURL(/\/docs\/writing-content#reusing-content$/);
+});
+
 test('theme toggle switches to light mode', async ({ page }) => {
 	await page.emulateMedia({ colorScheme: 'dark' });
 	await gotoHydrated(page, '/docs');

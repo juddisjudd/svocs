@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
 	expandIncludes,
+	extractSearchSections,
 	extractTocFromMarkdown,
 	getAllLlmsDocuments,
 	getAllSearchDocuments,
@@ -52,6 +53,20 @@ describe('content registry', () => {
 			expect(doc.raw.startsWith('---')).toBe(false);
 			expect(doc.raw.replace(/^```[\s\S]*?^```/gm, '')).not.toMatch(/^<script/m);
 		}
+	});
+});
+
+describe('extractSearchSections', () => {
+	it('splits page text at h2 and h3 headings, with the TOC ids', () => {
+		const raw =
+			'---\ntitle: T\n---\n\nIntro.\n\n## Set `up`\n\nInstall it.\n\n### Notes\n\nMore.\n\n#### Deep\n\nStill notes.\n';
+		expect(extractSearchSections(raw)).toEqual([
+			{ id: 'set-up', title: 'Set up', content: 'Install it.' },
+			{ id: 'notes', title: 'Notes', content: 'More. Deep Still notes.' }
+		]);
+		expect(extractSearchSections(raw).map((section) => section.id)).toEqual(
+			extractTocFromMarkdown(raw).map((item) => item.id)
+		);
 	});
 });
 

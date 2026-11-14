@@ -1,4 +1,5 @@
 import { getAllSearchDocuments } from '#lib/server/content.js';
+import { toSearchRecords } from '../records';
 import { createDocumentIndex } from './flexsearch-config';
 
 /** Build-time only — FlexSearch's export() is callback-based and multi-chunk
@@ -7,16 +8,8 @@ import { createDocumentIndex } from './flexsearch-config';
 export async function buildFlexSearchIndex(): Promise<Record<string, string>> {
 	const index = createDocumentIndex();
 
-	for (const doc of getAllSearchDocuments()) {
-		index.add({
-			id: doc.id,
-			url: doc.url,
-			title: doc.title,
-			excerpt:
-				doc.description ??
-				(doc.content.length > 160 ? `${doc.content.slice(0, 160)}…` : doc.content),
-			content: doc.content
-		});
+	for (const record of getAllSearchDocuments().flatMap(toSearchRecords)) {
+		index.add(record);
 	}
 
 	const chunks: Record<string, string> = {};

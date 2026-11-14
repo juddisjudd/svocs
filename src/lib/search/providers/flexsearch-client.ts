@@ -1,6 +1,9 @@
 import { resolve } from '$app/paths';
-import { createDocumentIndex, type FlexDoc } from './flexsearch-config';
+import { createDocumentIndex } from './flexsearch-config';
+import { groupRecords, type SearchRecord } from '../records';
 import type { SearchClient, SearchResultItem } from '../types';
+
+const FIELD_RANK = ['title', 'heading', 'content'] as const;
 
 export function createClient(): SearchClient {
 	let indexPromise: Promise<ReturnType<typeof createDocumentIndex>> | null = null;
@@ -28,17 +31,22 @@ export function createClient(): SearchClient {
 	return {
 		async search(query: string): Promise<SearchResultItem[]> {
 			const index = await ensureLoaded();
-			const results = index.search(query, { enrich: true, merge: true, limit: 8 });
+			const byField = index.search(query, { index: [...FIELD_RANK], enrich: true, limit: 40 });
 
-			return results.map((hit) => {
-				const doc = hit.doc as FlexDoc | null;
-				return {
-					id: String(hit.id),
-					url: doc?.url ?? '',
-					title: doc?.title ?? '',
-					excerpt: doc?.excerpt ?? ''
-				} satisfies SearchResultItem;
-			});
+			// FlexSearch has no field boosts, so title hits rank first, then heading hits, then body hits.
+			const hits = new Map<string, SearchRecord>();
+			for (const { result } of byField.toSorted(
+				(a, b) =>
+					FIELD_RANK.indexOf(a.field as (typeof FIELD_RANK)[number]) -
+					FIELD_RANK.indexOf(b.field as (typeof FIELD_RANK)[number])
+			)) {
+				for (const hit of result) {
+					if (hit.doc && !hits.has(String(hit.id))) {
+						hits.set(String(hit.id), hit.doc as SearchRecord);
+					}
+				}
+			}
+			return groupRecords([...hits.values()], query);
 		}
 	};
 }

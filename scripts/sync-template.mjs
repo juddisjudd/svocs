@@ -27,6 +27,7 @@ const SHARED = [
 	'src/lib/themes',
 	'src/lib/types',
 	'src/lib/search/types.ts',
+	'src/lib/search/records.ts',
 	'src/lib/search/providers/pagefind-client.ts',
 	'src/routes/+error.svelte',
 	'src/routes/docs',

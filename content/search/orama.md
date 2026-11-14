@@ -12,7 +12,7 @@ That's the whole configuration. Orama indexes in the browser, so there's no serv
 
 ## How it works
 
-A prerendered route, `/search-index.orama.json`, serves every page's `{id, url, title, content}` as a plain JSON array. It's built during `vite build` itself, guarded so it 404s (and is skipped) on any other backend. The `⌘K` dialog fetches that JSON once, builds a fresh in-memory Orama index with `create()` + `insertMultiple()`, and searches locally from then on.
+A prerendered route, `/search-index.orama.json`, serves a plain JSON array with one record per page and one per h2 or h3 section. It's built during `vite build` itself, guarded so it 404s (and is skipped) on any other backend. The `⌘K` dialog fetches that JSON once, builds a fresh in-memory Orama index with `create()` + `insertMultiple()`, and searches locally from then on.
 
 ## Why build the index in the browser instead of shipping a pre-built one?
 

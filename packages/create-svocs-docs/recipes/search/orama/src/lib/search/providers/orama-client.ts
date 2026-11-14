@@ -1,7 +1,7 @@
 import { resolve } from '$app/paths';
 import { create, insertMultiple, search, type AnyOrama } from '@orama/orama';
+import { groupRecords, type SearchRecord } from '../records';
 import type { SearchClient, SearchResultItem } from '../types';
-import type { OramaDoc } from './orama-indexer';
 
 export function createClient(): SearchClient {
 	let dbPromise: Promise<AnyOrama> | null = null;
@@ -13,13 +13,21 @@ export function createClient(): SearchClient {
 					if (!res.ok) {
 						throw new Error('Search index is not available yet. Run bun run build first.');
 					}
-					return (await res.json()) as OramaDoc[];
+					return (await res.json()) as SearchRecord[];
 				})
-				.then(async (docs) => {
+				.then(async (records) => {
 					const db = create({
-						schema: { id: 'string', url: 'string', title: 'string', content: 'string' } as const
+						schema: {
+							id: 'string',
+							page: 'string',
+							pageTitle: 'string',
+							url: 'string',
+							title: 'string',
+							heading: 'string',
+							content: 'string'
+						} as const
 					});
-					await insertMultiple(db, docs);
+					await insertMultiple(db, records);
 					return db;
 				});
 		}
@@ -29,17 +37,17 @@ export function createClient(): SearchClient {
 	return {
 		async search(query: string): Promise<SearchResultItem[]> {
 			const db = await ensureLoaded();
-			const results = await search(db, { term: query, limit: 8 });
-
-			return results.hits.map((hit) => {
-				const doc = hit.document as OramaDoc;
-				return {
-					id: doc.id,
-					url: doc.url,
-					title: doc.title,
-					excerpt: doc.content.length > 160 ? `${doc.content.slice(0, 160)}…` : doc.content
-				} satisfies SearchResultItem;
+			const results = await search(db, {
+				term: query,
+				properties: ['title', 'heading', 'content'],
+				boost: { title: 3, heading: 2 },
+				limit: 40
 			});
+
+			return groupRecords(
+				results.hits.map((hit) => hit.document as SearchRecord),
+				query
+			);
 		}
 	};
 }
