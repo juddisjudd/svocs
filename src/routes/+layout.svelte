@@ -8,11 +8,16 @@
 	import ThemeToggle from '#lib/themes/docs/ThemeToggle.svelte';
 	import { SITE_URL, SITE_NAME, REPO_URL } from '#lib/site.js';
 	import { withoutBase } from '#lib/core/base-path.js';
+	import { setSiteChrome } from '#lib/themes/docs/site-chrome.js';
 
 	let { children }: { children: Snippet } = $props();
 	const repoUrl = REPO_URL;
 	// Without the base path: SITE_URL already includes it.
 	const currentPath = $derived(withoutBase(page.url).replace(/\/$/, '') || '/');
+
+	// Docs pages draw these around their full-height sidebar; an error page under /docs renders without the docs layout.
+	setSiteChrome({ brand, links, actions, footer });
+	const docsShell = $derived(Boolean(page.route.id?.startsWith('/docs') && !page.error));
 
 	// Every prerendered route gets a matching card from scripts/og/generate.mjs
 	// (build/og/<route>.png), so the URL is derivable straight from the path.
@@ -56,76 +61,79 @@
 
 <a class="skip" href="#main-content">Skip to content</a>
 
-<div class="app-shell">
-	<!-- The same on every page, so kept out of the search index. -->
-	<header data-pagefind-ignore>
-		<div class="topbar">
-			<div class="topbar-left">
-				<a class="brand" href={resolve('/')}>
-					<img class="mark" src={logoMark} alt="" width="20" height="20" />
-					<span><span class="brand-accent">SV</span><span class="brand-rest">OCS</span></span>
-				</a>
+{#snippet brand()}
+	<a class="brand" href={resolve('/')}>
+		<img class="mark" src={logoMark} alt="" width="20" height="20" />
+		<span><span class="brand-accent">SV</span><span class="brand-rest">OCS</span></span>
+	</a>
+{/snippet}
 
-				<nav class="primary-nav" aria-label="Primary">
-					<a
-						href={resolve('/showcase')}
-						aria-current={currentPath === '/showcase' ? 'page' : undefined}
-					>
-						Showcase
-					</a>
-					<a
-						href={resolve('/sponsors')}
-						aria-current={currentPath === '/sponsors' ? 'page' : undefined}
-					>
-						Sponsors
-					</a>
-				</nav>
-			</div>
+{#snippet links()}
+	<nav class="primary-nav" aria-label="Primary">
+		<a href={resolve('/showcase')} aria-current={currentPath === '/showcase' ? 'page' : undefined}>
+			Showcase
+		</a>
+		<a href={resolve('/sponsors')} aria-current={currentPath === '/sponsors' ? 'page' : undefined}>
+			Sponsors
+		</a>
+	</nav>
+{/snippet}
 
-			<div class="actions">
-				<div class="search-wrap">
-					<SearchBox onOpen={() => searchDialog?.open()} />
-				</div>
-				<ThemeToggle />
-				<!-- eslint-disable svelte/no-navigation-without-resolve -- external URL -->
-				<a
-					class="repo"
-					href={repoUrl}
-					target="_blank"
-					rel="noreferrer"
-					aria-label="GitHub repository"
-				>
-					<!-- eslint-enable svelte/no-navigation-without-resolve -->
-					<svg viewBox="0 0 24 24" aria-hidden="true">
-						<path
-							d="M12 2C6.477 2 2 6.596 2 12.266c0 4.536 2.865 8.385 6.839 9.743.5.096.683-.222.683-.494 0-.244-.009-.89-.014-1.747-2.782.617-3.37-1.38-3.37-1.38-.455-1.183-1.11-1.498-1.11-1.498-.908-.639.069-.626.069-.626 1.004.072 1.532 1.058 1.532 1.058.893 1.57 2.341 1.117 2.91.854.091-.667.35-1.118.636-1.374-2.221-.259-4.555-1.14-4.555-5.075 0-1.121.39-2.039 1.029-2.757-.103-.261-.446-1.312.098-2.735 0 0 .84-.276 2.75 1.053A9.35 9.35 0 0 1 12 6.877c.85.004 1.705.118 2.504.347 1.909-1.329 2.747-1.053 2.747-1.053.546 1.423.203 2.474.1 2.735.64.718 1.027 1.636 1.027 2.757 0 3.945-2.338 4.813-4.566 5.067.359.318.678.946.678 1.907 0 1.377-.012 2.487-.012 2.826 0 .274.18.594.688.493C19.137 20.647 22 16.8 22 12.266 22 6.596 17.523 2 12 2z"
-						/>
-					</svg>
-				</a>
-			</div>
+{#snippet actions()}
+	<div class="actions">
+		<div class="search-wrap">
+			<SearchBox onOpen={() => searchDialog?.open()} />
 		</div>
-	</header>
+		<ThemeToggle />
+		<!-- eslint-disable svelte/no-navigation-without-resolve -- external URL -->
+		<a class="repo" href={repoUrl} target="_blank" rel="noreferrer" aria-label="GitHub repository">
+			<!-- eslint-enable svelte/no-navigation-without-resolve -->
+			<svg viewBox="0 0 24 24" aria-hidden="true">
+				<path
+					d="M12 2C6.477 2 2 6.596 2 12.266c0 4.536 2.865 8.385 6.839 9.743.5.096.683-.222.683-.494 0-.244-.009-.89-.014-1.747-2.782.617-3.37-1.38-3.37-1.38-.455-1.183-1.11-1.498-1.11-1.498-.908-.639.069-.626.069-.626 1.004.072 1.532 1.058 1.532 1.058.893 1.57 2.341 1.117 2.91.854.091-.667.35-1.118.636-1.374-2.221-.259-4.555-1.14-4.555-5.075 0-1.121.39-2.039 1.029-2.757-.103-.261-.446-1.312.098-2.735 0 0 .84-.276 2.75 1.053A9.35 9.35 0 0 1 12 6.877c.85.004 1.705.118 2.504.347 1.909-1.329 2.747-1.053 2.747-1.053.546 1.423.203 2.474.1 2.735.64.718 1.027 1.636 1.027 2.757 0 3.945-2.338 4.813-4.566 5.067.359.318.678.946.678 1.907 0 1.377-.012 2.487-.012 2.826 0 .274.18.594.688.493C19.137 20.647 22 16.8 22 12.266 22 6.596 17.523 2 12 2z"
+				/>
+			</svg>
+		</a>
+	</div>
+{/snippet}
+
+{#snippet footer()}
+	<div class="footer-wrap">
+		<span>© {new Date().getFullYear()} SVOCS</span>
+		<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- external URL -->
+		<a class="footer-oss" href={repoUrl} target="_blank" rel="noreferrer">
+			<svg viewBox="0 0 24 24" aria-hidden="true">
+				<path
+					d="M12 2C6.477 2 2 6.596 2 12.266c0 4.536 2.865 8.385 6.839 9.743.5.096.683-.222.683-.494 0-.244-.009-.89-.014-1.747-2.782.617-3.37-1.38-3.37-1.38-.455-1.183-1.11-1.498-1.11-1.498-.908-.639.069-.626.069-.626 1.004.072 1.532 1.058 1.532 1.058.893 1.57 2.341 1.117 2.91.854.091-.667.35-1.118.636-1.374-2.221-.259-4.555-1.14-4.555-5.075 0-1.121.39-2.039 1.029-2.757-.103-.261-.446-1.312.098-2.735 0 0 .84-.276 2.75 1.053A9.35 9.35 0 0 1 12 6.877c.85.004 1.705.118 2.504.347 1.909-1.329 2.747-1.053 2.747-1.053.546 1.423.203 2.474.1 2.735.64.718 1.027 1.636 1.027 2.757 0 3.945-2.338 4.813-4.566 5.067.359.318.678.946.678 1.907 0 1.377-.012 2.487-.012 2.826 0 .274.18.594.688.493C19.137 20.647 22 16.8 22 12.266 22 6.596 17.523 2 12 2z"
+				/>
+			</svg>
+			Fully open-source on GitHub
+		</a>
+	</div>
+{/snippet}
+
+<div class={['app-shell', docsShell && 'docs-shell']}>
+	{#if docsShell}
+		{@render children()}
+	{:else}
+		<header>
+			<div class="topbar">
+				{@render brand()}
+				<div class="topbar-end">
+					{@render links()}
+					{@render actions()}
+				</div>
+			</div>
+		</header>
+
+		<main id="main-content">
+			{@render children()}
+		</main>
+
+		<footer>{@render footer()}</footer>
+	{/if}
 
 	<SearchDialog bind:this={searchDialog} />
-
-	<main id="main-content">
-		{@render children()}
-	</main>
-
-	<footer>
-		<div class="footer-wrap">
-			<span>© {new Date().getFullYear()} SVOCS</span>
-			<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- external URL -->
-			<a class="footer-oss" href={repoUrl} target="_blank" rel="noreferrer">
-				<svg viewBox="0 0 24 24" aria-hidden="true">
-					<path
-						d="M12 2C6.477 2 2 6.596 2 12.266c0 4.536 2.865 8.385 6.839 9.743.5.096.683-.222.683-.494 0-.244-.009-.89-.014-1.747-2.782.617-3.37-1.38-3.37-1.38-.455-1.183-1.11-1.498-1.11-1.498-.908-.639.069-.626.069-.626 1.004.072 1.532 1.058 1.532 1.058.893 1.57 2.341 1.117 2.91.854.091-.667.35-1.118.636-1.374-2.221-.259-4.555-1.14-4.555-5.075 0-1.121.39-2.039 1.029-2.757-.103-.261-.446-1.312.098-2.735 0 0 .84-.276 2.75 1.053A9.35 9.35 0 0 1 12 6.877c.85.004 1.705.118 2.504.347 1.909-1.329 2.747-1.053 2.747-1.053.546 1.423.203 2.474.1 2.735.64.718 1.027 1.636 1.027 2.757 0 3.945-2.338 4.813-4.566 5.067.359.318.678.946.678 1.907 0 1.377-.012 2.487-.012 2.826 0 .274.18.594.688.493C19.137 20.647 22 16.8 22 12.266 22 6.596 17.523 2 12 2z"
-					/>
-				</svg>
-				Fully open-source on GitHub
-			</a>
-		</div>
-	</footer>
 
 	<!-- Filter behind the theme-switch dissolve; see the ::view-transition rules in the styles. -->
 	<svg class="dissolve-defs" width="0" height="0" aria-hidden="true" focusable="false">
@@ -361,6 +369,10 @@
 		grid-template-rows: auto 1fr auto;
 	}
 
+	.app-shell.docs-shell {
+		display: block;
+	}
+
 	header {
 		position: sticky;
 		top: 0;
@@ -379,10 +391,10 @@
 		gap: 1rem;
 	}
 
-	.topbar-left {
+	.topbar-end {
 		display: flex;
 		align-items: center;
-		gap: 1.5rem;
+		gap: 1.25rem;
 		min-width: 0;
 	}
 

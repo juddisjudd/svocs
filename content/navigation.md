@@ -65,3 +65,29 @@ A folder's own title and order can be set from its _parent_ directory's `_meta.j
 ```
 
 This only applies to folders that don't resolve to a real document (no `index.md`/`index.svx` inside them). If the folder has an index page, that page's own title wins, since it's a real page with its own metadata.
+
+## Header, logo and footer
+
+On docs pages, the sidebar runs the full height of the window. Your logo sits at the top of it. A bar over the content holds your header links, search, the theme toggle and the GitHub button. The footer sits under the content.
+
+These parts are snippets in `src/routes/+layout.svelte`, handed to the docs layout with `setSiteChrome()`:
+
+| Snippet   | What it holds                                                                                               |
+| --------- | ----------------------------------------------------------------------------------------------------------- |
+| `brand`   | Your logo and site name. A collapsed sidebar shows only the first 2rem of it, so start it with a logo mark. |
+| `links`   | Header links, such as a blog. They sit left of search. Optional.                                            |
+| `actions` | Search, the theme toggle and the GitHub button.                                                             |
+| `footer`  | The footer content. Optional.                                                                               |
+
+To add a header link, add an `<a>` to the `links` snippet:
+
+```svelte filename="src/routes/+layout.svelte"
+{#snippet links()}
+	<nav class="primary-nav" aria-label="Primary">
+		<a href={resolve('/docs')}>Docs</a>
+		<a href="https://example.com/blog">Blog</a>
+	</nav>
+{/snippet}
+```
+
+Pages outside `/docs`, such as the landing page, show the same snippets in a full-width header.

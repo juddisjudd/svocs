@@ -13,12 +13,15 @@
 	import { observeHeadings } from '#lib/themes/docs/scroll-spy.js';
 	import { readStorage } from '#lib/core/storage.js';
 	import { withoutBase } from '#lib/core/base-path.js';
+	import { getSiteChrome } from '#lib/themes/docs/site-chrome.js';
 
 	let { data, children }: { data: LayoutData; children: Snippet } = $props();
+	const chrome = getSiteChrome();
 	let sidebarOpen = $state(false);
 	let navCollapsed = $state(readStorage('docs-nav') === 'collapsed');
 	let proseEl: HTMLDivElement | undefined = $state();
 	let activeHeadingId: string | undefined = $state();
+	let footerHeight = $state(0);
 
 	function closeSidebar() {
 		sidebarOpen = false;
@@ -32,6 +35,11 @@
 			// storage unavailable — collapse still applies for this page view
 		}
 	}
+
+	// The collapsed look keys off <html data-docs-nav>, which app.html sets before first paint so a reload never animates.
+	$effect(() => {
+		document.documentElement.dataset.docsNav = navCollapsed ? 'collapsed' : 'open';
+	});
 
 	// A getter, not the array itself: reading `data.pageMap` here (component
 	// init, outside any reactive context) would only capture its initial
@@ -90,114 +98,175 @@
 	);
 </script>
 
-<div class="docs-layout" class:nav-collapsed={navCollapsed}>
+{#snippet menuToggle()}
 	<button
 		class="mobile-toggle"
 		type="button"
 		aria-expanded={sidebarOpen}
+		aria-label={sidebarOpen ? 'Close menu' : 'Open menu'}
 		onclick={() => (sidebarOpen = !sidebarOpen)}
 	>
-		{sidebarOpen ? 'Close menu' : 'Menu'}
+		<svg viewBox="0 0 16 16" aria-hidden="true">
+			{#if sidebarOpen}
+				<path d="m4 4 8 8M12 4l-8 8" />
+			{:else}
+				<path d="M2.5 4.5h11M2.5 8h11M2.5 11.5h11" />
+			{/if}
+		</svg>
 	</button>
+{/snippet}
 
+<div
+	class={['docs-layout', !chrome && 'legacy']}
+	style:--footer-space={footerHeight ? `${footerHeight}px` : undefined}
+>
 	<aside class:open={sidebarOpen}>
+		{#if chrome}
+			<div class="sidebar-brand">
+				<div class="sidebar-brand-clip">{@render chrome.brand()}</div>
+			</div>
+		{/if}
 		<nav aria-label="Documentation navigation">
 			<SidebarTree nodes={data.pageMap} currentPath={pagerPath} onNavigate={closeSidebar} />
 		</nav>
-		<button
-			class="rail-toggle"
-			type="button"
-			aria-expanded={!navCollapsed}
-			aria-label={navCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-			onclick={toggleNav}
-		>
-			<svg viewBox="0 0 16 16" aria-hidden="true" class:flipped={navCollapsed}>
-				<path
-					d="m9 4-4 4 4 4"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="1.5"
-					stroke-linecap="round"
-					stroke-linejoin="round"
-				/>
-				<path
-					d="m13 4-4 4 4 4"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="1.5"
-					stroke-linecap="round"
-					stroke-linejoin="round"
-				/>
-			</svg>
-		</button>
+		<div class="rail-footer">
+			<button
+				class="rail-toggle"
+				type="button"
+				aria-expanded={!navCollapsed}
+				aria-label={navCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+				onclick={toggleNav}
+			>
+				<svg viewBox="0 0 16 16" aria-hidden="true">
+					<path
+						d="m9 4-4 4 4 4"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="1.5"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+					/>
+					<path
+						d="m13 4-4 4 4 4"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="1.5"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+					/>
+				</svg>
+			</button>
+		</div>
 	</aside>
 
-	<div class="doc-col">
-		{#if breadcrumbs.length > 0}
-			<nav class="breadcrumbs" aria-label="Breadcrumb">
-				<ol>
-					{#each breadcrumbs as crumb (crumb.path)}
-						<li>
-							<!-- A folder without an index page has no route, so no link: it would 404. -->
-							{#if crumb.path === '/docs' || documentPaths.has(crumb.path)}
-								<a
-									href={crumb.path === '/docs'
-										? resolve('/docs')
-										: resolve('/docs/[...slug]', { slug: crumb.path.replace('/docs/', '') })}
-									aria-current={crumb.path === currentPath ? 'page' : undefined}
-								>
-									{crumb.title}
-								</a>
-							{:else}
-								<span>{crumb.title}</span>
-							{/if}
-						</li>
-					{/each}
-				</ol>
-			</nav>
+	<div class="docs-main">
+		{#if chrome}
+			<header class="topbar">
+				<div class="topbar-start">
+					{@render menuToggle()}
+					<div class="topbar-brand">{@render chrome.brand()}</div>
+				</div>
+				<div class="topbar-end">
+					{@render chrome.links?.()}
+					{@render chrome.actions()}
+				</div>
+			</header>
+		{:else}
+			{@render menuToggle()}
 		{/if}
 
-		<div class="prose" bind:this={proseEl}>
-			{@render children()}
-		</div>
-
-		{#if prevDoc || nextDoc}
-			<nav class="pager" aria-label="Pagination">
-				{#if prevDoc}
-					<a class="prev" href={resolve('/docs/[...slug]', { slug: prevDoc.slug })}>
-						<span aria-hidden="true">←</span>
-						{prevDoc.title}
-					</a>
-				{:else}
-					<span></span>
+		<svelte:element
+			this={chrome ? 'main' : 'div'}
+			id={chrome ? 'main-content' : undefined}
+			class="docs-body"
+		>
+			<div class="doc-col">
+				{#if breadcrumbs.length > 0}
+					<nav class="breadcrumbs" aria-label="Breadcrumb">
+						<ol>
+							{#each breadcrumbs as crumb (crumb.path)}
+								<li>
+									<!-- A folder without an index page has no route, so no link: it would 404. -->
+									{#if crumb.path === '/docs' || documentPaths.has(crumb.path)}
+										<a
+											href={crumb.path === '/docs'
+												? resolve('/docs')
+												: resolve('/docs/[...slug]', { slug: crumb.path.replace('/docs/', '') })}
+											aria-current={crumb.path === currentPath ? 'page' : undefined}
+										>
+											{crumb.title}
+										</a>
+									{:else}
+										<span>{crumb.title}</span>
+									{/if}
+								</li>
+							{/each}
+						</ol>
+					</nav>
 				{/if}
-				{#if nextDoc}
-					<a class="next" href={resolve('/docs/[...slug]', { slug: nextDoc.slug })}>
-						{nextDoc.title}
-						<span aria-hidden="true">→</span>
-					</a>
+
+				<div class="prose" bind:this={proseEl}>
+					{@render children()}
+				</div>
+
+				{#if prevDoc || nextDoc}
+					<nav class="pager" aria-label="Pagination">
+						{#if prevDoc}
+							<a class="prev" href={resolve('/docs/[...slug]', { slug: prevDoc.slug })}>
+								<span aria-hidden="true">←</span>
+								{prevDoc.title}
+							</a>
+						{:else}
+							<span></span>
+						{/if}
+						{#if nextDoc}
+							<a class="next" href={resolve('/docs/[...slug]', { slug: nextDoc.slug })}>
+								{nextDoc.title}
+								<span aria-hidden="true">→</span>
+							</a>
+						{/if}
+					</nav>
+				{/if}
+			</div>
+
+			<nav class="toc-rail" aria-label="Table of contents">
+				{#if toc.length > 0}
+					<Toc items={toc} activeId={activeHeadingId} />
 				{/if}
 			</nav>
+		</svelte:element>
+
+		{#if chrome?.footer}
+			<footer class="docs-footer" bind:offsetHeight={footerHeight}>
+				{@render chrome.footer()}
+			</footer>
 		{/if}
 	</div>
-
-	<nav class="toc-rail" aria-label="Table of contents">
-		{#if toc.length > 0}
-			<Toc items={toc} activeId={activeHeadingId} />
-		{/if}
-	</nav>
 </div>
 
 <style>
 	.docs-layout {
+		--nav-width: 17.5rem;
+		--rail-width: 3.25rem;
+		--topbar-height: 3.75rem;
+		--footer-height: calc(3.5rem + 1px);
+		--sidebar-top: 0px;
+		--rail-ease: cubic-bezier(0.22, 1, 0.36, 1);
+		--rail-duration: 320ms;
 		display: grid;
-		grid-template-columns: 17.5rem minmax(0, 1fr) 15.5rem;
-		padding: 0 1rem;
-		transition: grid-template-columns 220ms cubic-bezier(0.23, 1, 0.32, 1);
+		grid-template-columns: var(--nav-width) minmax(0, 1fr);
+		min-height: 100dvh;
+		transition: grid-template-columns var(--rail-duration) var(--rail-ease);
 	}
 
-	.docs-layout.nav-collapsed {
-		grid-template-columns: 2.6rem minmax(0, 1fr) 15.5rem;
+	:global(html[data-docs-nav='collapsed']) .docs-layout {
+		grid-template-columns: var(--rail-width) minmax(0, 1fr);
+	}
+
+	/* a root layout without setSiteChrome() keeps its own sticky header above the docs */
+	.docs-layout.legacy {
+		--sidebar-top: var(--topbar-height);
+		min-height: 0;
 	}
 
 	.mobile-toggle {
@@ -208,22 +277,63 @@
 
 	aside {
 		position: sticky;
-		top: 3.6rem;
-		height: calc(100vh - 3.6rem);
+		top: var(--sidebar-top);
+		height: calc(100dvh - var(--sidebar-top));
 		display: flex;
 		flex-direction: column;
 		border-right: 1px solid var(--line);
 		overflow: hidden;
 	}
 
+	.sidebar-brand {
+		flex-shrink: 0;
+		display: flex;
+		align-items: center;
+		height: var(--topbar-height);
+		border-bottom: 1px solid var(--line-strong);
+	}
+
+	/* fades out whatever the rail cuts off, so a collapsed rail shows the logo mark without a sliver of the name */
+	.sidebar-brand-clip {
+		flex: 1;
+		min-width: 0;
+		display: flex;
+		align-items: center;
+		padding-left: 1rem;
+		overflow: hidden;
+		white-space: nowrap;
+		mask-image: linear-gradient(
+			to right,
+			#000 calc(100% - 0.95rem),
+			transparent calc(100% - 0.45rem)
+		);
+	}
+
 	aside nav {
 		flex: 1;
+		/* a fixed width, so the shrinking rail clips the links instead of re-wrapping them every frame */
+		width: var(--nav-width);
 		overflow-y: auto;
 		overflow-x: hidden;
 		/* wheel/trackpad momentum at the nav's edge stays in the nav instead
 		   of spilling into the page scroll */
 		overscroll-behavior: contain;
-		padding: 1.5rem 0.75rem 1rem 0;
+		padding: 1.5rem 0.75rem 1rem 1rem;
+		transition:
+			opacity 220ms ease 90ms,
+			translate var(--rail-duration) var(--rail-ease),
+			visibility 0s;
+	}
+
+	/* links fade out ahead of the rail, and fade back in once it has opened up */
+	:global(html[data-docs-nav='collapsed']) aside nav {
+		opacity: 0;
+		translate: -0.75rem 0;
+		visibility: hidden;
+		transition:
+			opacity 120ms ease,
+			translate var(--rail-duration) var(--rail-ease),
+			visibility 0s linear var(--rail-duration);
 	}
 
 	/* Minimal auto-hiding scrollbars for the two rails: invisible until the
@@ -259,20 +369,30 @@
 		background: color-mix(in srgb, var(--line-strong) 85%, transparent);
 	}
 
-	.nav-collapsed aside nav {
-		display: none;
+	/* anchored to the rail's right edge, so the toggle travels with the panel as it collapses */
+	.rail-footer {
+		display: flex;
+		justify-content: flex-end;
+		height: var(--footer-height);
+		align-items: center;
+		padding: 0 0.75rem 0 0;
+		border-top: 1px solid var(--line);
+		transition:
+			padding var(--rail-duration) var(--rail-ease),
+			border-color var(--rail-duration) ease;
+	}
+
+	:global(html[data-docs-nav='collapsed']) .rail-footer {
+		padding-right: calc((var(--rail-width) - 2rem) / 2);
+		border-top-color: transparent;
 	}
 
 	.rail-toggle {
-		/* margin-top: auto keeps the button pinned bottom-left even when the
-		   nav above it is hidden in the collapsed state */
-		margin-top: auto;
-		align-self: flex-start;
 		display: grid;
 		place-items: center;
+		flex-shrink: 0;
 		width: 2rem;
 		height: 2rem;
-		margin-bottom: 1rem;
 		padding: 0;
 		border: 1px solid var(--line);
 		border-radius: 0.45rem;
@@ -281,21 +401,89 @@
 		cursor: pointer;
 		transition:
 			color 0.15s ease,
-			border-color 0.15s ease;
+			border-color 0.15s ease,
+			background-color 0.15s ease;
 	}
 
 	.rail-toggle:hover {
 		color: var(--accent-soft);
+		border-color: var(--line-strong);
+		background: color-mix(in srgb, var(--bg-soft-2) 70%, transparent);
 	}
 
 	.rail-toggle svg {
 		width: 0.95rem;
 		height: 0.95rem;
-		transition: transform 200ms ease;
+		transition: rotate var(--rail-duration) var(--rail-ease);
 	}
 
-	.rail-toggle svg.flipped {
-		transform: rotate(180deg);
+	:global(html[data-docs-nav='collapsed']) .rail-toggle svg {
+		rotate: 180deg;
+	}
+
+	/* ---- top bar, body and footer of the content area ---- */
+
+	.docs-main {
+		min-width: 0;
+		display: flex;
+		flex-direction: column;
+	}
+
+	.topbar {
+		position: sticky;
+		top: 0;
+		z-index: 10;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+		height: var(--topbar-height);
+		padding: 0 1rem;
+		background: color-mix(in srgb, var(--bg) 78%, transparent);
+		backdrop-filter: blur(12px);
+		border-bottom: 1px solid var(--line-strong);
+	}
+
+	.topbar-start,
+	.topbar-end {
+		display: flex;
+		align-items: center;
+		gap: 1.25rem;
+		min-width: 0;
+	}
+
+	.topbar-start {
+		gap: 0.75rem;
+	}
+
+	.topbar-brand {
+		display: none;
+	}
+
+	.mobile-toggle svg {
+		width: 1rem;
+		height: 1rem;
+		fill: none;
+		stroke: currentColor;
+		stroke-width: 1.5;
+		stroke-linecap: round;
+	}
+
+	.docs-body {
+		flex: 1;
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) 15.5rem;
+		padding: 0 1rem;
+	}
+
+	/* as tall as the sidebar footer, so both top borders line up at the bottom of the page */
+	.docs-footer {
+		display: grid;
+		align-items: center;
+		min-height: var(--footer-height);
+		padding: 0 1rem;
+		border-top: 1px solid var(--line-strong);
+		background: color-mix(in srgb, var(--bg) 78%, transparent);
 	}
 
 	/* ---- content column ---- */
@@ -696,8 +884,9 @@
 
 	.toc-rail {
 		position: sticky;
-		top: 3.6rem;
-		height: calc(100vh - 3.6rem);
+		top: var(--topbar-height);
+		/* ends above the footer; any taller and the footer pushes the stuck rail up under the top bar */
+		height: calc(100dvh - var(--topbar-height) - var(--footer-space, var(--footer-height)));
 		overflow-y: auto;
 		/* long TOC titles wrap (see Toc.svelte); never a horizontal bar */
 		overflow-x: hidden;
@@ -709,12 +898,8 @@
 	/* ---- responsive ---- */
 
 	@media (max-width: 1100px) {
-		.docs-layout {
-			grid-template-columns: 17.5rem minmax(0, 1fr);
-		}
-
-		.docs-layout.nav-collapsed {
-			grid-template-columns: 2.6rem minmax(0, 1fr);
+		.docs-body {
+			grid-template-columns: minmax(0, 1fr);
 		}
 
 		.toc-rail {
@@ -724,51 +909,72 @@
 
 	@media (max-width: 900px) {
 		.docs-layout,
-		.docs-layout.nav-collapsed {
-			grid-template-columns: 1fr;
-			padding-top: 0.85rem;
+		:global(html[data-docs-nav='collapsed']) .docs-layout {
+			grid-template-columns: minmax(0, 1fr);
 		}
 
 		.mobile-toggle {
-			display: inline-flex;
-			align-items: center;
-			justify-content: center;
-			justify-self: start;
-			padding: 0.5rem 0.85rem;
+			display: grid;
+			place-items: center;
+			flex-shrink: 0;
+			width: 2.2rem;
+			height: 2.2rem;
+			padding: 0;
 			border: 1px solid var(--line);
-			border-radius: 0.55rem;
+			border-radius: 0.5rem;
 			background: color-mix(in srgb, var(--bg-soft) 88%, transparent);
 			color: var(--text);
-			font-weight: 600;
+			cursor: pointer;
 		}
 
+		/* without the top bar, the toggle sits above the open menu so it can close it */
+		.legacy .mobile-toggle {
+			position: relative;
+			z-index: 10;
+			align-self: flex-start;
+			margin: 0.85rem 1rem 0;
+		}
+
+		.legacy aside nav,
+		:global(html[data-docs-nav='collapsed']) .legacy aside nav {
+			padding-top: 3.75rem;
+		}
+
+		.topbar-brand {
+			display: flex;
+		}
+
+		/* the open menu covers the page below the top bar, rather than pushing the article down */
 		aside {
 			display: none;
-			position: static;
+			position: fixed;
+			inset: var(--topbar-height) 0 0;
+			z-index: 9;
 			height: auto;
 			border-right: none;
-			border-bottom: 1px solid var(--line);
-			overflow: visible;
+			background: var(--bg);
+			overflow-y: auto;
+			overscroll-behavior: contain;
 		}
 
 		aside.open {
-			display: block;
+			display: flex;
+		}
+
+		.sidebar-brand,
+		.rail-footer {
+			display: none;
 		}
 
 		aside nav,
-		.nav-collapsed aside nav {
-			display: block;
-			padding: 0.85rem 0 1.25rem;
-			/* Full shorthand, not just overflow-y: pairing a "visible" y-axis
-			   with the desktop rule's overflow-x: hidden makes the UA force
-			   y back to auto (spec: visible must match the other axis or it
-			   resolves to auto), silently re-trapping mobile scroll inside
-			   this nav instead of the page. */
+		:global(html[data-docs-nav='collapsed']) aside nav {
+			flex: none;
+			width: auto;
+			opacity: 1;
+			translate: none;
+			visibility: visible;
+			padding: 1rem;
 			overflow: visible;
-		}
-
-		.rail-toggle {
-			display: none;
 		}
 
 		.doc-col {
@@ -779,8 +985,12 @@
 
 	@media (prefers-reduced-motion: reduce) {
 		.docs-layout,
+		aside nav,
+		:global(html[data-docs-nav='collapsed']) aside nav,
+		.rail-footer,
 		.rail-toggle svg {
 			transition-duration: 0.01ms;
+			transition-delay: 0s;
 		}
 	}
 </style>

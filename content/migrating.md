@@ -88,14 +88,14 @@ A Fumadocs include of one section, such as `<include>ped.mdx#methods</include>`,
 
 The converter only reads the content folder. Everything else on the old site was code, so it does not carry over:
 
-| Part of the old site | Where it goes in svocs                                                      |
-| -------------------- | --------------------------------------------------------------------------- |
-| Header links         | Add `<a>` elements to the `actions` block in `src/routes/+layout.svelte`.   |
-| Footer               | The `<footer>` in `src/routes/+layout.svelte`.                              |
-| Landing page         | `src/routes/+page.svelte`.                                                  |
-| Favicon              | Copy it into `static/`, then set the `<link rel="icon">` in `src/app.html`. |
-| Colors and fonts     | See [Theming](/docs/theming).                                               |
-| Analytics scripts    | Add them to `<head>` in `src/app.html`.                                     |
+| Part of the old site | Where it goes in svocs                                                                                                               |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Header links         | Add `<a>` elements to the `links` snippet in `src/routes/+layout.svelte`. See [Navigation](/docs/navigation#header-logo-and-footer). |
+| Footer               | The `footer` snippet in `src/routes/+layout.svelte`.                                                                                 |
+| Landing page         | `src/routes/+page.svelte`.                                                                                                           |
+| Favicon              | Copy it into `static/`, then set the `<link rel="icon">` in `src/app.html`.                                                          |
+| Colors and fonts     | See [Theming](/docs/theming).                                                                                                        |
+| Analytics scripts    | Add them to `<head>` in `src/app.html`.                                                                                              |
 
 For Fumadocs, Nextra, Starlight and Docusaurus sites, files in the source's `public/` (or Docusaurus `static/`) folder are already copied into `static/`. Next.js apps often keep the favicon in `app/` instead, so check there too.
 

@@ -73,6 +73,34 @@ test('search lists matching sections and opens them at their heading', async ({ 
 	await expect(page).toHaveURL(/\/docs\/writing-content#reusing-content$/);
 });
 
+test('a collapsed sidebar stays collapsed across a reload', async ({ page }) => {
+	await gotoHydrated(page, '/docs');
+	const links = page.locator('aside nav');
+	await page.getByRole('button', { name: 'Collapse sidebar' }).click();
+	await expect(links).toBeHidden();
+
+	await page.reload();
+	await expect(page.locator('html')).toHaveAttribute('data-docs-nav', 'collapsed');
+	await expect(links).toBeHidden();
+
+	await page.getByRole('button', { name: 'Expand sidebar' }).click();
+	await expect(links).toBeVisible();
+});
+
+test('the table of contents stays below the top bar at the end of a page', async ({ page }) => {
+	await gotoHydrated(page, '/docs/writing-content');
+	const railTop = () =>
+		page.evaluate(() => {
+			const rail = document.querySelector('.toc-rail')!.getBoundingClientRect();
+			const bar = document.querySelector('.topbar')!.getBoundingClientRect();
+			return Math.round(rail.top - bar.bottom);
+		});
+	const atTop = await railTop();
+
+	await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+	await expect.poll(railTop).toBe(atTop);
+});
+
 test('theme toggle switches to light mode', async ({ page }) => {
 	await page.emulateMedia({ colorScheme: 'dark' });
 	await gotoHydrated(page, '/docs');

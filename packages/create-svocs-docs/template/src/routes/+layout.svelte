@@ -7,8 +7,13 @@
 	import ThemeToggle from '#lib/themes/docs/ThemeToggle.svelte';
 	import { REPO_URL, SITE_NAME, SITE_URL } from '#lib/site.js';
 	import { withoutBase } from '#lib/core/base-path.js';
+	import { setSiteChrome } from '#lib/themes/docs/site-chrome.js';
 
 	let { children }: { children: Snippet } = $props();
+
+	// Docs pages draw these around their full-height sidebar; header links sit left of search.
+	setSiteChrome({ brand, links, actions, footer });
+	const docsShell = $derived(Boolean(page.route.id?.startsWith('/docs') && !page.error));
 
 	// Every prerendered route gets a matching social card from
 	// scripts/og/generate.mjs (build/og/<route>.png), so the URL derives
@@ -44,52 +49,77 @@
 
 <a class="skip" href="#main-content">Skip to content</a>
 
-<div class="app-shell">
-	<!-- The same on every page, so kept out of the search index. -->
-	<header data-pagefind-ignore>
-		<div class="topbar">
-			<a class="brand" href={resolve('/')}>
-				{SITE_NAME}
-			</a>
+{#snippet brand()}
+	<a class="brand" href={resolve('/')}>
+		<!-- Shown alone when the docs sidebar is collapsed; swap it for your logo. -->
+		<span class="brand-mark" aria-hidden="true">{SITE_NAME.charAt(0)}</span>
+		{SITE_NAME}
+	</a>
+{/snippet}
 
-			<div class="actions">
-				<div class="search-wrap">
-					<SearchBox onOpen={() => searchDialog?.open()} />
-				</div>
-				<ThemeToggle />
-				{#if REPO_URL}
-					<!-- eslint-disable svelte/no-navigation-without-resolve -- external URL -->
-					<a
-						class="repo"
-						href={REPO_URL}
-						target="_blank"
-						rel="noreferrer"
-						aria-label="GitHub repository"
-					>
-						<!-- eslint-enable svelte/no-navigation-without-resolve -->
-						<svg viewBox="0 0 24 24" aria-hidden="true">
-							<path
-								d="M12 2C6.477 2 2 6.596 2 12.266c0 4.536 2.865 8.385 6.839 9.743.5.096.683-.222.683-.494 0-.244-.009-.89-.014-1.747-2.782.617-3.37-1.38-3.37-1.38-.455-1.183-1.11-1.498-1.11-1.498-.908-.639.069-.626.069-.626 1.004.072 1.532 1.058 1.532 1.058.893 1.57 2.341 1.117 2.91.854.091-.667.35-1.118.636-1.374-2.221-.259-4.555-1.14-4.555-5.075 0-1.121.39-2.039 1.029-2.757-.103-.261-.446-1.312.098-2.735 0 0 .84-.276 2.75 1.053A9.35 9.35 0 0 1 12 6.877c.85.004 1.705.118 2.504.347 1.909-1.329 2.747-1.053 2.747-1.053.546 1.423.203 2.474.1 2.735.64.718 1.027 1.636 1.027 2.757 0 3.945-2.338 4.813-4.566 5.067.359.318.678.946.678 1.907 0 1.377-.012 2.487-.012 2.826 0 .274.18.594.688.493C19.137 20.647 22 16.8 22 12.266 22 6.596 17.523 2 12 2z"
-							/>
-						</svg>
-					</a>
-				{/if}
-			</div>
+{#snippet links()}
+	<nav class="primary-nav" aria-label="Primary">
+		<a href={resolve('/docs')} aria-current={currentPath.startsWith('/docs') ? 'page' : undefined}
+			>Docs</a
+		>
+	</nav>
+{/snippet}
+
+{#snippet actions()}
+	<div class="actions">
+		<div class="search-wrap">
+			<SearchBox onOpen={() => searchDialog?.open()} />
 		</div>
-	</header>
+		<ThemeToggle />
+		{#if REPO_URL}
+			<!-- eslint-disable svelte/no-navigation-without-resolve -- external URL -->
+			<a
+				class="repo"
+				href={REPO_URL}
+				target="_blank"
+				rel="noreferrer"
+				aria-label="GitHub repository"
+			>
+				<!-- eslint-enable svelte/no-navigation-without-resolve -->
+				<svg viewBox="0 0 24 24" aria-hidden="true">
+					<path
+						d="M12 2C6.477 2 2 6.596 2 12.266c0 4.536 2.865 8.385 6.839 9.743.5.096.683-.222.683-.494 0-.244-.009-.89-.014-1.747-2.782.617-3.37-1.38-3.37-1.38-.455-1.183-1.11-1.498-1.11-1.498-.908-.639.069-.626.069-.626 1.004.072 1.532 1.058 1.532 1.058.893 1.57 2.341 1.117 2.91.854.091-.667.35-1.118.636-1.374-2.221-.259-4.555-1.14-4.555-5.075 0-1.121.39-2.039 1.029-2.757-.103-.261-.446-1.312.098-2.735 0 0 .84-.276 2.75 1.053A9.35 9.35 0 0 1 12 6.877c.85.004 1.705.118 2.504.347 1.909-1.329 2.747-1.053 2.747-1.053.546 1.423.203 2.474.1 2.735.64.718 1.027 1.636 1.027 2.757 0 3.945-2.338 4.813-4.566 5.067.359.318.678.946.678 1.907 0 1.377-.012 2.487-.012 2.826 0 .274.18.594.688.493C19.137 20.647 22 16.8 22 12.266 22 6.596 17.523 2 12 2z"
+					/>
+				</svg>
+			</a>
+		{/if}
+	</div>
+{/snippet}
+
+{#snippet footer()}
+	<div class="footer-wrap">
+		<span>© {new Date().getFullYear()} {SITE_NAME}</span>
+		<a class="footer-link" href={resolve('/docs')}>Docs</a>
+	</div>
+{/snippet}
+
+<div class={['app-shell', docsShell && 'docs-shell']}>
+	{#if docsShell}
+		{@render children()}
+	{:else}
+		<header>
+			<div class="topbar">
+				{@render brand()}
+				<div class="topbar-end">
+					{@render links()}
+					{@render actions()}
+				</div>
+			</div>
+		</header>
+
+		<main id="main-content">
+			{@render children()}
+		</main>
+
+		<footer>{@render footer()}</footer>
+	{/if}
 
 	<SearchDialog bind:this={searchDialog} />
-
-	<main id="main-content">
-		{@render children()}
-	</main>
-
-	<footer>
-		<div class="footer-wrap">
-			<span>© {new Date().getFullYear()} {SITE_NAME}</span>
-			<a class="footer-link" href={resolve('/docs')}>Docs</a>
-		</div>
-	</footer>
 
 	<!-- Filter behind the theme-switch dissolve; see the ::view-transition rules in the styles. -->
 	<svg class="dissolve-defs" width="0" height="0" aria-hidden="true" focusable="false">
@@ -324,6 +354,10 @@
 		grid-template-rows: auto 1fr auto;
 	}
 
+	.app-shell.docs-shell {
+		display: block;
+	}
+
 	header {
 		position: sticky;
 		top: 0;
@@ -343,12 +377,59 @@
 	}
 
 	.brand {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
 		text-decoration: none;
 		color: var(--text);
 		font-weight: 700;
 		letter-spacing: 0.03em;
 		font-size: 0.98rem;
 		flex-shrink: 0;
+	}
+
+	.brand-mark {
+		display: grid;
+		place-items: center;
+		width: 1.25rem;
+		height: 1.25rem;
+		border-radius: 0.3rem;
+		background: var(--accent);
+		color: var(--accent-contrast);
+		font-size: 0.75rem;
+		font-weight: 800;
+		letter-spacing: 0;
+		text-transform: uppercase;
+	}
+
+	.topbar-end {
+		display: flex;
+		align-items: center;
+		gap: 1.25rem;
+		min-width: 0;
+	}
+
+	.primary-nav {
+		display: flex;
+		align-items: center;
+		gap: 1.1rem;
+	}
+
+	.primary-nav a {
+		text-decoration: none;
+		color: var(--text-dim);
+		font-size: 0.88rem;
+		font-weight: 550;
+		transition: color 120ms ease;
+	}
+
+	.primary-nav a:hover {
+		color: var(--accent-soft);
+	}
+
+	.primary-nav a[aria-current='page'] {
+		color: var(--accent-strong);
+		font-weight: 700;
 	}
 
 	.actions {
@@ -410,6 +491,12 @@
 
 	.footer-link:hover {
 		color: var(--accent-soft);
+	}
+
+	@media (max-width: 800px) {
+		.primary-nav {
+			display: none;
+		}
 	}
 
 	@media (max-width: 560px) {

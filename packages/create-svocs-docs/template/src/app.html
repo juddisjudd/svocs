@@ -55,6 +55,9 @@
 					} else if (window.matchMedia('(prefers-color-scheme: light)').matches) {
 						theme = 'light';
 					}
+					if (localStorage.getItem('docs-nav') === 'collapsed') {
+						document.documentElement.dataset.docsNav = 'collapsed';
+					}
 				} catch (e) {
 					/* fall back to dark */
 				}
